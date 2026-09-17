@@ -55,6 +55,10 @@ export function renderStudentProfileView() {
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
+            <button id="open-edit-profile-btn" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer">
+              <span>✏️</span>
+              <span>Edit Profile</span>
+            </button>
             <button id="open-ai-classification-modal-btn" class="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-500/20 transition-all flex items-center space-x-2 cursor-pointer">
               <span>⚡</span>
               <span>Run AI Profiler</span>
@@ -663,12 +667,18 @@ export function attachStudentProfileEvents() {
 
   // 5. AI Classification Modal
   const openModalBtn = document.getElementById("open-ai-classification-modal-btn");
+  const openEditProfileBtn = document.getElementById("open-edit-profile-btn");
   const modal = document.getElementById("ai-classification-modal");
   const closeModalBtn = document.getElementById("close-ai-classification-modal-btn");
   const form = document.getElementById("ai-classification-form");
 
-  if (openModalBtn && modal) {
-    openModalBtn.addEventListener("click", () => modal.classList.remove("hidden"));
+  if (modal) {
+    if (openModalBtn) {
+      openModalBtn.addEventListener("click", () => modal.classList.remove("hidden"));
+    }
+    if (openEditProfileBtn) {
+      openEditProfileBtn.addEventListener("click", () => modal.classList.remove("hidden"));
+    }
     if (closeModalBtn) closeModalBtn.addEventListener("click", () => modal.classList.add("hidden"));
     modal.addEventListener("click", (e) => {
       if (e.target === modal) modal.classList.add("hidden");

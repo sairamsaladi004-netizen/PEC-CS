@@ -556,11 +556,11 @@ export function attachLoginEvents() {
 
 function redirectAfterLogin(role) {
   const normRole = (role || "").toLowerCase();
-  if (normRole.includes("super admin")) {
+  if (normRole.includes("super") || normRole.includes("director") || normRole.includes("academic")) {
     window.location.hash = "#/admin/dashboard";
   } else if (normRole.includes("faculty") || normRole.includes("coordinator")) {
     window.location.hash = "#/coordinator/dashboard";
-  } else if (normRole.includes("club admin") || normRole.includes("leader")) {
+  } else if (normRole.includes("club admin") || normRole.includes("leader") || normRole.includes("club_admin")) {
     window.location.hash = "#/club-dashboard";
   } else {
     window.location.hash = "#/student/dashboard";
