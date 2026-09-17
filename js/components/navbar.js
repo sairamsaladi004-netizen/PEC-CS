@@ -98,16 +98,22 @@ export function renderNavbar() {
               </select>
             </div>
 
-            <!-- Sign In / Profile Link -->
+            <!-- Sign In / Switch Account / Profile Link -->
             ${currentRole === ROLES.GUEST ? `
-              <a href="#/login" class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-xs transition-colors flex items-center space-x-1">
+              <a href="#/login" class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md transition-colors flex items-center space-x-1.5">
                 <span>🔐</span>
                 <span>Sign In</span>
               </a>
             ` : `
-              <a href="#/student-profile" class="flex items-center space-x-2 pl-1 group" title="Open Profile (${user.name})">
-                <img src="${user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}" class="w-8 h-8 rounded-xl object-cover border border-blue-500/50 group-hover:ring-2 group-hover:ring-blue-400 transition-all" alt="${user.name}" />
-              </a>
+              <div class="flex items-center space-x-2">
+                <a href="#/login" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold border border-slate-700 transition-colors flex items-center space-x-1" title="Sign In or Switch Account">
+                  <span>🔐</span>
+                  <span>Sign In</span>
+                </a>
+                <a href="#/student-profile" class="flex items-center space-x-2 pl-0.5 group" title="Open Profile (${user.name})">
+                  <img src="${user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}" class="w-8 h-8 rounded-xl object-cover border border-blue-500/50 group-hover:ring-2 group-hover:ring-blue-400 transition-all" alt="${user.name}" />
+                </a>
+              </div>
             `}
 
             <!-- Mobile Menu Toggle Button -->

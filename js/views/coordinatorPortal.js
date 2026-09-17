@@ -101,6 +101,11 @@ export function renderCoordinatorPortalView(subSection = "dashboard") {
         <a href="#/coordinator/events" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap ${activeTab === 'events' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}">
           📅 Events (${clubEvents.length})
         </a>
+        <a href="#/poster" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap text-purple-700 bg-purple-50 hover:bg-purple-100 flex items-center space-x-1.5 border border-purple-200">
+          <span>🎨</span>
+          <span>AI Poster Studio</span>
+          <span class="px-1.5 py-0.2 text-[9px] font-bold bg-purple-600 text-white rounded-full">10 Styles</span>
+        </a>
         <a href="#/coordinator/attendance" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap ${activeTab === 'attendance' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}">
           ⏱️ Attendance & QR Tokens
         </a>

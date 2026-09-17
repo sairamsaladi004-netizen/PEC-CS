@@ -77,8 +77,8 @@ export function renderStudentDashboardView(subSection = "dashboard") {
         </a>
         <a href="#/student/recommendations" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap flex items-center space-x-1.5 ${activeTab === 'recommendations' ? 'bg-indigo-600 text-white shadow-xs' : 'text-indigo-600 bg-indigo-50/70 hover:bg-indigo-100/70'}">
           <span>✨</span>
-          <span>AI Recommendations</span>
-          <span class="px-1.5 py-0.2 text-[9px] font-mono font-bold rounded-full ${activeTab === 'recommendations' ? 'bg-white text-indigo-700' : 'bg-indigo-600 text-white'}">ROUND 2</span>
+          <span>Recommendations</span>
+          <span class="px-1.5 py-0.2 text-[9px] font-mono font-bold rounded-full ${activeTab === 'recommendations' ? 'bg-white text-indigo-700' : 'bg-indigo-600 text-white'}">Match</span>
         </a>
         <a href="#/student/clubs" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap ${activeTab === 'clubs' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}">
           🏛️ My Clubs & Applications (${myMemberships.length})
@@ -150,74 +150,24 @@ function renderSubSectionContent(tab, ctx) {
       return `
         <div class="space-y-6">
           
-          <!-- Engine Header & Formula Card -->
-          <div class="bg-linear-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-3xl p-6 sm:p-8 text-white border border-indigo-700/50 shadow-xl relative overflow-hidden">
-            <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
-            
-            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-              <div class="space-y-2 max-w-2xl">
-                <div class="flex items-center space-x-2">
-                  <span class="px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 text-[10px] font-bold uppercase tracking-wider border border-indigo-400/30">
-                    Round 2 AI Intelligence Engine
-                  </span>
-                  <span class="text-xs text-indigo-300">Content-Based Synergy Model</span>
+          <!-- Student Club Recommendations Header -->
+          <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white border border-slate-800 shadow-xl relative overflow-hidden">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+              <div class="space-y-1 max-w-2xl">
+                <div class="inline-flex items-center space-x-2 px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold border border-indigo-400/30">
+                  <span>✨ Curated For You</span>
                 </div>
-                <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white">AI Student–Club Recommendation Engine</h2>
-                <p class="text-xs sm:text-sm text-indigo-200 leading-relaxed">
-                  Personalized technical club matching calibrated to your stated academic interests, verified skills, previous event attendance records, and department curriculum synergy.
+                <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white">Recommended Clubs & Technical Societies</h2>
+                <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  Personalized technical club suggestions tailored to your academic branch (${user.department || 'CSE'}), registered skills, and career interests.
                 </p>
               </div>
-
-              <!-- Live Formula Banner Box -->
-              <div class="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 text-xs space-y-2 lg:max-w-md">
-                <div class="text-[10px] font-mono uppercase text-indigo-200 font-bold flex items-center justify-between">
-                  <span>Mathematical Synergy Formula</span>
-                  <span class="px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 rounded text-[9px]">100% EXPLAINABLE</span>
-                </div>
-                <div class="font-mono text-[11px] text-white bg-slate-950/40 p-2.5 rounded-xl border border-white/10 leading-snug">
-                  Compatibility = 0.35×Interest + 0.25×Skill + 0.20×Activity + 0.10×Event + 0.10×Dept
-                </div>
-                <div class="flex items-center justify-between text-[10px] text-indigo-200 pt-1">
-                  <span>Student Persona: <strong class="text-white">${user.name}</strong> (${user.department || 'CSE'})</span>
-                  <button id="toggle-weights-panel-btn" class="text-indigo-300 hover:text-white underline font-bold">
-                    Tune Weights ⚙️
-                  </button>
-                </div>
+              <div class="flex items-center space-x-2">
+                <a href="#/clubs" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md">
+                  Explore All 35 Clubs →
+                </a>
               </div>
             </div>
-
-            <!-- Expandable Custom Weights Tuning Drawer -->
-            <div id="weights-tuning-drawer" class="hidden mt-6 pt-6 border-t border-indigo-700/50 space-y-4">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-indigo-200">Interactive Weights Tuning (Dynamic Recalculation)</span>
-                <button id="reset-weights-btn" class="text-[11px] text-indigo-300 hover:text-white underline">
-                  Reset to Round 2 Standard Defaults
-                </button>
-              </div>
-              <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 text-xs font-mono">
-                <div class="bg-indigo-950/50 p-3 rounded-xl border border-indigo-700/40">
-                  <div class="flex justify-between mb-1 text-[11px]"><span>Interest</span><span id="weight-val-interest">35%</span></div>
-                  <input type="range" id="slider-weight-interest" min="0" max="60" value="35" class="w-full accent-indigo-400">
-                </div>
-                <div class="bg-indigo-950/50 p-3 rounded-xl border border-indigo-700/40">
-                  <div class="flex justify-between mb-1 text-[11px]"><span>Skill</span><span id="weight-val-skill">25%</span></div>
-                  <input type="range" id="slider-weight-skill" min="0" max="50" value="25" class="w-full accent-indigo-400">
-                </div>
-                <div class="bg-indigo-950/50 p-3 rounded-xl border border-indigo-700/40">
-                  <div class="flex justify-between mb-1 text-[11px]"><span>Activity</span><span id="weight-val-activity">20%</span></div>
-                  <input type="range" id="slider-weight-activity" min="0" max="40" value="20" class="w-full accent-indigo-400">
-                </div>
-                <div class="bg-indigo-950/50 p-3 rounded-xl border border-indigo-700/40">
-                  <div class="flex justify-between mb-1 text-[11px]"><span>Events</span><span id="weight-val-event">10%</span></div>
-                  <input type="range" id="slider-weight-event" min="0" max="30" value="10" class="w-full accent-indigo-400">
-                </div>
-                <div class="bg-indigo-950/50 p-3 rounded-xl border border-indigo-700/40">
-                  <div class="flex justify-between mb-1 text-[11px]"><span>Dept</span><span id="weight-val-dept">10%</span></div>
-                  <input type="range" id="slider-weight-dept" min="0" max="30" value="10" class="w-full accent-indigo-400">
-                </div>
-              </div>
-            </div>
-
           </div>
 
           <!-- Student Profile Attributes Snapshot -->

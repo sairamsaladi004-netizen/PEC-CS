@@ -146,8 +146,10 @@ export function handleRoute() {
       break;
 
     case "#/projects":
-      mountPoint.innerHTML = renderProjectsView();
-      attachProjectsEvents();
+    case "#/hackathon":
+    case "#/hackathons":
+      mountPoint.innerHTML = renderProjectsView(params);
+      attachProjectsEvents(params);
       break;
 
     case "#/lms":
