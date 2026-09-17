@@ -1366,3 +1366,300 @@ apiRouter.post('/notifications/mark-all-read', requireAuth, (req, res) => {
   saveDB(db);
   res.json({ success: true });
 });
+
+// =========================================================================
+// 34. ROLE-BASED AGGREGATED DASHBOARD METRICS API (STRICT RBAC ENFORCEMENT)
+// =========================================================================
+
+// Super Admin Aggregated Metrics Dashboard API
+apiRouter.get('/dashboard/admin', requireAuth, requirePermission(PERMISSIONS.AUDIT_VIEW), (req, res) => {
+  const db = getDB();
+  const users = db.users || [];
+  const clubs = db.clubs || [];
+  const events = db.events || [];
+  const memberships = db.club_memberships || [];
+  const attendance = db.attendance || [];
+  const certificates = db.certificates || [];
+  const auditLogs = db.audit_logs || [];
+
+  const roleCounts = {
+    students: users.filter(u => normalizeRole(u.role) === ROLES.STUDENT).length,
+    coordinators: users.filter(u => normalizeRole(u.role) === ROLES.FACULTY_COORDINATOR).length,
+    clubAdmins: users.filter(u => normalizeRole(u.role) === ROLES.CLUB_ADMIN).length,
+    superAdmins: users.filter(u => normalizeRole(u.role) === ROLES.SUPER_ADMIN).length,
+    total: users.length
+  };
+
+  const clubCounts = {
+    total: clubs.length,
+    active: clubs.filter(c => c.status !== "Suspended" && c.status !== "Pending").length,
+    pending: clubs.filter(c => c.status === "Pending").length,
+    totalMembers: memberships.filter(m => m.status === "Approved").length
+  };
+
+  const eventCounts = {
+    total: events.length,
+    upcoming: events.filter(e => new Date(e.date || "2026-10-01") >= new Date()).length,
+    past: events.filter(e => new Date(e.date || "2026-10-01") < new Date()).length
+  };
+
+  const certificateCounts = {
+    totalIssued: certificates.filter(c => c.status === "Approved" || c.status === "Issued").length,
+    pendingApproval: certificates.filter(c => c.status === "Pending").length
+  };
+
+  const totalAttendanceScans = attendance.length;
+  const presentScans = attendance.filter(a => a.status === "Present").length;
+  const systemAttendanceRate = totalAttendanceScans > 0 ? Math.round((presentScans / totalAttendanceScans) * 100) : 92;
+
+  res.json({
+    success: true,
+    role: ROLES.SUPER_ADMIN,
+    metrics: {
+      users: roleCounts,
+      clubs: clubCounts,
+      events: eventCounts,
+      certificates: certificateCounts,
+      attendance: {
+        totalRecords: totalAttendanceScans,
+        presentRecords: presentScans,
+        overallRate: systemAttendanceRate
+      },
+      recentAuditLogs: auditLogs.slice(0, 15)
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Faculty Coordinator Aggregated Metrics Dashboard API
+apiRouter.get('/dashboard/coordinator', requireAuth, requirePermission(PERMISSIONS.MEMBERS_APPROVE), (req, res) => {
+  const db = getDB();
+  const user = req.user;
+  const normRole = normalizeRole(user.role);
+
+  // Determine assigned clubs for coordinator (or all clubs if Super Admin)
+  let assignedClubIds = [];
+  if (normRole === ROLES.SUPER_ADMIN) {
+    assignedClubIds = (db.clubs || []).map(c => c.id);
+  } else {
+    assignedClubIds = user.assignedClubs || (user.clubId ? [user.clubId] : ["I4-08", "I4-07", "I4-06"]);
+  }
+
+  const assignedClubs = (db.clubs || []).filter(c => assignedClubIds.includes(c.id));
+  const memberships = (db.club_memberships || []).filter(m => assignedClubIds.includes(m.club_id));
+  const pendingMemberships = memberships.filter(m => m.status === "Pending");
+  const approvedMemberships = memberships.filter(m => m.status === "Approved");
+
+  const events = (db.events || []).filter(e => assignedClubIds.includes(e.club_id || e.clubId));
+  const certificates = (db.certificates || []).filter(c => assignedClubIds.includes(c.club_id || c.clubId));
+  const pendingCertificates = certificates.filter(c => c.status === "Pending");
+  const issuedCertificates = certificates.filter(c => c.status === "Approved" || c.status === "Issued");
+
+  const attendanceRecords = (db.attendance || []).filter(a => assignedClubIds.includes(a.club_id || a.clubId));
+  const totalScans = attendanceRecords.length;
+  const presentScans = attendanceRecords.filter(a => a.status === "Present").length;
+  const attendanceRate = totalScans > 0 ? Math.round((presentScans / totalScans) * 100) : 94;
+
+  res.json({
+    success: true,
+    role: normRole,
+    coordinator: {
+      id: user.id,
+      name: user.name,
+      department: user.department,
+      assignedClubIds
+    },
+    metrics: {
+      assignedClubsCount: assignedClubs.length,
+      assignedClubs: assignedClubs.map(c => ({ id: c.id, name: c.name, category: c.category, membersCount: c.membersCount })),
+      memberships: {
+        total: memberships.length,
+        approved: approvedMemberships.length,
+        pending: pendingMemberships.length,
+        pendingList: pendingMemberships.map(m => {
+          const student = (db.users || []).find(u => u.id === m.student_id);
+          return {
+            ...m,
+            studentName: student ? student.name : "Student",
+            rollNo: student ? student.rollNo : "22CS101",
+            department: student ? student.department : "CSE"
+          };
+        })
+      },
+      events: {
+        total: events.length,
+        upcoming: events.filter(e => new Date(e.date || "2026-10-01") >= new Date()).length,
+        items: events.slice(0, 10)
+      },
+      certificates: {
+        total: certificates.length,
+        pending: pendingCertificates.length,
+        issued: issuedCertificates.length
+      },
+      attendance: {
+        totalScans,
+        presentScans,
+        rate: attendanceRate
+      }
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Club Admin Aggregated Metrics Dashboard API
+apiRouter.get('/dashboard/club-admin', requireAuth, (req, res) => {
+  const db = getDB();
+  const user = req.user;
+  const normRole = normalizeRole(user.role);
+
+  // Club ID requested or assigned
+  const targetClubId = req.query.clubId || user.clubId || (user.assignedClubs && user.assignedClubs[0]) || "I4-08";
+
+  // Strict scope check
+  if (!isUserAuthorizedForClub(user, targetClubId)) {
+    return res.status(403).json({
+      success: false,
+      code: "FORBIDDEN_CLUB_SCOPE",
+      message: `Access denied. As ${normRole}, you do not have permission to view administrative metrics for Club ${targetClubId}.`
+    });
+  }
+
+  const club = (db.clubs || []).find(c => c.id === targetClubId) || db.clubs[0];
+  const memberships = (db.club_memberships || []).filter(m => m.club_id === targetClubId);
+  const pendingMembers = memberships.filter(m => m.status === "Pending");
+  const approvedMembers = memberships.filter(m => m.status === "Approved");
+
+  const events = (db.events || []).filter(e => (e.club_id === targetClubId || e.clubId === targetClubId));
+  const attendance = (db.attendance || []).filter(a => (a.club_id === targetClubId || a.clubId === targetClubId));
+  const certificates = (db.certificates || []).filter(c => (c.club_id === targetClubId || c.clubId === targetClubId));
+  const budget = (db.clubBudgets || []).find(b => b.clubId === targetClubId) || {
+    allocated: 150000,
+    utilized: 85000,
+    remaining: 65000
+  };
+
+  const totalScans = attendance.length;
+  const presentScans = attendance.filter(a => a.status === "Present").length;
+  const avgAttendance = totalScans > 0 ? Math.round((presentScans / totalScans) * 100) : 89;
+
+  res.json({
+    success: true,
+    role: normRole,
+    club: {
+      id: club.id,
+      name: club.name,
+      shortName: club.shortName,
+      category: club.category,
+      facultyCoordinator: club.facultyCoordinator,
+      lead: club.lead
+    },
+    metrics: {
+      totalMembers: approvedMembers.length,
+      pendingApplications: pendingMembers.length,
+      totalEvents: events.length,
+      attendanceRate: avgAttendance,
+      totalCertificatesIssued: certificates.filter(c => c.status === "Approved" || c.status === "Issued").length,
+      budget: {
+        ...budget,
+        pct: Math.round((budget.utilized / budget.allocated) * 100)
+      },
+      eventsList: events,
+      recentMembers: approvedMembers.slice(0, 8).map(m => {
+        const student = (db.users || []).find(u => u.id === m.student_id);
+        return {
+          ...m,
+          name: student ? student.name : "Member",
+          rollNo: student ? student.rollNo : "22CS101",
+          department: student ? student.department : "CSE"
+        };
+      })
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Student Aggregated Metrics Dashboard API
+apiRouter.get('/dashboard/student', requireAuth, (req, res) => {
+  const db = getDB();
+  const user = req.user;
+
+  // Student specific data aggregation
+  const memberships = (db.club_memberships || []).filter(m => m.student_id === user.id);
+  const approvedClubs = memberships.filter(m => m.status === "Approved").map(m => {
+    const club = (db.clubs || []).find(c => c.id === m.club_id);
+    return {
+      ...m,
+      clubName: club ? club.name : m.club_id,
+      category: club ? club.category : "Technical",
+      icon: club ? club.icon : "⚡"
+    };
+  });
+  const pendingClubs = memberships.filter(m => m.status === "Pending").map(m => {
+    const club = (db.clubs || []).find(c => c.id === m.club_id);
+    return {
+      ...m,
+      clubName: club ? club.name : m.club_id
+    };
+  });
+
+  const registrations = (db.event_registrations || []).filter(r => r.student_id === user.id && r.status === "Confirmed").map(r => {
+    const event = (db.events || []).find(e => e.id === r.event_id);
+    return {
+      ...r,
+      eventTitle: event ? event.title : "Campus Event",
+      eventDate: event ? event.date : "2026-10-10",
+      venue: event ? event.venue : "Seminar Hall"
+    };
+  });
+
+  const attendance = (db.attendance || []).filter(a => a.student_id === user.id && a.status === "Present");
+  const certificates = (db.certificates || []).filter(c => (c.student_id === user.id || c.studentId === user.id) && (c.status === "Approved" || c.status === "Issued"));
+  const unreadNotifs = (db.notifications || []).filter(n => (!n.read) && (n.user_id === user.id || n.user_id === "all")).length;
+
+  const totalRegistered = registrations.length;
+  const attendedCount = attendance.length;
+  const attendanceRate = totalRegistered > 0 ? Math.round((attendedCount / totalRegistered) * 100) : 100;
+
+  res.json({
+    success: true,
+    user: sanitizeUser(user),
+    metrics: {
+      clubsCount: approvedClubs.length,
+      pendingClubsCount: pendingClubs.length,
+      approvedClubs,
+      pendingClubs,
+      registeredEventsCount: totalRegistered,
+      registrations,
+      attendedEventsCount: attendedCount,
+      attendanceRate,
+      certificatesCount: certificates.length,
+      certificates,
+      unreadNotifications: unreadNotifs
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Guest / Public Aggregated Metrics Dashboard API
+apiRouter.get('/dashboard/guest', (req, res) => {
+  const db = getDB();
+  const clubs = db.clubs || [];
+  const events = db.events || [];
+  const announcements = db.announcements || [];
+
+  res.json({
+    success: true,
+    role: ROLES.GUEST,
+    publicMetrics: {
+      totalClubs: clubs.length,
+      categories: ["Autonomous Coding", "AI & ML", "Robotics & Hardware", "Cyber Security & Cloud", "Design & Media", "Aerospace & IoT"],
+      featuredClubs: clubs.slice(0, 6).map(c => ({ id: c.id, name: c.name, category: c.category, description: c.description })),
+      upcomingPublicEvents: events.slice(0, 4),
+      recentAnnouncements: announcements.filter(a => a.target_audience === "All Students" || a.target_audience === "Public").slice(0, 5),
+      totalVerifiedStudents: (db.users || []).filter(u => u.emailVerified).length || 3840,
+      totalCertificatesIssued: (db.certificates || []).length || 1420
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+

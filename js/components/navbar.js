@@ -329,6 +329,15 @@ export function attachNavbarEvents() {
   // Notifications toggle
   const notifBtn = document.getElementById("nav-notif-btn");
   const notifDropdown = document.getElementById("nav-notif-dropdown");
+  const markAllBtn = document.getElementById("mark-all-read-btn");
+
+  if (markAllBtn) {
+    markAllBtn.addEventListener("click", () => {
+      markAllAsRead();
+      window.location.reload();
+    });
+  }
+
   if (notifBtn && notifDropdown) {
     notifBtn.addEventListener("click", (e) => {
       e.stopPropagation();
