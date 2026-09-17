@@ -1,18 +1,29 @@
-import { getCurrentUser, switchUser, getAllDemoAccounts, logoutUser } from '../auth.js';
-import { getNotificationsForUser, getUnreadCount, markAsRead, markAllAsRead } from '../notifications.js';
+import { getCurrentUser, switchUser, getAllDemoAccounts } from '../auth.js';
+import { ROLES, normalizeRole } from '../rbac.js';
+import { getNotificationsForUser, getUnreadCount } from '../notifications.js';
 
 export function renderNavbar() {
   const user = getCurrentUser() || {};
+  const currentRole = normalizeRole(user.role);
   const unreadCount = getUnreadCount();
   const accounts = getAllDemoAccounts();
   const currentHash = window.location.hash || "#/";
+
+  // Badge styling per role
+  const roleBadgeStyles = {
+    [ROLES.SUPER_ADMIN]: "bg-rose-500/20 text-rose-300 border-rose-500/30",
+    [ROLES.FACULTY_COORDINATOR]: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+    [ROLES.CLUB_ADMIN]: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+    [ROLES.STUDENT]: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+    [ROLES.GUEST]: "bg-slate-500/20 text-slate-300 border-slate-500/30"
+  };
 
   return `
     <header class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
           
-          <!-- Logo & Institutional Brand -->
+          <!-- Logo & Brand -->
           <div class="flex items-center space-x-3">
             <a href="#/" class="flex items-center space-x-2.5 group">
               <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-black text-base shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
@@ -20,43 +31,33 @@ export function renderNavbar() {
               </div>
               <div>
                 <div class="text-sm font-black tracking-tight leading-none flex items-center space-x-1.5">
-                  <span>Pragati Engineering College</span>
-                  <span class="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono">Autonomous</span>
+                  <span>Pragati University</span>
+                  <span class="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono">PEC Autonomous</span>
                 </div>
-                <div class="text-[10px] text-slate-400 font-medium">Student Club Management System</div>
+                <div class="text-[10px] text-slate-400 font-medium">Technical Club Management Platform</div>
               </div>
             </a>
 
-            <!-- Desktop Nav Links -->
-            <nav class="hidden xl:flex items-center space-x-1 ml-6 text-xs font-semibold">
-              <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/clubs') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">35 Clubs</a>
-              <a href="#/events" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/events') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">Events</a>
-              
-              <!-- Role-Specific Portals -->
-              <a href="#/student/dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/student') ? 'bg-blue-600 text-white' : 'text-blue-300 hover:text-white hover:bg-blue-900/40'}">Student Portal</a>
-              
-              ${user.role === 'Club Coordinator' || user.role === 'Club Student Leader' || user.role === 'Super Admin' ? `
-                <a href="#/coordinator/dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/coordinator') ? 'bg-purple-600 text-white' : 'text-purple-300 hover:text-white hover:bg-purple-900/40'}">Coordinator Portal</a>
-              ` : ''}
-
-              ${user.role === 'Super Admin' ? `
-                <a href="#/admin/dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/admin') ? 'bg-rose-600 text-white' : 'text-rose-300 hover:text-white hover:bg-rose-900/40'}">Admin Console</a>
-              ` : ''}
-
-              <a href="#/verify" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/verify') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">Verify Credential</a>
-              <a href="#/announcements" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/announcements') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">Notices</a>
-              <a href="#/about" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/about') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">About PEC</a>
+            <!-- Dynamic Role-Based Desktop Nav Links -->
+            <nav class="hidden lg:flex items-center space-x-1 ml-4 text-xs font-semibold">
+              ${renderDesktopNavForRole(currentRole, currentHash)}
             </nav>
           </div>
 
-          <!-- Right Controls: Search, Notifications, Persona Switcher, Profile -->
+          <!-- Right Controls: Role Pill, Switcher, Notifs, Auth -->
           <div class="flex items-center space-x-2.5">
             
+            <!-- Active Role Indicator Pill -->
+            <div class="hidden md:flex items-center space-x-1.5 px-2.5 py-1 rounded-xl border text-[11px] font-bold font-mono ${roleBadgeStyles[currentRole] || 'bg-slate-800 text-slate-300'}">
+              <span class="w-1.5 h-1.5 rounded-full ${currentRole === ROLES.SUPER_ADMIN ? 'bg-rose-400' : currentRole === ROLES.FACULTY_COORDINATOR ? 'bg-purple-400' : currentRole === ROLES.CLUB_ADMIN ? 'bg-blue-400' : currentRole === ROLES.STUDENT ? 'bg-emerald-400' : 'bg-slate-400'}"></span>
+              <span>${currentRole}</span>
+            </div>
+
             <!-- Global Search Trigger -->
             <button id="nav-search-trigger" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center space-x-1.5 border border-slate-700/60 transition-colors">
               <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-              <span class="hidden sm:inline">Search</span>
-              <kbd class="hidden sm:inline-block px-1.5 py-0.5 text-[10px] bg-slate-900 text-slate-400 rounded font-mono">⌘K</kbd>
+              <span class="hidden xl:inline">Search</span>
+              <kbd class="hidden xl:inline-block px-1.5 py-0.5 text-[10px] bg-slate-900 text-slate-400 rounded font-mono">⌘K</kbd>
             </button>
 
             <!-- Notifications Bell -->
@@ -82,31 +83,35 @@ export function renderNavbar() {
               </div>
             </div>
 
-            <!-- Dedicated Login Link -->
-            <a href="#/login" class="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-xs transition-colors flex items-center space-x-1" title="Login with College Roll No or Email">
-              <span>🔐</span>
-              <span class="hidden md:inline">Sign In</span>
-            </a>
-
-            <!-- Role Persona Switcher -->
+            <!-- Role Persona Switcher (Super Admin, Faculty Coord, Club Admin, Student, Guest) -->
             <div class="hidden sm:flex items-center space-x-1 bg-slate-800 p-1 rounded-xl border border-slate-700/60">
-              <span class="text-[10px] uppercase font-bold text-slate-400 px-2">Role</span>
-              <select id="persona-switcher-select" class="bg-slate-900 text-white text-xs font-semibold rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                ${accounts.map(acc => `
-                  <option value="${acc.id}" ${acc.id === user.id ? 'selected' : ''}>
-                    ${acc.name} (${acc.role})
-                  </option>
-                `).join('')}
+              <span class="text-[10px] uppercase font-bold text-slate-400 px-1.5">Role</span>
+              <select id="persona-switcher-select" class="bg-slate-900 text-white text-xs font-semibold rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer">
+                ${accounts.map(acc => {
+                  const accRole = normalizeRole(acc.role);
+                  return `
+                    <option value="${acc.id}" ${acc.id === user.id ? 'selected' : ''}>
+                      ${acc.name} — ${accRole}
+                    </option>
+                  `;
+                }).join('')}
               </select>
             </div>
 
-            <!-- User Avatar & Profile Quick Links -->
-            <a href="#/student-profile" class="flex items-center space-x-2 pl-1 group" title="Open Profile">
-              <img src="${user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}" class="w-8 h-8 rounded-xl object-cover border border-blue-500/50 group-hover:ring-2 group-hover:ring-blue-400 transition-all" />
-            </a>
+            <!-- Sign In / Profile Link -->
+            ${currentRole === ROLES.GUEST ? `
+              <a href="#/login" class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-xs transition-colors flex items-center space-x-1">
+                <span>🔐</span>
+                <span>Sign In</span>
+              </a>
+            ` : `
+              <a href="#/student-profile" class="flex items-center space-x-2 pl-1 group" title="Open Profile (${user.name})">
+                <img src="${user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}" class="w-8 h-8 rounded-xl object-cover border border-blue-500/50 group-hover:ring-2 group-hover:ring-blue-400 transition-all" alt="${user.name}" />
+              </a>
+            `}
 
             <!-- Mobile Menu Toggle Button -->
-            <button id="mobile-menu-toggle" class="xl:hidden p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300">
+            <button id="mobile-menu-toggle" class="lg:hidden p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
             </button>
           </div>
@@ -115,29 +120,161 @@ export function renderNavbar() {
       </div>
 
       <!-- Mobile Menu Dropdown -->
-      <div id="mobile-menu" class="hidden xl:hidden bg-slate-900 border-b border-slate-800 px-4 pt-2 pb-4 space-y-2 text-xs font-semibold">
+      <div id="mobile-menu" class="hidden lg:hidden bg-slate-900 border-b border-slate-800 px-4 pt-2 pb-4 space-y-3 text-xs font-semibold">
+        <div class="flex items-center justify-between py-1 border-b border-slate-800">
+          <span class="text-slate-400">Current Role:</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase ${roleBadgeStyles[currentRole]}">${currentRole}</span>
+        </div>
+
         <div class="grid grid-cols-2 gap-1.5 pb-2 border-b border-slate-800">
-          <a href="#/login" class="px-3 py-2 rounded-lg bg-blue-600 text-white font-bold">🔐 Sign In / Register</a>
-          <a href="#/student/dashboard" class="px-3 py-2 rounded-lg bg-blue-600/30 text-blue-300">Student Portal</a>
-          <a href="#/coordinator/dashboard" class="px-3 py-2 rounded-lg bg-purple-600/30 text-purple-300">Coordinator Console</a>
-          <a href="#/admin/dashboard" class="px-3 py-2 rounded-lg bg-rose-600/30 text-rose-300">Admin Governance</a>
-          <a href="#/clubs" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">35 Official Clubs</a>
-          <a href="#/events" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Events & Passes</a>
-          <a href="#/verify" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Verify Credential</a>
-          <a href="#/membership-card" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Digital ID Card</a>
-          <a href="#/about" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">About Pragati</a>
+          ${renderMobileNavForRole(currentRole)}
         </div>
         
         <div class="pt-2 sm:hidden flex items-center justify-between">
-          <span class="text-slate-400">Switch Persona:</span>
+          <span class="text-slate-400 text-xs">Switch Persona:</span>
           <select id="mobile-persona-select" class="bg-slate-800 text-white text-xs rounded-lg px-2 py-1 border border-slate-700">
             ${accounts.map(acc => `
-              <option value="${acc.id}" ${acc.id === user.id ? 'selected' : ''}>${acc.name} (${acc.role})</option>
+              <option value="${acc.id}" ${acc.id === user.id ? 'selected' : ''}>${acc.name} (${normalizeRole(acc.role)})</option>
             `).join('')}
           </select>
         </div>
       </div>
     </header>
+  `;
+}
+
+// 1. Desktop Nav Generator per exact Role Specifications
+function renderDesktopNavForRole(role, currentHash) {
+  const norm = normalizeRole(role);
+
+  if (norm === ROLES.SUPER_ADMIN) {
+    return `
+      <a href="#/admin/dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/admin') ? 'bg-rose-600 text-white' : 'text-rose-300 hover:text-white hover:bg-rose-900/40'}">👑 Admin Console</a>
+      <a href="#/admin/dashboard?tab=users" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Users & Roles</a>
+      <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">All 35 Clubs</a>
+      <a href="#/events" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Events</a>
+      <a href="#/attendance" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Attendance</a>
+      <a href="#/verify" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Certificates</a>
+      <a href="#/reports" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Reports</a>
+      <a href="#/admin/dashboard?tab=audit" class="px-2.5 py-1.5 rounded-lg text-amber-300 hover:text-white hover:bg-amber-900/30 font-mono text-[11px]">Audit Logs</a>
+    `;
+  }
+
+  if (norm === ROLES.FACULTY_COORDINATOR) {
+    return `
+      <a href="#/coordinator/dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/coordinator') ? 'bg-purple-600 text-white' : 'text-purple-300 hover:text-white hover:bg-purple-900/40'}">🎓 Faculty Portal</a>
+      <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">My Clubs</a>
+      <a href="#/coordinator/dashboard?tab=members" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Members</a>
+      <a href="#/coordinator/events" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Events & Approvals</a>
+      <a href="#/attendance" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Attendance</a>
+      <a href="#/coordinator/dashboard?tab=certificates" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Certificates</a>
+      <a href="#/reports" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Reports</a>
+      <a href="#/announcements" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Notices</a>
+    `;
+  }
+
+  if (norm === ROLES.CLUB_ADMIN) {
+    return `
+      <a href="#/club-dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/club-dashboard') ? 'bg-blue-600 text-white' : 'text-blue-300 hover:text-white hover:bg-blue-900/40'}">⚡ Club Dashboard</a>
+      <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">My Club</a>
+      <a href="#/club-dashboard" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Roster</a>
+      <a href="#/coordinator/events" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Club Events</a>
+      <a href="#/attendance" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">QR Attendance</a>
+      <a href="#/projects" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Projects</a>
+      <a href="#/lms" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Resources</a>
+      <a href="#/announcements" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Notices</a>
+    `;
+  }
+
+  if (norm === ROLES.STUDENT) {
+    return `
+      <a href="#/student/dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/student') ? 'bg-emerald-600 text-white' : 'text-emerald-300 hover:text-white hover:bg-emerald-900/40'}">🎒 Student Portal</a>
+      <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">35 Clubs</a>
+      <a href="#/events" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Events & Passes</a>
+      <a href="#/student/attendance" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">My Attendance</a>
+      <a href="#/student/certificates" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Certificates</a>
+      <a href="#/membership-card" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Digital ID</a>
+      <a href="#/projects" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Projects</a>
+      <a href="#/lms" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Resources</a>
+      <a href="#/announcements" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Notices</a>
+    `;
+  }
+
+  // GUEST / Public
+  return `
+    <a href="#/" class="px-2.5 py-1.5 rounded-lg text-white hover:bg-slate-800">Home</a>
+    <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">35 Official Clubs</a>
+    <a href="#/events" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Public Events</a>
+    <a href="#/announcements" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Public Notices</a>
+    <a href="#/verify" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Verify Credential</a>
+    <a href="#/about" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">About PEC</a>
+  `;
+}
+
+// 2. Mobile Nav Generator
+function renderMobileNavForRole(role) {
+  const norm = normalizeRole(role);
+
+  if (norm === ROLES.SUPER_ADMIN) {
+    return `
+      <a href="#/admin/dashboard" class="px-3 py-2 rounded-lg bg-rose-600 text-white font-bold">👑 Admin Console</a>
+      <a href="#/admin/dashboard?tab=users" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Users & Roles</a>
+      <a href="#/clubs" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">All 35 Clubs</a>
+      <a href="#/events" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Events Management</a>
+      <a href="#/attendance" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Attendance Hub</a>
+      <a href="#/admin/dashboard?tab=audit" class="px-3 py-2 rounded-lg bg-slate-800 text-amber-300 font-mono">Audit Logs</a>
+      <a href="#/reports" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">System Reports</a>
+      <a href="#/admin/dashboard?tab=settings" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">System Settings</a>
+    `;
+  }
+
+  if (norm === ROLES.FACULTY_COORDINATOR) {
+    return `
+      <a href="#/coordinator/dashboard" class="px-3 py-2 rounded-lg bg-purple-600 text-white font-bold">🎓 Faculty Portal</a>
+      <a href="#/clubs" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">My Assigned Clubs</a>
+      <a href="#/coordinator/dashboard?tab=members" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Review Members</a>
+      <a href="#/coordinator/events" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Event Approvals</a>
+      <a href="#/attendance" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Attendance Kiosk</a>
+      <a href="#/coordinator/dashboard?tab=certificates" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Issue Certificates</a>
+      <a href="#/reports" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Club Reports</a>
+      <a href="#/announcements" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Announcements</a>
+    `;
+  }
+
+  if (norm === ROLES.CLUB_ADMIN) {
+    return `
+      <a href="#/club-dashboard" class="px-3 py-2 rounded-lg bg-blue-600 text-white font-bold">⚡ Club Admin</a>
+      <a href="#/clubs" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">My Club Chapter</a>
+      <a href="#/club-dashboard" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Member Roster</a>
+      <a href="#/coordinator/events" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Create Event</a>
+      <a href="#/attendance" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Live QR Attendance</a>
+      <a href="#/projects" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Club Projects</a>
+      <a href="#/lms" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Resources</a>
+      <a href="#/student-profile" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">My Profile</a>
+    `;
+  }
+
+  if (norm === ROLES.STUDENT) {
+    return `
+      <a href="#/student/dashboard" class="px-3 py-2 rounded-lg bg-emerald-600 text-white font-bold">🎒 Student Portal</a>
+      <a href="#/clubs" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">35 Clubs</a>
+      <a href="#/events" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Events & Passes</a>
+      <a href="#/student/attendance" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">My Attendance</a>
+      <a href="#/student/certificates" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">My Certificates</a>
+      <a href="#/membership-card" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Digital ID Card</a>
+      <a href="#/projects" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Club Projects</a>
+      <a href="#/student-profile" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Student Profile</a>
+    `;
+  }
+
+  // GUEST
+  return `
+    <a href="#/login" class="px-3 py-2 rounded-lg bg-blue-600 text-white font-bold">🔐 Sign In / Register</a>
+    <a href="#/" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Home</a>
+    <a href="#/clubs" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">35 Official Clubs</a>
+    <a href="#/events" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Public Events</a>
+    <a href="#/verify" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Verify Credential</a>
+    <a href="#/about" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">About Pragati</a>
   `;
 }
 
@@ -168,6 +305,7 @@ export function attachNavbarEvents() {
   if (switcher) {
     switcher.addEventListener("change", (e) => {
       switchUser(e.target.value);
+      window.location.reload();
     });
   }
 
@@ -175,6 +313,7 @@ export function attachNavbarEvents() {
   if (mobileSwitcher) {
     mobileSwitcher.addEventListener("change", (e) => {
       switchUser(e.target.value);
+      window.location.reload();
     });
   }
 
@@ -187,7 +326,7 @@ export function attachNavbarEvents() {
     });
   }
 
-  // Notification dropdown toggle
+  // Notifications toggle
   const notifBtn = document.getElementById("nav-notif-btn");
   const notifDropdown = document.getElementById("nav-notif-dropdown");
   if (notifBtn && notifDropdown) {
@@ -195,7 +334,6 @@ export function attachNavbarEvents() {
       e.stopPropagation();
       notifDropdown.classList.toggle("hidden");
     });
-
     document.addEventListener("click", (e) => {
       if (!notifDropdown.contains(e.target) && !notifBtn.contains(e.target)) {
         notifDropdown.classList.add("hidden");
@@ -203,49 +341,16 @@ export function attachNavbarEvents() {
     });
   }
 
-  // Mark all read
-  const markAllBtn = document.getElementById("mark-all-read-btn");
-  if (markAllBtn) {
-    markAllBtn.addEventListener("click", () => {
-      markAllAsRead();
-      const list = document.querySelector("#nav-notif-dropdown .max-h-64");
-      if (list) list.innerHTML = renderNotifList();
-    });
-  }
-
-  // Individual notif read
-  document.querySelectorAll(".notif-link").forEach(link => {
-    link.addEventListener("click", (e) => {
-      const id = e.currentTarget.getAttribute("data-id");
-      if (id) markAsRead(id);
-    });
-  });
-
-  // Global search trigger
+  // Search shortcut
   const searchTrigger = document.getElementById("nav-search-trigger");
   if (searchTrigger) {
     searchTrigger.addEventListener("click", () => {
-      const modal = document.getElementById("search-modal");
-      if (modal) {
-        modal.classList.remove("hidden");
+      const searchModal = document.getElementById("search-modal");
+      if (searchModal) {
+        searchModal.classList.remove("hidden");
         const input = document.getElementById("search-input");
         if (input) input.focus();
       }
     });
   }
-
-  // Keyboard shortcut cmd+k
-  document.addEventListener("keydown", (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-      e.preventDefault();
-      const modal = document.getElementById("search-modal");
-      if (modal) {
-        modal.classList.toggle("hidden");
-        const input = document.getElementById("search-input");
-        if (input && !modal.classList.contains("hidden")) {
-          input.focus();
-        }
-      }
-    }
-  });
 }

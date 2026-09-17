@@ -807,16 +807,27 @@ export function initDB() {
   return getDB();
 }
 
-// REST API Dispatch Helpers for Real Database Mutations
+// REST API Dispatch Helpers for Real Database Mutations with RBAC Auth Context
 export async function apiRequest(endpoint, method = "GET", body = null) {
   try {
     const opts = {
       method,
       headers: { "Content-Type": "application/json" }
     };
+    const activeUserId = typeof localStorage !== 'undefined' ? localStorage.getItem("campustech_active_user_id") : null;
+    if (activeUserId) {
+      opts.headers['x-user-id'] = activeUserId;
+      opts.headers['Authorization'] = `Bearer ${activeUserId}`;
+    }
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(endpoint, opts);
     const data = await res.json();
+    if (data && typeof data === 'object') {
+      data._httpStatus = res.status;
+      if (!res.ok && data.success === undefined) {
+        data.success = false;
+      }
+    }
     return data;
   } catch (err) {
     console.warn(`API call to ${endpoint} failed, falling back to local handler:`, err);

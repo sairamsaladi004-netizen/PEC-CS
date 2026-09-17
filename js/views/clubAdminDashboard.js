@@ -1,6 +1,8 @@
-import { getDB, saveDB, logAudit } from '../db.js';
+import { getDB, saveDB, logAudit, apiRequest } from '../db.js';
 import { getCurrentUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
+import { ROLES, normalizeRole, isUserAuthorizedForClub } from '../rbac.js';
+import { renderAccessDenied, attachAccessDeniedEvents } from '../components/accessDenied.js';
 
 // Global references to Chart.js instances to allow clean destruction and re-rendering
 let chartParticipationInstance = null;
@@ -11,11 +13,34 @@ let chartRatingInstance = null;
 export function renderClubAdminDashboardView(params = {}) {
   const db = getDB();
   const currentUser = getCurrentUser() || {};
+  const currentRole = normalizeRole(currentUser.role);
   
-  // Determine selected club: from query params, or user's assigned club, or fallback to first club (I4-08)
-  const defaultClubId = currentUser.adminForClub || (currentUser.clubs && currentUser.clubs[0]) || "I4-08";
-  const selectedClubId = params.id || defaultClubId;
-  const club = db.clubs.find(c => c.id === selectedClubId) || db.clubs[0];
+  // Determine selected club: from query params, or user's assigned club, or fallback
+  const userClub = currentUser.clubId || (currentUser.assignedClubs && currentUser.assignedClubs[0]) || "I4-08";
+  const selectedClubId = params.id || userClub;
+
+  // SCOPE ENFORCEMENT: Is this user authorized for the requested club?
+  if (!isUserAuthorizedForClub(currentUser, selectedClubId)) {
+    return renderAccessDenied({
+      requiredRole: ROLES.CLUB_ADMIN,
+      attemptedRoute: `#/club-dashboard?id=${selectedClubId}`,
+      clubId: selectedClubId,
+      message: `Access denied. As ${currentRole} (${currentUser.name}), you are restricted to managing your assigned club (${userClub}). You cannot access administrative records for Club ${selectedClubId}.`
+    });
+  }
+
+  const club = (db.clubs || []).find(c => c.id === selectedClubId) || db.clubs[0];
+
+  // Authorized clubs for switcher dropdown
+  let authorizedClubs = [];
+  if (currentRole === ROLES.SUPER_ADMIN) {
+    authorizedClubs = db.clubs || [];
+  } else if (currentRole === ROLES.FACULTY_COORDINATOR) {
+    const assigned = currentUser.assignedClubs || [selectedClubId];
+    authorizedClubs = (db.clubs || []).filter(c => assigned.includes(c.id));
+  } else {
+    authorizedClubs = (db.clubs || []).filter(c => c.id === selectedClubId);
+  }
 
   // Budget info from db or fallback
   const budgetInfo = (db.clubBudgets || []).find(b => b.clubId === club.id) || {
@@ -26,7 +51,7 @@ export function renderClubAdminDashboardView(params = {}) {
   const budgetPct = Math.round((budgetInfo.utilized / budgetInfo.allocated) * 100);
 
   // Events related to this club
-  const clubEvents = db.events.filter(e => e.clubId === club.id || e.organizer?.toLowerCase().includes(club.shortName?.toLowerCase() || club.id));
+  const clubEvents = (db.events || []).filter(e => e.club_id === club.id || e.clubId === club.id);
 
   return `
     <div class="space-y-6 pb-16">
@@ -57,7 +82,7 @@ export function renderClubAdminDashboardView(params = {}) {
           <div class="flex items-center space-x-2 bg-slate-50 px-3 py-2 rounded-2xl border border-slate-200">
             <span class="text-xs font-bold text-slate-500">Managing Chapter:</span>
             <select id="club-switcher-select" class="bg-white text-slate-800 text-xs font-bold rounded-xl px-3 py-1.5 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
-              ${db.clubs.map(c => `
+              ${authorizedClubs.map(c => `
                 <option value="${c.id}" ${c.id === club.id ? 'selected' : ''}>
                   ${c.id} - ${c.name}
                 </option>
@@ -349,6 +374,9 @@ export function renderClubAdminDashboardView(params = {}) {
 }
 
 export function attachClubAdminDashboardEvents(params = {}) {
+  // If access denied was rendered
+  attachAccessDeniedEvents();
+
   // 1. Club Switcher Select
   const switcher = document.getElementById("club-switcher-select");
   if (switcher) {
@@ -459,13 +487,13 @@ function renderClubAdminCharts(params = {}) {
     ? ["Autonomous Line Rover", "ROS Gazebo Simulation", "Manipulator Kinematics", "Microcontroller Sprint", "RoboWars Exhibition"]
     : ["Technical Bootcamp", "Annual Symposia", "Hands-on Workshop", "Student Project Expo", "Department Conclave"];
 
-  const registeredData = isAcm 
+  const registeredData = isAiml 
     ? [140, 180, 165, 190, 240]
     : isCyber
     ? [110, 150, 175, 160, 210]
     : [120, 160, 180, 220, 310];
 
-  const attendedData = isAcm 
+  const attendedData = isAiml 
     ? [128, 162, 149, 172, 224]
     : isCyber
     ? [98, 136, 158, 144, 192]

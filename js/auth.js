@@ -1,5 +1,6 @@
 import { getDB, saveDB, logAudit, apiRequest } from './db.js';
 import { APP_CONFIG } from './config.js';
+import { ROLES, normalizeRole, hasRolePermission, isUserAuthorizedForClub } from './rbac.js';
 
 const ACTIVE_USER_KEY = "campustech_active_user_id";
 
@@ -8,15 +9,34 @@ export function getCurrentUser() {
   const activeId = typeof localStorage !== 'undefined' ? localStorage.getItem(ACTIVE_USER_KEY) : null;
   if (activeId) {
     const found = (db.users || []).find(u => u.id === activeId);
-    if (found) return found;
+    if (found) {
+      return {
+        ...found,
+        role: normalizeRole(found.role)
+      };
+    }
   }
-  return (db.users && db.users[0]) || null;
+  // Default to first student if available, else guest
+  const defaultUser = (db.users || []).find(u => u.id === "std-101") || (db.users && db.users[0]);
+  if (defaultUser) {
+    return {
+      ...defaultUser,
+      role: normalizeRole(defaultUser.role)
+    };
+  }
+  return {
+    id: "guest-001",
+    name: "Public Guest",
+    role: ROLES.GUEST,
+    isGuest: true
+  };
 }
 
 export function setCurrentUser(userId) {
   const db = getDB();
   const user = (db.users || []).find(u => u.id === userId);
   if (user) {
+    user.role = normalizeRole(user.role);
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(ACTIVE_USER_KEY, user.id);
     }
@@ -32,34 +52,44 @@ export function switchUser(userId) {
 export function hasPermission(permission) {
   const user = getCurrentUser();
   if (!user) return false;
-  if (user.role === "Super Admin") return true;
-  const permissions = APP_CONFIG.rolePermissions[user.role] || [];
-  return permissions.includes(permission) || permissions.includes("all_permissions");
+  return hasRolePermission(user.role, permission);
 }
 
 export function hasRole(role) {
   const user = getCurrentUser();
   if (!user) return false;
-  if (user.role === "Super Admin") return true;
-  return user.role === role;
+  const currentNorm = normalizeRole(user.role);
+  const targetNorm = normalizeRole(role);
+  if (currentNorm === ROLES.SUPER_ADMIN) return true;
+  return currentNorm === targetNorm;
+}
+
+export function isAuthorizedForClub(clubId) {
+  const user = getCurrentUser();
+  if (!user) return false;
+  return isUserAuthorizedForClub(user, clubId);
 }
 
 export function isCoordinatorForClub(clubId) {
-  const user = getCurrentUser();
-  if (!user) return false;
-  if (user.role === "Super Admin") return true;
-  if (user.role === "Club Coordinator") {
-    return Array.isArray(user.assignedClubs) && user.assignedClubs.includes(clubId);
-  }
-  if (user.role === "Club Student Leader") {
-    return user.clubId === clubId;
-  }
-  return false;
+  return isAuthorizedForClub(clubId);
 }
 
 export function getAllDemoAccounts() {
   const db = getDB();
-  return (db.users || []).filter(u => u.isDemo !== false);
+  const users = (db.users || []).filter(u => u.isDemo !== false);
+  // Order specifically by institutional hierarchy: Super Admin -> Faculty Coord -> Club Admin -> Student -> Guest
+  const priority = {
+    [ROLES.SUPER_ADMIN]: 1,
+    [ROLES.FACULTY_COORDINATOR]: 2,
+    [ROLES.CLUB_ADMIN]: 3,
+    [ROLES.STUDENT]: 4,
+    [ROLES.GUEST]: 5
+  };
+  return [...users].sort((a, b) => {
+    const rA = normalizeRole(a.role);
+    const rB = normalizeRole(b.role);
+    return (priority[rA] || 99) - (priority[rB] || 99);
+  });
 }
 
 // Asynchronous Login against REST API with local state fallback

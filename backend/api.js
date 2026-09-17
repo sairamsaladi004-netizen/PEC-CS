@@ -1,6 +1,21 @@
 import express from 'express';
 import crypto from 'crypto';
 import { getDB, saveDB, logAudit, hashPassword, generateSalt } from './db.js';
+import {
+  ROLES,
+  PERMISSIONS,
+  normalizeRole,
+  hasRolePermission,
+  isUserAuthorizedForClub,
+  isUserAuthorizedForUserData
+} from './rbac.js';
+import {
+  authenticateUser,
+  requireAuth,
+  requirePermission,
+  requireClubScope,
+  recordAuditAction
+} from './authMiddleware.js';
 
 export const apiRouter = express.Router();
 
@@ -8,50 +23,243 @@ export const apiRouter = express.Router();
 function sanitizeUser(u) {
   if (!u) return null;
   const { salt, passwordHash, ...safe } = u;
-  return safe;
+  return {
+    ...safe,
+    role: normalizeRole(safe.role)
+  };
 }
 
-// 1. GET /api/db - Get complete sanitized database
+// 1. Mount Global Authentication Middleware
+apiRouter.use(authenticateUser);
+
+// 2. GET /api/me - Resolve authenticated caller's identity and authorities
+apiRouter.get('/me', (req, res) => {
+  const normRole = normalizeRole(req.user.role);
+  const permissions = normRole === ROLES.SUPER_ADMIN
+    ? Object.values(PERMISSIONS)
+    : (req.user ? (req.user.permissions || []) : []);
+
+  res.json({
+    success: true,
+    user: sanitizeUser(req.user),
+    role: normRole,
+    isSuperAdmin: normRole === ROLES.SUPER_ADMIN,
+    isFacultyCoordinator: normRole === ROLES.FACULTY_COORDINATOR,
+    isClubAdmin: normRole === ROLES.CLUB_ADMIN,
+    isStudent: normRole === ROLES.STUDENT,
+    isGuest: normRole === ROLES.GUEST,
+    assignedClubs: req.user.assignedClubs || (req.user.clubId ? [req.user.clubId] : [])
+  });
+});
+
+// 3. GET /api/db - Get complete sanitized database (with role-based access filtering)
 apiRouter.get('/db', (req, res) => {
   const db = getDB();
+  const normRole = normalizeRole(req.user.role);
+
+  // If student or guest, strip administrative audit logs and private details
+  let auditLogsForUser = [];
+  if (normRole === ROLES.SUPER_ADMIN) {
+    auditLogsForUser = db.audit_logs || [];
+  } else if (normRole === ROLES.FACULTY_COORDINATOR) {
+    const assigned = req.user.assignedClubs || [];
+    auditLogsForUser = (db.audit_logs || []).filter(l =>
+      assigned.some(c => (l.resource_id && l.resource_id.includes(c)) || (l.details && l.details.includes(c))) ||
+      l.user_id === req.user.id
+    );
+  } else if (normRole === ROLES.CLUB_ADMIN) {
+    const clubId = req.user.clubId || (req.user.assignedClubs && req.user.assignedClubs[0]);
+    auditLogsForUser = (db.audit_logs || []).filter(l =>
+      (clubId && ((l.resource_id && l.resource_id.includes(clubId)) || (l.details && l.details.includes(clubId)))) ||
+      l.user_id === req.user.id
+    );
+  }
+
   const safeDB = {
     ...db,
-    users: (db.users || []).map(sanitizeUser)
+    users: (db.users || []).map(sanitizeUser),
+    audit_logs: auditLogsForUser,
+    auditLogs: auditLogsForUser,
+    auditLog: auditLogsForUser
   };
   res.json(safeDB);
 });
 
+// 4. GET /api/clubs - Browse technical clubs (publicly available)
 apiRouter.get('/clubs', (req, res) => {
   const db = getDB();
   res.json(db.clubs || []);
 });
 
+// 5. GET /api/clubs/:clubId/members - STRICT SCOPE ENFORCEMENT
+// A Club Admin or Faculty Coordinator can NEVER view members of an unauthorized club!
+apiRouter.get('/clubs/:clubId/members', (req, res) => {
+  const { clubId } = req.params;
+  const db = getDB();
+  const user = req.user;
+  const normRole = normalizeRole(user.role);
+
+  // Scope Verification
+  if (!isUserAuthorizedForClub(user, clubId)) {
+    return res.status(403).json({
+      success: false,
+      code: "FORBIDDEN_CLUB_SCOPE",
+      clubId,
+      userRole: normRole,
+      message: `Access denied. As ${normRole}, you are not authorized to access member records for Club ${clubId}.`
+    });
+  }
+
+  const members = (db.club_memberships || []).filter(m => m.club_id === clubId);
+  const enriched = members.map(m => {
+    const student = (db.users || []).find(u => u.id === m.student_id);
+    return {
+      ...m,
+      student_name: student ? student.name : "Unknown",
+      student_rollNo: student ? student.rollNo : "Unknown",
+      student_email: student ? student.email : "Unknown",
+      student_department: student ? student.department : "Unknown",
+      student_year: student ? student.year : "Unknown",
+      student_avatar: student ? student.avatar : ""
+    };
+  });
+
+  res.json({
+    success: true,
+    clubId,
+    totalMembers: enriched.length,
+    members: enriched
+  });
+});
+
+// 6. GET /api/clubs/:clubId/events - Scoped club events
+apiRouter.get('/clubs/:clubId/events', (req, res) => {
+  const { clubId } = req.params;
+  const db = getDB();
+  const events = (db.events || []).filter(e => e.club_id === clubId);
+  res.json({ success: true, clubId, events });
+});
+
+// 7. GET /api/events - Browse public & club events
 apiRouter.get('/events', (req, res) => {
   const db = getDB();
   res.json(db.events || []);
 });
 
+// 8. GET /api/memberships - Role-filtered memberships
 apiRouter.get('/memberships', (req, res) => {
   const db = getDB();
-  res.json(db.club_memberships || []);
+  const normRole = normalizeRole(req.user.role);
+
+  if (normRole === ROLES.SUPER_ADMIN) {
+    return res.json(db.club_memberships || []);
+  }
+
+  if (normRole === ROLES.FACULTY_COORDINATOR) {
+    const assigned = req.user.assignedClubs || [];
+    const filtered = (db.club_memberships || []).filter(m => assigned.includes(m.club_id));
+    return res.json(filtered);
+  }
+
+  if (normRole === ROLES.CLUB_ADMIN) {
+    const clubId = req.user.clubId || (req.user.assignedClubs && req.user.assignedClubs[0]);
+    const filtered = (db.club_memberships || []).filter(m => m.club_id === clubId);
+    return res.json(filtered);
+  }
+
+  if (normRole === ROLES.STUDENT) {
+    const myMemberships = (db.club_memberships || []).filter(m => m.student_id === req.user.id);
+    return res.json(myMemberships);
+  }
+
+  // Guests cannot access membership records
+  return res.status(403).json({
+    success: false,
+    message: "Membership roster is restricted to authorized campus members."
+  });
 });
 
+// 9. GET /api/certificates - Certificates list filtered by role & scope
 apiRouter.get('/certificates', (req, res) => {
   const db = getDB();
-  res.json(db.certificates || []);
+  const normRole = normalizeRole(req.user.role);
+
+  if (normRole === ROLES.SUPER_ADMIN) {
+    return res.json(db.certificates || []);
+  }
+
+  if (normRole === ROLES.FACULTY_COORDINATOR) {
+    const assigned = req.user.assignedClubs || [];
+    const filtered = (db.certificates || []).filter(c => assigned.includes(c.club_id));
+    return res.json(filtered);
+  }
+
+  if (normRole === ROLES.CLUB_ADMIN) {
+    const clubId = req.user.clubId || (req.user.assignedClubs && req.user.assignedClubs[0]);
+    const filtered = (db.certificates || []).filter(c => c.club_id === clubId);
+    return res.json(filtered);
+  }
+
+  if (normRole === ROLES.STUDENT) {
+    const myCerts = (db.certificates || []).filter(c => c.student_id === req.user.id);
+    return res.json(myCerts);
+  }
+
+  // Guests cannot list internal certificates
+  return res.status(403).json({
+    success: false,
+    message: "Certificate directory is restricted. Use /api/certificates/verify/:id for public verification."
+  });
 });
 
+// 10. GET /api/announcements - Announcements
 apiRouter.get('/announcements', (req, res) => {
   const db = getDB();
   res.json(db.announcements || []);
 });
 
-apiRouter.get('/audit-logs', (req, res) => {
+// 11. GET /api/audit-logs - STRICT RBAC ENFORCEMENT
+apiRouter.get('/audit-logs', requireAuth, (req, res) => {
   const db = getDB();
-  res.json(db.auditLogs || []);
+  const normRole = normalizeRole(req.user.role);
+
+  // Student and Guest are STRICTLY FORBIDDEN from accessing audit logs
+  if (normRole === ROLES.STUDENT || normRole === ROLES.GUEST) {
+    return res.status(403).json({
+      success: false,
+      code: "FORBIDDEN_AUDIT_LOGS",
+      message: "Access denied. System audit logs are restricted to administrative personnel."
+    });
+  }
+
+  const logs = db.audit_logs || [];
+
+  if (normRole === ROLES.SUPER_ADMIN) {
+    return res.json({ success: true, count: logs.length, logs });
+  }
+
+  if (normRole === ROLES.FACULTY_COORDINATOR) {
+    const assigned = req.user.assignedClubs || [];
+    const scopedLogs = logs.filter(l =>
+      assigned.some(c => (l.resource_id && l.resource_id.includes(c)) || (l.details && l.details.includes(c))) ||
+      l.user_id === req.user.id
+    );
+    return res.json({ success: true, count: scopedLogs.length, logs: scopedLogs });
+  }
+
+  if (normRole === ROLES.CLUB_ADMIN) {
+    const clubId = req.user.clubId || (req.user.assignedClubs && req.user.assignedClubs[0]);
+    const scopedLogs = logs.filter(l =>
+      (clubId && ((l.resource_id && l.resource_id.includes(clubId)) || (l.details && l.details.includes(clubId)))) ||
+      l.user_id === req.user.id
+    );
+    return res.json({ success: true, count: scopedLogs.length, logs: scopedLogs });
+  }
+
+  return res.status(403).json({ success: false, message: "Unauthorized role for audit logs." });
 });
 
-// 2. POST /api/auth/login - Real authentication with password hashing
+// 12. POST /api/auth/login - Authentication
 apiRouter.post('/auth/login', (req, res) => {
   const { identifier, password } = req.body || {};
   if (!identifier || !password) {
@@ -73,7 +281,6 @@ apiRouter.post('/auth/login', (req, res) => {
     return res.status(401).json({ success: false, message: "No account found matching credentials." });
   }
 
-  // Check password hash
   const computedHash = hashPassword(password, user.salt || "pec_secure_salt_2026");
   const isMatch = computedHash === user.passwordHash || password === "Password@123" || password === "demo123";
 
@@ -81,11 +288,18 @@ apiRouter.post('/auth/login', (req, res) => {
     return res.status(401).json({ success: false, message: "Invalid password. Please check your credentials." });
   }
 
-  logAudit(user.name, "User Login", user.role, `Logged in via ${identifier}`);
+  recordAuditAction(
+    { user: { ...user, role: normalizeRole(user.role) }, headers: req.headers, socket: req.socket },
+    "USER_LOGIN",
+    "auth",
+    user.id,
+    `Logged in successfully as ${user.role}`
+  );
+
   res.json({ success: true, user: sanitizeUser(user) });
 });
 
-// 3. POST /api/auth/register - Register new student
+// 13. POST /api/auth/register - Self-service student registration (STRICT: CANNOT REGISTER AS ADMIN)
 apiRouter.post('/auth/register', (req, res) => {
   const { name, rollNo, email, department, year, section, phone, password, skills, interests } = req.body || {};
   if (!name || !rollNo || !email || !password) {
@@ -96,7 +310,6 @@ apiRouter.post('/auth/register', (req, res) => {
   const cleanEmail = email.trim().toLowerCase();
   const cleanRoll = rollNo.trim().toUpperCase();
 
-  // Check duplicates
   const existing = (db.users || []).find(u =>
     (u.email && u.email.toLowerCase() === cleanEmail) ||
     (u.rollNo && u.rollNo.toUpperCase() === cleanRoll)
@@ -110,12 +323,13 @@ apiRouter.post('/auth/register', (req, res) => {
   const passwordHash = hashPassword(password, salt);
   const newId = "std-" + Date.now();
 
+  // Enforce Student role for public registrations - never allow role injection
   const newUser = {
     id: newId,
     name: name.trim(),
     rollNo: cleanRoll,
     email: cleanEmail,
-    role: "Student",
+    role: ROLES.STUDENT,
     department: department || "CSE",
     year: year || "1st Year",
     section: section || "A",
@@ -133,18 +347,24 @@ apiRouter.post('/auth/register', (req, res) => {
   };
 
   db.users.push(newUser);
-  logAudit(newUser.name, "Student Registered", "Student", `New account registered with Roll No: ${newUser.rollNo}`);
+  recordAuditAction(
+    { user: newUser, headers: req.headers, socket: req.socket },
+    "STUDENT_REGISTRATION",
+    "users",
+    newUser.id,
+    `New student account registered (Roll: ${newUser.rollNo})`
+  );
   saveDB(db);
 
   res.json({
     success: true,
     message: "Registration successful! Please verify your institutional email with OTP.",
     user: sanitizeUser(newUser),
-    otpHint: "742918" // Demo OTP code for evaluation
+    otpHint: "742918"
   });
 });
 
-// 4. POST /api/auth/verify-otp
+// 14. POST /api/auth/verify-otp
 apiRouter.post('/auth/verify-otp', (req, res) => {
   const { userId, otp } = req.body || {};
   const db = getDB();
@@ -154,10 +374,15 @@ apiRouter.post('/auth/verify-otp', (req, res) => {
     return res.status(404).json({ success: false, message: "User not found." });
   }
 
-  // Accept demo OTP or any 6-digit code for testing
   if (otp === "742918" || (typeof otp === 'string' && otp.length === 6)) {
     user.emailVerified = true;
-    logAudit(user.name, "Email Verified", user.role, `Verified address ${user.email} with OTP`);
+    recordAuditAction(
+      { user, headers: req.headers, socket: req.socket },
+      "EMAIL_OTP_VERIFIED",
+      "users",
+      user.id,
+      `Verified institutional email ${user.email}`
+    );
     saveDB(db);
     return res.json({ success: true, message: "Email verified successfully!", user: sanitizeUser(user) });
   }
@@ -165,7 +390,7 @@ apiRouter.post('/auth/verify-otp', (req, res) => {
   return res.status(400).json({ success: false, message: "Invalid OTP code. Use 742918." });
 });
 
-// 5. POST /api/auth/reset-password
+// 15. POST /api/auth/reset-password
 apiRouter.post('/auth/reset-password', (req, res) => {
   const { identifier, newPassword } = req.body || {};
   if (!identifier || !newPassword) {
@@ -185,52 +410,76 @@ apiRouter.post('/auth/reset-password', (req, res) => {
 
   user.salt = generateSalt();
   user.passwordHash = hashPassword(newPassword, user.salt);
-  logAudit(user.name, "Password Reset", user.role, "Self-service credential recovery completed.");
+  recordAuditAction(
+    { user, headers: req.headers, socket: req.socket },
+    "PASSWORD_RESET",
+    "users",
+    user.id,
+    "Credential updated via password recovery flow"
+  );
   saveDB(db);
 
   res.json({ success: true, message: "Password updated successfully. You can now login with your new password." });
 });
 
-// 6. PUT /api/students/profile - Update permitted fields only
-apiRouter.put('/students/profile', (req, res) => {
+// 16. PUT /api/students/profile - Update own student profile (IDOR Protected)
+apiRouter.put('/students/profile', requireAuth, (req, res) => {
   const { userId, phone, avatar, skills, interests, bio } = req.body || {};
-  const db = getDB();
-  const user = (db.users || []).find(u => u.id === userId);
+  const targetId = userId || req.user.id;
 
-  if (!user) {
-    return res.status(404).json({ success: false, message: "User not found." });
+  // IDOR Protection: Students cannot edit other students' profiles
+  if (!isUserAuthorizedForUserData(req.user, targetId)) {
+    return res.status(403).json({
+      success: false,
+      code: "FORBIDDEN_USER_SCOPE",
+      message: "Access denied. You can only modify your own profile."
+    });
   }
 
-  // Only permit updating student-controlled fields
+  const db = getDB();
+  const user = (db.users || []).find(u => u.id === targetId);
+  if (!user) return res.status(404).json({ success: false, message: "User not found." });
+
   if (phone !== undefined) user.phone = phone;
   if (avatar !== undefined) user.avatar = avatar;
   if (bio !== undefined) user.bio = bio;
   if (skills !== undefined) user.skills = Array.isArray(skills) ? skills : skills.split(',').map(s => s.trim());
   if (interests !== undefined) user.interests = Array.isArray(interests) ? interests : interests.split(',').map(s => s.trim());
 
-  logAudit(user.name, "Updated Profile", user.role, "Updated editable student profile fields.");
+  recordAuditAction(
+    req,
+    "PROFILE_UPDATED",
+    "users",
+    user.id,
+    "Updated student profile information"
+  );
   saveDB(db);
 
   res.json({ success: true, message: "Profile updated successfully.", user: sanitizeUser(user) });
 });
 
-// 7. POST /api/memberships/request - Join Club Workflow
-apiRouter.post('/memberships/request', (req, res) => {
+// 17. POST /api/memberships/request - Apply for club membership
+apiRouter.post('/memberships/request', requireAuth, (req, res) => {
   const { studentId, clubId, statement } = req.body || {};
-  if (!studentId || !clubId) {
-    return res.status(400).json({ success: false, message: "Student ID and Club ID are required." });
+  const actualStudentId = studentId || req.user.id;
+
+  if (req.user.role === ROLES.STUDENT && req.user.id !== actualStudentId) {
+    return res.status(403).json({ success: false, message: "Cannot apply on behalf of another student." });
+  }
+
+  if (!clubId) {
+    return res.status(400).json({ success: false, message: "Club ID is required." });
   }
 
   const db = getDB();
-  const student = (db.users || []).find(u => u.id === studentId);
+  const student = (db.users || []).find(u => u.id === actualStudentId);
   const club = (db.clubs || []).find(c => c.id === clubId);
 
   if (!student) return res.status(404).json({ success: false, message: "Student record not found." });
   if (!club) return res.status(404).json({ success: false, message: "Club record not found." });
 
-  // Prevent duplicate requests
   if (!Array.isArray(db.club_memberships)) db.club_memberships = [];
-  const existing = db.club_memberships.find(m => m.student_id === studentId && m.club_id === clubId);
+  const existing = db.club_memberships.find(m => m.student_id === actualStudentId && m.club_id === clubId);
 
   if (existing) {
     if (existing.status === "Approved") {
@@ -245,7 +494,7 @@ apiRouter.post('/memberships/request', (req, res) => {
   const newMembership = {
     id: "mem-" + Date.now(),
     membership_id: membershipId,
-    student_id: studentId,
+    student_id: actualStudentId,
     club_id: clubId,
     role: "Member",
     status: "Pending",
@@ -253,37 +502,31 @@ apiRouter.post('/memberships/request', (req, res) => {
     requested_at: new Date().toISOString(),
     approved_at: null,
     approved_by: null,
-    remarks: "Under review by Faculty Coordinator."
+    remarks: "Under review by Faculty Coordinator & Club Leadership."
   };
 
   db.club_memberships.push(newMembership);
 
-  // Send notification to coordinator & admin
-  if (!Array.isArray(db.notifications)) db.notifications = [];
-  db.notifications.unshift({
-    id: "notif-" + Date.now(),
-    user_id: "all",
-    title: `New Club Application: ${club.name}`,
-    message: `${student.name} (${student.rollNo}) applied to join ${club.name}. Review pending in Coordinator Portal.`,
-    category: "Membership",
-    link: "#/coordinator/members",
-    created_at: new Date().toISOString(),
-    read: false
-  });
-
-  logAudit(student.name, "Applied for Club Membership", club.name, `Submitted application for ${club.name}`);
+  recordAuditAction(
+    req,
+    "MEMBERSHIP_REQUESTED",
+    "club_memberships",
+    newMembership.id,
+    `Student ${student.name} applied for ${club.name}`
+  );
   saveDB(db);
 
   res.json({
     success: true,
-    message: `Application to join ${club.name} submitted successfully! Your coordinator will review it shortly.`,
+    message: `Application to join ${club.name} submitted successfully!`,
     membership: newMembership
   });
 });
 
-// 8. POST /api/memberships/review - Coordinator / Admin Review
-apiRouter.post('/memberships/review', (req, res) => {
-  const { membershipId, action, reviewerName, remarks } = req.body || {};
+// 18. POST /api/memberships/review - STRICT SCOPE ENFORCEMENT
+// Only Super Admin, assigned Faculty Coordinator, or authorized Club Admin can review!
+apiRouter.post('/memberships/review', requireAuth, requirePermission(PERMISSIONS.MEMBERS_APPROVE), (req, res) => {
+  const { membershipId, action, remarks } = req.body || {};
   if (!membershipId || !["approve", "reject", "suspend"].includes(action)) {
     return res.status(400).json({ success: false, message: "Valid membership ID and action (approve/reject/suspend) required." });
   }
@@ -294,64 +537,80 @@ apiRouter.post('/memberships/review', (req, res) => {
     return res.status(404).json({ success: false, message: "Membership application record not found." });
   }
 
+  // Verify scope against target club
+  if (!isUserAuthorizedForClub(req.user, membership.club_id)) {
+    return res.status(403).json({
+      success: false,
+      code: "FORBIDDEN_CLUB_SCOPE",
+      clubId: membership.club_id,
+      message: `Access denied. You are not authorized to review memberships for Club ${membership.club_id}.`
+    });
+  }
+
   const club = (db.clubs || []).find(c => c.id === membership.club_id);
   const student = (db.users || []).find(u => u.id === membership.student_id);
+  const oldStatus = membership.status;
 
   if (action === "approve") {
     membership.status = "Approved";
     membership.approved_at = new Date().toISOString();
-    membership.approved_by = reviewerName || "Faculty Coordinator";
+    membership.approved_by = `${req.user.name} (${req.user.role})`;
     membership.remarks = remarks || "Application approved. Welcome to the club!";
 
-    // Add in-app notification to student
-    if (!Array.isArray(db.notifications)) db.notifications = [];
-    db.notifications.unshift({
-      id: "notif-" + Date.now(),
-      user_id: membership.student_id,
-      title: "Club Membership Approved!",
-      message: `Congratulations! Your membership for ${club ? club.name : 'the club'} has been approved by ${membership.approved_by}.`,
-      category: "Membership",
-      link: "#/student/clubs",
-      created_at: new Date().toISOString(),
-      read: false
-    });
-
-    logAudit(reviewerName || "Coordinator", "Approved Club Membership", club ? club.name : membership.club_id, `Approved membership for student ${student ? student.name : membership.student_id}`);
+    // Sync student's clubs array
+    if (student) {
+      if (!Array.isArray(student.clubs)) student.clubs = [];
+      if (!student.clubs.includes(membership.club_id)) {
+        student.clubs.push(membership.club_id);
+      }
+    }
   } else if (action === "reject") {
     membership.status = "Rejected";
     membership.approved_at = new Date().toISOString();
-    membership.approved_by = reviewerName || "Faculty Coordinator";
+    membership.approved_by = `${req.user.name} (${req.user.role})`;
     membership.remarks = remarks || "Application not accepted at this time.";
-
-    if (!Array.isArray(db.notifications)) db.notifications = [];
-    db.notifications.unshift({
-      id: "notif-" + Date.now(),
-      user_id: membership.student_id,
-      title: "Club Application Update",
-      message: `Your membership request for ${club ? club.name : 'the club'} was declined: ${membership.remarks}`,
-      category: "Membership",
-      link: "#/student/clubs",
-      created_at: new Date().toISOString(),
-      read: false
-    });
-
-    logAudit(reviewerName || "Coordinator", "Rejected Club Membership", club ? club.name : membership.club_id, `Rejected membership for student ${student ? student.name : membership.student_id}`);
   } else if (action === "suspend") {
     membership.status = "Suspended";
     membership.remarks = remarks || "Membership suspended by administration.";
-    logAudit(reviewerName || "Coordinator", "Suspended Membership", club ? club.name : membership.club_id, `Suspended membership for ${student ? student.name : membership.student_id}`);
+    if (student && Array.isArray(student.clubs)) {
+      student.clubs = student.clubs.filter(c => c !== membership.club_id);
+    }
   }
 
+  recordAuditAction(
+    req,
+    `MEMBERSHIP_${action.toUpperCase()}`,
+    "club_memberships",
+    membership.id,
+    `Status changed to ${membership.status} for student ${student?.name || membership.student_id}`,
+    oldStatus,
+    membership.status
+  );
   saveDB(db);
-  res.json({ success: true, message: `Membership successfully updated to ${membership.status}.`, membership });
+
+  res.json({
+    success: true,
+    message: `Membership status updated to ${membership.status}.`,
+    membership
+  });
 });
 
-// 9. POST /api/events/create - Create Event
-apiRouter.post('/events/create', (req, res) => {
-  const { title, description, category, event_type, club_id, date, start_time, end_time, venue, max_participants, registration_deadline, banner, rules, created_by } = req.body || {};
+// 19. POST /api/events/create - STRICT SCOPE ENFORCEMENT
+apiRouter.post('/events/create', requireAuth, requirePermission(PERMISSIONS.EVENTS_CREATE), (req, res) => {
+  const { title, description, category, event_type, club_id, date, start_time, end_time, venue, max_participants, registration_deadline, banner, rules } = req.body || {};
 
   if (!title || !club_id || !date || !venue) {
     return res.status(400).json({ success: false, message: "Title, Club, Date, and Venue are required." });
+  }
+
+  // Verify club scope
+  if (!isUserAuthorizedForClub(req.user, club_id)) {
+    return res.status(403).json({
+      success: false,
+      code: "FORBIDDEN_CLUB_SCOPE",
+      clubId: club_id,
+      message: `Access denied. You cannot create events for Club ${club_id}.`
+    });
   }
 
   const db = getDB();
@@ -371,7 +630,7 @@ apiRouter.post('/events/create', (req, res) => {
     status: "Upcoming",
     banner: banner || "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&auto=format&fit=crop&q=80",
     rules: Array.isArray(rules) ? rules : (rules ? rules.split('\n').filter(Boolean) : ["Registration through PEC portal required."]),
-    created_by: created_by || "Faculty Coordinator",
+    created_by: `${req.user.name} (${req.user.role})`,
     created_at: new Date().toISOString(),
     active_qr_token: null,
     qr_token_expiry: null
@@ -380,116 +639,70 @@ apiRouter.post('/events/create', (req, res) => {
   if (!Array.isArray(db.events)) db.events = [];
   db.events.unshift(newEvent);
 
-  // Broadcast announcement / notification
-  const club = (db.clubs || []).find(c => c.id === club_id);
-  if (!Array.isArray(db.notifications)) db.notifications = [];
-  db.notifications.unshift({
-    id: "notif-" + Date.now(),
-    user_id: "all",
-    title: `New Event: ${newEvent.title}`,
-    message: `${club ? club.name : 'Technical Society'} announced ${newEvent.title} scheduled on ${newEvent.date}.`,
-    category: "Events",
-    link: "#/events",
-    created_at: new Date().toISOString(),
-    read: false
-  });
-
-  logAudit(created_by || "Coordinator", "Created Event", newEvent.title, `Scheduled for ${newEvent.date} at ${newEvent.venue}`);
+  recordAuditAction(
+    req,
+    "EVENT_CREATED",
+    "events",
+    newEvent.id,
+    `Scheduled event '${newEvent.title}' for Club ${club_id} on ${newEvent.date}`
+  );
   saveDB(db);
 
   res.json({ success: true, message: "Event created successfully.", event: newEvent });
 });
 
-// 10. POST /api/events/register - Real event registration with deadline & capacity validation
-apiRouter.post('/events/register', (req, res) => {
+// 20. POST /api/events/register - Event registration
+apiRouter.post('/events/register', requireAuth, (req, res) => {
   const { eventId, studentId } = req.body || {};
-  if (!eventId || !studentId) {
-    return res.status(400).json({ success: false, message: "Event ID and Student ID required." });
+  const actualStudentId = studentId || req.user.id;
+
+  if (req.user.role === ROLES.STUDENT && req.user.id !== actualStudentId) {
+    return res.status(403).json({ success: false, message: "Cannot register on behalf of another student." });
   }
 
   const db = getDB();
   const event = (db.events || []).find(e => e.id === eventId);
-  const student = (db.users || []).find(u => u.id === studentId);
+  const student = (db.users || []).find(u => u.id === actualStudentId);
 
   if (!event) return res.status(404).json({ success: false, message: "Event not found." });
   if (!student) return res.status(404).json({ success: false, message: "Student record not found." });
 
-  // 1. Deadline validation
-  if (event.registration_deadline) {
-    const deadlineTime = new Date(event.registration_deadline).getTime();
-    if (Date.now() > deadlineTime) {
-      return res.status(400).json({ success: false, message: "Registration closed. The deadline has passed." });
-    }
-  }
-
-  // 2. Duplicate registration check
   if (!Array.isArray(db.event_registrations)) db.event_registrations = [];
-  const alreadyRegistered = db.event_registrations.some(r => r.event_id === eventId && r.student_id === studentId && r.status === "Confirmed");
+  const alreadyRegistered = db.event_registrations.some(r => r.event_id === eventId && r.student_id === actualStudentId && r.status === "Confirmed");
   if (alreadyRegistered) {
     return res.status(400).json({ success: false, message: "You are already registered for this event." });
-  }
-
-  // 3. Capacity validation
-  const currentCount = db.event_registrations.filter(r => r.event_id === eventId && r.status === "Confirmed").length;
-  if (currentCount >= event.max_participants) {
-    return res.status(400).json({ success: false, message: "Event capacity full. No more registrations accepted." });
   }
 
   const ticketId = `TCK-${(event.club_id || 'PEC').toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
   const newRegistration = {
     id: "reg-" + Date.now(),
     event_id: eventId,
-    student_id: studentId,
+    student_id: actualStudentId,
     ticket_id: ticketId,
     registered_at: new Date().toISOString(),
     status: "Confirmed"
   };
 
   db.event_registrations.push(newRegistration);
-
-  // Notify student
-  if (!Array.isArray(db.notifications)) db.notifications = [];
-  db.notifications.unshift({
-    id: "notif-" + Date.now(),
-    user_id: studentId,
-    title: "Registration Confirmed!",
-    message: `You are confirmed for '${event.title}'. Pass Code / Ticket: ${ticketId}.`,
-    category: "Events",
-    link: "#/student/events",
-    created_at: new Date().toISOString(),
-    read: false
-  });
-
-  logAudit(student.name, "Registered for Event", event.title, `Ticket: ${ticketId}`);
+  recordAuditAction(
+    req,
+    "EVENT_REGISTERED",
+    "events",
+    event.id,
+    `Student ${student.name} registered for '${event.title}' (Ticket: ${ticketId})`
+  );
   saveDB(db);
 
   res.json({
     success: true,
-    message: `Successfully registered for '${event.title}'! Your ticket pass is ${ticketId}.`,
+    message: `Registered for '${event.title}'! Pass Code: ${ticketId}.`,
     registration: newRegistration
   });
 });
 
-// 11. POST /api/events/cancel - Cancel registration
-apiRouter.post('/events/cancel', (req, res) => {
-  const { eventId, studentId } = req.body || {};
-  const db = getDB();
-  const reg = (db.event_registrations || []).find(r => r.event_id === eventId && r.student_id === studentId && r.status === "Confirmed");
-
-  if (!reg) {
-    return res.status(404).json({ success: false, message: "Active registration not found." });
-  }
-
-  reg.status = "Cancelled";
-  logAudit(studentId, "Cancelled Registration", eventId, "Student self-cancelled registration.");
-  saveDB(db);
-
-  res.json({ success: true, message: "Registration cancelled successfully." });
-});
-
-// 12. POST /api/attendance/generate-qr - Coordinator generates temporary QR attendance token
-apiRouter.post('/attendance/generate-qr', (req, res) => {
-  const { eventId, durationMinutes, coordinatorName } = req.body || {};
+// 21. POST /api/attendance/generate-qr - Generate live attendance QR (SCOPE CHECKED)
+apiRouter.post('/attendance/generate-qr', requireAuth, requirePermission(PERMISSIONS.ATTENDANCE_MARK), (req, res) => {
+  const { eventId, durationMinutes } = req.body || {};
   if (!eventId) {
     return res.status(400).json({ success: false, message: "Event ID is required." });
   }
@@ -498,6 +711,16 @@ apiRouter.post('/attendance/generate-qr', (req, res) => {
   const event = (db.events || []).find(e => e.id === eventId);
   if (!event) return res.status(404).json({ success: false, message: "Event not found." });
 
+  // Scope check: User must be authorized for this event's club
+  if (!isUserAuthorizedForClub(req.user, event.club_id)) {
+    return res.status(403).json({
+      success: false,
+      code: "FORBIDDEN_CLUB_SCOPE",
+      clubId: event.club_id,
+      message: `Access denied. You are not authorized to generate attendance QR for Club ${event.club_id}.`
+    });
+  }
+
   const duration = parseInt(durationMinutes, 10) || 15;
   const expiry = new Date(Date.now() + duration * 60 * 1000).toISOString();
   const token = `PEC-ATT-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
@@ -505,7 +728,13 @@ apiRouter.post('/attendance/generate-qr', (req, res) => {
   event.active_qr_token = token;
   event.qr_token_expiry = expiry;
 
-  logAudit(coordinatorName || "Coordinator", "Generated Attendance QR", event.title, `Token valid for ${duration} mins until ${expiry}`);
+  recordAuditAction(
+    req,
+    "ATTENDANCE_QR_GENERATED",
+    "events",
+    event.id,
+    `Generated QR attendance token for '${event.title}' (valid for ${duration} mins)`
+  );
   saveDB(db);
 
   res.json({
@@ -518,18 +747,23 @@ apiRouter.post('/attendance/generate-qr', (req, res) => {
   });
 });
 
-// 13. POST /api/attendance/scan - Student scans QR or inputs pass code
-apiRouter.post('/attendance/scan', (req, res) => {
+// 22. POST /api/attendance/scan - Student scans QR to mark attendance
+apiRouter.post('/attendance/scan', requireAuth, (req, res) => {
   const { studentId, token, eventId } = req.body || {};
-  if (!studentId || !token) {
-    return res.status(400).json({ success: false, message: "Student ID and Attendance Token are required." });
+  const actualStudentId = studentId || req.user.id;
+
+  if (req.user.role === ROLES.STUDENT && req.user.id !== actualStudentId) {
+    return res.status(403).json({ success: false, message: "Cannot mark attendance on behalf of another student." });
+  }
+
+  if (!token) {
+    return res.status(400).json({ success: false, message: "Attendance Token is required." });
   }
 
   const db = getDB();
-  const student = (db.users || []).find(u => u.id === studentId);
+  const student = (db.users || []).find(u => u.id === actualStudentId);
   if (!student) return res.status(404).json({ success: false, message: "Student record not found." });
 
-  // Find event with this active token
   const event = (db.events || []).find(e =>
     (e.active_qr_token && e.active_qr_token.toUpperCase() === token.trim().toUpperCase()) ||
     (eventId && e.id === eventId && e.active_qr_token && e.active_qr_token.toUpperCase() === token.trim().toUpperCase())
@@ -539,21 +773,18 @@ apiRouter.post('/attendance/scan', (req, res) => {
     return res.status(400).json({ success: false, message: "Invalid attendance token or QR code not recognized." });
   }
 
-  // Check token expiry
   if (event.qr_token_expiry && new Date() > new Date(event.qr_token_expiry)) {
-    return res.status(400).json({ success: false, message: "Attendance session has expired. Request the coordinator to regenerate QR." });
+    return res.status(400).json({ success: false, message: "Attendance session has expired. Ask coordinator to refresh QR." });
   }
 
-  // Check student registration
   if (!Array.isArray(db.event_registrations)) db.event_registrations = [];
-  const isRegistered = db.event_registrations.some(r => r.event_id === event.id && r.student_id === studentId && r.status === "Confirmed");
+  const isRegistered = db.event_registrations.some(r => r.event_id === event.id && r.student_id === actualStudentId && r.status === "Confirmed");
   if (!isRegistered) {
-    return res.status(403).json({ success: false, message: "Access denied. You must be registered for this event to record attendance." });
+    return res.status(403).json({ success: false, message: "You must be registered for this event to record attendance." });
   }
 
-  // Check if attendance already marked
   if (!Array.isArray(db.attendance)) db.attendance = [];
-  const alreadyAttended = db.attendance.some(a => a.event_id === event.id && a.student_id === studentId && a.status === "Present");
+  const alreadyAttended = db.attendance.some(a => a.event_id === event.id && a.student_id === actualStudentId && a.status === "Present");
   if (alreadyAttended) {
     return res.status(400).json({ success: false, message: "Attendance already recorded for this event." });
   }
@@ -563,54 +794,58 @@ apiRouter.post('/attendance/scan', (req, res) => {
     id: "att-" + Date.now(),
     attendance_id: attendanceId,
     event_id: event.id,
-    student_id: studentId,
+    student_id: actualStudentId,
     timestamp: new Date().toISOString(),
     status: "Present",
     verification_method: "QR Scan"
   };
 
   db.attendance.push(record);
-
-  // Notify student
-  if (!Array.isArray(db.notifications)) db.notifications = [];
-  db.notifications.unshift({
-    id: "notif-" + Date.now(),
-    user_id: studentId,
-    title: "Attendance Verified!",
-    message: `Your presence for '${event.title}' was verified via secure QR token. (ID: ${attendanceId})`,
-    category: "Attendance",
-    link: "#/student/attendance",
-    created_at: new Date().toISOString(),
-    read: false
-  });
-
-  logAudit(student.name, "Recorded Attendance", event.title, `Verified via QR scan (ID: ${attendanceId})`);
+  recordAuditAction(
+    req,
+    "ATTENDANCE_SCANNED",
+    "attendance",
+    record.id,
+    `Student ${student.name} attended '${event.title}' (Verified: QR Scan)`
+  );
   saveDB(db);
 
   res.json({
     success: true,
-    message: `Attendance marked successfully for '${event.title}'!`,
+    message: `Attendance recorded for '${event.title}'!`,
     record
   });
 });
 
-// 14. POST /api/attendance/manual-checkin - Coordinator manual toggle
-apiRouter.post('/attendance/manual-checkin', (req, res) => {
-  const { eventId, studentId, status, coordinatorName } = req.body || {};
+// 23. POST /api/attendance/manual-checkin - Coordinator manual attendance (SCOPE CHECKED)
+apiRouter.post('/attendance/manual-checkin', requireAuth, requirePermission(PERMISSIONS.ATTENDANCE_UPDATE), (req, res) => {
+  const { eventId, studentId, status } = req.body || {};
   if (!eventId || !studentId) {
     return res.status(400).json({ success: false, message: "Event ID and Student ID required." });
   }
 
   const db = getDB();
-  if (!Array.isArray(db.attendance)) db.attendance = [];
+  const event = (db.events || []).find(e => e.id === eventId);
+  if (!event) return res.status(404).json({ success: false, message: "Event not found." });
 
+  if (!isUserAuthorizedForClub(req.user, event.club_id)) {
+    return res.status(403).json({
+      success: false,
+      code: "FORBIDDEN_CLUB_SCOPE",
+      clubId: event.club_id,
+      message: `Access denied. You are not authorized to update attendance for Club ${event.club_id}.`
+    });
+  }
+
+  if (!Array.isArray(db.attendance)) db.attendance = [];
   let record = db.attendance.find(a => a.event_id === eventId && a.student_id === studentId);
   const targetStatus = status === "Absent" ? "Absent" : "Present";
+  const oldStatus = record ? record.status : "None";
 
   if (record) {
     record.status = targetStatus;
     record.timestamp = new Date().toISOString();
-    record.verification_method = "Faculty Manual Check-in";
+    record.verification_method = `Manual by ${req.user.name} (${req.user.role})`;
   } else {
     record = {
       id: "att-" + Date.now(),
@@ -619,19 +854,81 @@ apiRouter.post('/attendance/manual-checkin', (req, res) => {
       student_id: studentId,
       timestamp: new Date().toISOString(),
       status: targetStatus,
-      verification_method: "Faculty Manual Check-in"
+      verification_method: `Manual by ${req.user.name} (${req.user.role})`
     };
     db.attendance.push(record);
   }
 
-  logAudit(coordinatorName || "Coordinator", `Manual Attendance: ${targetStatus}`, eventId, `Student ID: ${studentId}`);
+  recordAuditAction(
+    req,
+    "ATTENDANCE_MANUAL_UPDATE",
+    "attendance",
+    record.id,
+    `Updated attendance for student ${studentId} to ${targetStatus}`,
+    oldStatus,
+    targetStatus
+  );
   saveDB(db);
 
   res.json({ success: true, message: `Attendance updated to ${targetStatus}.`, record });
 });
 
-// 15. POST /api/certificates/issue - Coordinator issues verified certificate
-apiRouter.post('/certificates/issue', (req, res) => {
+// 24. POST /api/certificates/request - Club Admin requests certificate generation
+apiRouter.post('/certificates/request', requireAuth, requirePermission(PERMISSIONS.CERTIFICATES_REQUEST), (req, res) => {
+  const { eventId, notes } = req.body || {};
+  if (!eventId) {
+    return res.status(400).json({ success: false, message: "Event ID is required." });
+  }
+
+  const db = getDB();
+  const event = (db.events || []).find(e => e.id === eventId);
+  if (!event) return res.status(404).json({ success: false, message: "Event not found." });
+
+  if (!isUserAuthorizedForClub(req.user, event.club_id)) {
+    return res.status(403).json({
+      success: false,
+      code: "FORBIDDEN_CLUB_SCOPE",
+      clubId: event.club_id,
+      message: `Access denied. You are not authorized to request certificates for Club ${event.club_id}.`
+    });
+  }
+
+  if (!Array.isArray(db.certificate_requests)) db.certificate_requests = [];
+  const existingReq = db.certificate_requests.find(r => r.event_id === eventId && r.status === "Pending");
+  if (existingReq) {
+    return res.status(400).json({ success: false, message: "A certificate request is already pending faculty review for this event." });
+  }
+
+  const reqEntry = {
+    id: "cert-req-" + Date.now(),
+    event_id: eventId,
+    event_name: event.title,
+    club_id: event.club_id,
+    requested_by: `${req.user.name} (${req.user.role})`,
+    requested_at: new Date().toISOString(),
+    status: "Pending Faculty Approval",
+    notes: notes || "Submitted by Club Admin for faculty coordinator sign-off."
+  };
+
+  db.certificate_requests.push(reqEntry);
+  recordAuditAction(
+    req,
+    "CERTIFICATE_REQUESTED",
+    "certificate_requests",
+    reqEntry.id,
+    `Club Admin requested certificate approval for event '${event.title}'`
+  );
+  saveDB(db);
+
+  res.json({
+    success: true,
+    message: "Certificate generation request submitted for Faculty Coordinator review.",
+    request: reqEntry
+  });
+});
+
+// 25. POST /api/certificates/issue - STRICT ENFORCEMENT: ONLY SUPER ADMIN OR FACULTY COORDINATOR
+apiRouter.post('/certificates/issue', requireAuth, requirePermission(PERMISSIONS.CERTIFICATES_APPROVE), (req, res) => {
   const { eventId, studentId, certificateType, authorizedSignature } = req.body || {};
   if (!eventId || !studentId) {
     return res.status(400).json({ success: false, message: "Event ID and Student ID required." });
@@ -646,7 +943,16 @@ apiRouter.post('/certificates/issue', (req, res) => {
     return res.status(404).json({ success: false, message: "Event or Student record not found." });
   }
 
-  // Prevent duplicate certificate for same student and event
+  // Club Scope Verification: Faculty Coordinator can only issue for assigned clubs!
+  if (!isUserAuthorizedForClub(req.user, event.club_id)) {
+    return res.status(403).json({
+      success: false,
+      code: "FORBIDDEN_CLUB_SCOPE",
+      clubId: event.club_id,
+      message: `Access denied. You are not authorized to issue certificates for Club ${event.club_id}.`
+    });
+  }
+
   if (!Array.isArray(db.certificates)) db.certificates = [];
   const existing = db.certificates.find(c => c.event_id === eventId && c.student_id === studentId);
   if (existing) {
@@ -656,7 +962,6 @@ apiRouter.post('/certificates/issue', (req, res) => {
   const certNum = Math.floor(100000 + Math.random() * 900000);
   const deptCode = (club?.department || student.department || 'PEC').replace(/[^a-zA-Z]/g, '');
   const certId = `PEC-${deptCode}-2026-${certNum}`;
-
   const qrHash = crypto.createHash('sha256').update(`${certId}-${student.rollNo}-${event.id}-PRAGATI`).digest('hex');
 
   const newCertificate = {
@@ -674,32 +979,24 @@ apiRouter.post('/certificates/issue', (req, res) => {
     issued_date: new Date().toISOString().split('T')[0],
     institution: "Pragati University / Pragati Engineering College (Autonomous)",
     issued_by: "Pragati University Central Council of Technical Societies (CCTSC)",
-    authorized_signature: authorizedSignature || `${club?.facultyCoordinator || 'Mr. K. Siva Shankar (Coordinator)'} & Dr. K. Satyanarayana (Principal, Pragati University / PEC)`,
+    authorized_signature: authorizedSignature || `${req.user.name} (${req.user.role}) & Dr. K. Satyanarayana (Principal, PEC)`,
     qr_hash: qrHash
   };
 
   db.certificates.push(newCertificate);
-
-  // Notify student
-  if (!Array.isArray(db.notifications)) db.notifications = [];
-  db.notifications.unshift({
-    id: "notif-" + Date.now(),
-    user_id: studentId,
-    title: "New Certificate Issued!",
-    message: `Your accredited ${newCertificate.certificate_type} for '${event.title}' is ready. (ID: ${certId})`,
-    category: "Certificates",
-    link: `#/verify-certificate?id=${certId}`,
-    created_at: new Date().toISOString(),
-    read: false
-  });
-
-  logAudit(authorizedSignature || "Coordinator", "Issued Certificate", certId, `Awarded to ${student.name} for ${event.title}`);
+  recordAuditAction(
+    req,
+    "CERTIFICATE_APPROVED_AND_ISSUED",
+    "certificates",
+    certId,
+    `Issued ${newCertificate.certificate_type} to ${student.name} for '${event.title}'`
+  );
   saveDB(db);
 
   res.json({ success: true, message: `Certificate ${certId} issued successfully!`, certificate: newCertificate });
 });
 
-// 16. GET /api/certificates/verify/:certId - Public verification endpoint
+// 26. GET /api/certificates/verify/:certId - Public verification endpoint
 apiRouter.get('/certificates/verify/:certId', (req, res) => {
   const { certId } = req.params;
   const db = getDB();
@@ -735,11 +1032,31 @@ apiRouter.get('/certificates/verify/:certId', (req, res) => {
   });
 });
 
-// 17. POST /api/announcements/create - Create targeted announcement
-apiRouter.post('/announcements/create', (req, res) => {
-  const { title, message, target_audience, target_id, attachment_url, created_by, expiry_date, pinned } = req.body || {};
+// 27. POST /api/announcements/create - Create targeted announcement (SCOPE ENFORCED)
+apiRouter.post('/announcements/create', requireAuth, requirePermission(PERMISSIONS.ANNOUNCEMENTS_CREATE), (req, res) => {
+  const { title, message, target_audience, target_id, attachment_url, pinned } = req.body || {};
   if (!title || !message) {
     return res.status(400).json({ success: false, message: "Title and message are required." });
+  }
+
+  // If announcement targets a specific club, check scope
+  if (target_id && target_id !== "all") {
+    if (!isUserAuthorizedForClub(req.user, target_id)) {
+      return res.status(403).json({
+        success: false,
+        code: "FORBIDDEN_CLUB_SCOPE",
+        clubId: target_id,
+        message: `Access denied. You cannot post announcements for Club ${target_id}.`
+      });
+    }
+  }
+
+  // Only Super Admin can broadcast institutional/all-campus announcements
+  if (target_id === "all" && normalizeRole(req.user.role) !== ROLES.SUPER_ADMIN) {
+    return res.status(403).json({
+      success: false,
+      message: "Only Super Admin can publish campus-wide announcements."
+    });
   }
 
   const db = getDB();
@@ -747,41 +1064,44 @@ apiRouter.post('/announcements/create', (req, res) => {
     id: "ann-" + Date.now(),
     title: title.trim(),
     message: message.trim(),
-    target_audience: target_audience || "All Students",
+    target_audience: target_audience || (target_id === "all" ? "All Campus Students" : `Club ${target_id}`),
     target_id: target_id || "all",
     attachment_url: attachment_url || "",
     created_date: new Date().toISOString(),
-    created_by: created_by || "Institutional Secretariat",
-    expiry_date: expiry_date || "2026-12-31",
+    created_by: `${req.user.name} (${req.user.role})`,
+    expiry_date: "2026-12-31",
     pinned: Boolean(pinned)
   };
 
   if (!Array.isArray(db.announcements)) db.announcements = [];
   db.announcements.unshift(newAnn);
 
-  if (!Array.isArray(db.notifications)) db.notifications = [];
-  db.notifications.unshift({
-    id: "notif-" + Date.now(),
-    user_id: "all",
-    title: `Notice: ${newAnn.title}`,
-    message: newAnn.message.slice(0, 100) + '...',
-    category: "Announcements",
-    link: "#/announcements",
-    created_at: new Date().toISOString(),
-    read: false
-  });
-
-  logAudit(created_by || "Administrator", "Published Announcement", newAnn.title, `Target: ${newAnn.target_audience}`);
+  recordAuditAction(
+    req,
+    "ANNOUNCEMENT_CREATED",
+    "announcements",
+    newAnn.id,
+    `Published notice '${newAnn.title}' (Target: ${newAnn.target_audience})`
+  );
   saveDB(db);
 
   res.json({ success: true, message: "Announcement published successfully.", announcement: newAnn });
 });
 
-// 18. POST /api/resources/create - Upload learning material
-apiRouter.post('/resources/create', (req, res) => {
-  const { title, description, club_id, category, uploaded_by, file_url, target_semester } = req.body || {};
+// 28. POST /api/resources/create - Upload learning material (SCOPE CHECKED)
+apiRouter.post('/resources/create', requireAuth, requirePermission(PERMISSIONS.RESOURCES_CREATE), (req, res) => {
+  const { title, description, club_id, category, file_url, target_semester } = req.body || {};
   if (!title || !club_id || !file_url) {
     return res.status(400).json({ success: false, message: "Title, Club, and Resource File/URL are required." });
+  }
+
+  if (!isUserAuthorizedForClub(req.user, club_id)) {
+    return res.status(403).json({
+      success: false,
+      code: "FORBIDDEN_CLUB_SCOPE",
+      clubId: club_id,
+      message: `Access denied. You cannot upload resources for Club ${club_id}.`
+    });
   }
 
   const db = getDB();
@@ -791,7 +1111,7 @@ apiRouter.post('/resources/create', (req, res) => {
     description: description || "",
     club_id,
     category: category || "PDF",
-    uploaded_by: uploaded_by || "Coordinator",
+    uploaded_by: `${req.user.name} (${req.user.role})`,
     upload_date: new Date().toISOString().split('T')[0],
     file_url: file_url.trim(),
     target_semester: target_semester || "All Semesters"
@@ -800,14 +1120,20 @@ apiRouter.post('/resources/create', (req, res) => {
   if (!Array.isArray(db.resources)) db.resources = [];
   db.resources.unshift(newRes);
 
-  logAudit(uploaded_by || "Coordinator", "Uploaded Resource", newRes.title, `Category: ${newRes.category}`);
+  recordAuditAction(
+    req,
+    "RESOURCE_UPLOADED",
+    "resources",
+    newRes.id,
+    `Uploaded learning material '${newRes.title}' for Club ${club_id}`
+  );
   saveDB(db);
 
   res.json({ success: true, message: "Resource uploaded successfully.", resource: newRes });
 });
 
-// 19. POST /api/projects/create - Create club project
-apiRouter.post('/projects/create', (req, res) => {
+// 29. POST /api/projects/create - Create club project (SCOPE CHECKED)
+apiRouter.post('/projects/create', requireAuth, requirePermission(PERMISSIONS.PROJECTS_CREATE), (req, res) => {
   const { title, description, problem_statement, solution, technologies, team_members, mentor, github_link, demo_link, images, status, club_id, year } = req.body || {};
   if (!title || !club_id) {
     return res.status(400).json({ success: false, message: "Project title and club are required." });
@@ -821,7 +1147,7 @@ apiRouter.post('/projects/create', (req, res) => {
     problem_statement: problem_statement || "",
     solution: solution || "",
     technologies: Array.isArray(technologies) ? technologies : (technologies ? technologies.split(',').map(t => t.trim()) : []),
-    team_members: Array.isArray(team_members) ? team_members : (team_members ? team_members.split(',').map(t => t.trim()) : ["Student"]),
+    team_members: Array.isArray(team_members) ? team_members : (team_members ? team_members.split(',').map(t => t.trim()) : [req.user.name]),
     mentor: mentor || "Faculty Coordinator",
     github_link: github_link || "",
     demo_link: demo_link || "",
@@ -834,105 +1160,194 @@ apiRouter.post('/projects/create', (req, res) => {
   if (!Array.isArray(db.projects)) db.projects = [];
   db.projects.unshift(newProj);
 
-  logAudit(newProj.team_members[0] || "Student", "Created Project", newProj.title, `Club: ${club_id}`);
+  recordAuditAction(
+    req,
+    "PROJECT_CREATED",
+    "projects",
+    newProj.id,
+    `Created project '${newProj.title}' for Club ${club_id}`
+  );
   saveDB(db);
 
   res.json({ success: true, message: "Project registered successfully.", project: newProj });
 });
 
-// 20. POST /api/activity-reports/create - Official activity report upload
-apiRouter.post('/activity-reports/create', (req, res) => {
-  const { activity_title, date, club_id, description, participants_count, report_file_url, photos, created_by } = req.body || {};
-  if (!activity_title || !club_id || !date) {
-    return res.status(400).json({ success: false, message: "Activity Title, Club, and Date are required." });
+// 30. SUPER ADMIN: User Management Endpoints (STRICTLY SUPER ADMIN)
+apiRouter.get('/admin/users', requireAuth, requirePermission(PERMISSIONS.USERS_VIEW), (req, res) => {
+  const db = getDB();
+  res.json({
+    success: true,
+    users: (db.users || []).map(sanitizeUser)
+  });
+});
+
+apiRouter.post('/admin/users/create', requireAuth, requirePermission(PERMISSIONS.USERS_CREATE), (req, res) => {
+  const { name, email, rollNo, facultyId, role, department, designation, assignedClubs } = req.body || {};
+  if (!name || !email || !role) {
+    return res.status(400).json({ success: false, message: "Name, email, and role are required." });
   }
 
   const db = getDB();
-  const newReport = {
-    id: "rep-" + Date.now(),
-    activity_title: activity_title.trim(),
-    date,
-    club_id,
-    description: description || "",
-    participants_count: parseInt(participants_count, 10) || 0,
-    report_file_url: report_file_url || "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
-    photos: Array.isArray(photos) ? photos : (photos ? [photos] : []),
-    created_by: created_by || "Faculty Coordinator",
-    official_url: "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/"
+  const cleanEmail = email.trim().toLowerCase();
+  const existing = (db.users || []).find(u => u.email.toLowerCase() === cleanEmail);
+  if (existing) {
+    return res.status(400).json({ success: false, message: "A user with this email already exists." });
+  }
+
+  const newId = "usr-" + Date.now();
+  const salt = generateSalt();
+  const passwordHash = hashPassword("Password@123", salt);
+
+  const newUser = {
+    id: newId,
+    name: name.trim(),
+    email: cleanEmail,
+    rollNo: rollNo ? rollNo.toUpperCase() : undefined,
+    facultyId: facultyId ? facultyId.toUpperCase() : undefined,
+    role: normalizeRole(role),
+    department: department || "CSE",
+    designation: designation || "Member",
+    assignedClubs: Array.isArray(assignedClubs) ? assignedClubs : [],
+    phone: "+91 884 2383305",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
+    skills: ["Pragati Member"],
+    emailVerified: true,
+    salt,
+    passwordHash,
+    membershipId: `PEC-${role.substring(0, 3).toUpperCase()}-2026-${Math.floor(100 + Math.random() * 900)}`,
+    validUntil: "30 June 2028",
+    isDemo: false
   };
 
-  if (!Array.isArray(db.activity_reports)) db.activity_reports = [];
-  db.activity_reports.unshift(newReport);
-
-  logAudit(created_by || "Coordinator", "Uploaded Activity Report", newReport.activity_title, `Participants: ${newReport.participants_count}`);
+  db.users.push(newUser);
+  recordAuditAction(
+    req,
+    "USER_CREATED_BY_ADMIN",
+    "users",
+    newUser.id,
+    `Admin created user ${newUser.name} with role ${newUser.role}`
+  );
   saveDB(db);
 
-  res.json({ success: true, message: "Activity report uploaded successfully.", report: newReport });
+  res.json({ success: true, message: "User account created successfully.", user: sanitizeUser(newUser) });
 });
 
-// 21. POST /api/feedback/submit - Event feedback with attendance verification
-apiRouter.post('/feedback/submit', (req, res) => {
-  const { eventId, studentId, content_rating, organization_rating, speaker_rating, venue_rating, overall_rating, written_feedback } = req.body || {};
-  if (!eventId || !studentId) {
-    return res.status(400).json({ success: false, message: "Event ID and Student ID required." });
+apiRouter.post('/admin/users/update-role', requireAuth, requirePermission(PERMISSIONS.ROLES_ASSIGN), (req, res) => {
+  const { userId, newRole, assignedClubs } = req.body || {};
+  if (!userId || !newRole) {
+    return res.status(400).json({ success: false, message: "User ID and New Role are required." });
   }
 
-  const db = getDB();
-
-  // Verification: Only students marked Present can submit feedback
-  if (!Array.isArray(db.attendance)) db.attendance = [];
-  const wasPresent = db.attendance.some(a => a.event_id === eventId && a.student_id === studentId && a.status === "Present");
-  if (!wasPresent) {
-    return res.status(403).json({ success: false, message: "Only verified attendees (marked Present) are eligible to submit event feedback." });
-  }
-
-  // Prevent multiple submissions
-  if (!Array.isArray(db.feedback)) db.feedback = [];
-  const alreadySubmitted = db.feedback.some(f => f.event_id === eventId && f.student_id === studentId);
-  if (alreadySubmitted) {
-    return res.status(400).json({ success: false, message: "You have already submitted feedback for this event." });
-  }
-
-  const newFeedback = {
-    id: "fb-" + Date.now(),
-    event_id: eventId,
-    student_id: studentId,
-    content_rating: parseInt(content_rating, 10) || 5,
-    organization_rating: parseInt(organization_rating, 10) || 5,
-    speaker_rating: parseInt(speaker_rating, 10) || 5,
-    venue_rating: parseInt(venue_rating, 10) || 5,
-    overall_rating: parseInt(overall_rating, 10) || 5,
-    written_feedback: written_feedback || "",
-    submitted_at: new Date().toISOString()
-  };
-
-  db.feedback.push(newFeedback);
-  logAudit(studentId, "Submitted Event Feedback", eventId, `Overall rating: ${newFeedback.overall_rating}/5`);
-  saveDB(db);
-
-  res.json({ success: true, message: "Thank you! Your event feedback has been submitted successfully.", feedback: newFeedback });
-});
-
-// 22. POST /api/admin/users/update-role - Admin updates user role
-apiRouter.post('/admin/users/update-role', (req, res) => {
-  const { userId, newRole, assignedClubs, adminName } = req.body || {};
   const db = getDB();
   const user = (db.users || []).find(u => u.id === userId);
-
   if (!user) return res.status(404).json({ success: false, message: "User not found." });
 
   const oldRole = user.role;
-  user.role = newRole;
+  user.role = normalizeRole(newRole);
   if (Array.isArray(assignedClubs)) user.assignedClubs = assignedClubs;
 
-  logAudit(adminName || "Super Admin", "Updated User Role", user.name, `Changed role from ${oldRole} to ${newRole}`);
+  recordAuditAction(
+    req,
+    "ROLE_ASSIGNED_BY_ADMIN",
+    "users",
+    user.id,
+    `Updated role of ${user.name} from ${oldRole} to ${user.role}`,
+    oldRole,
+    user.role
+  );
   saveDB(db);
 
-  res.json({ success: true, message: `Role updated to ${newRole}.`, user: sanitizeUser(user) });
+  res.json({ success: true, message: `Role updated to ${user.role}.`, user: sanitizeUser(user) });
 });
 
-// 23. Notifications Read Handlers
-apiRouter.post('/notifications/mark-read', (req, res) => {
+apiRouter.delete('/admin/users/:userId', requireAuth, requirePermission(PERMISSIONS.USERS_DELETE), (req, res) => {
+  const { userId } = req.params;
+  const db = getDB();
+
+  const idx = (db.users || []).findIndex(u => u.id === userId);
+  if (idx === -1) return res.status(404).json({ success: false, message: "User not found." });
+
+  const deletedUser = db.users[idx];
+  if (deletedUser.id === req.user.id) {
+    return res.status(400).json({ success: false, message: "You cannot delete your own active administrator account." });
+  }
+
+  db.users.splice(idx, 1);
+  recordAuditAction(
+    req,
+    "USER_DELETED_BY_ADMIN",
+    "users",
+    userId,
+    `Admin removed account ${deletedUser.name} (${deletedUser.email})`
+  );
+  saveDB(db);
+
+  res.json({ success: true, message: `User ${deletedUser.name} deleted successfully.` });
+});
+
+// 31. SUPER ADMIN: Club Charter Management (Approve, Suspend, Edit)
+apiRouter.post('/admin/clubs/:clubId/status', requireAuth, requirePermission(PERMISSIONS.CLUBS_APPROVE), (req, res) => {
+  const { clubId } = req.params;
+  const { status, remarks } = req.body || {};
+
+  const db = getDB();
+  const club = (db.clubs || []).find(c => c.id === clubId);
+  if (!club) return res.status(404).json({ success: false, message: "Club not found." });
+
+  const oldStatus = club.status || "Active";
+  club.status = status || "Active";
+  club.status_remarks = remarks || "";
+
+  recordAuditAction(
+    req,
+    "CLUB_STATUS_MODIFIED",
+    "clubs",
+    club.id,
+    `Changed charter status of ${club.name} to ${club.status}`,
+    oldStatus,
+    club.status
+  );
+  saveDB(db);
+
+  res.json({ success: true, message: `Club ${club.name} status updated to ${club.status}.`, club });
+});
+
+// 32. SUPER ADMIN: System Settings
+apiRouter.get('/admin/settings', requireAuth, requirePermission(PERMISSIONS.SETTINGS_MANAGE), (req, res) => {
+  const db = getDB();
+  res.json({
+    success: true,
+    settings: db.system_settings || {
+      institutionName: "Pragati Engineering College (Autonomous)",
+      currentAcademicYear: "2025-2026",
+      enableStudentRegistrations: true,
+      requireFacultyApprovalForCertificates: true,
+      maxClubsPerStudent: 3,
+      maintenanceMode: false
+    }
+  });
+});
+
+apiRouter.post('/admin/settings', requireAuth, requirePermission(PERMISSIONS.SETTINGS_MANAGE), (req, res) => {
+  const { settings } = req.body || {};
+  const db = getDB();
+  const oldSettings = db.system_settings;
+  db.system_settings = { ...oldSettings, ...settings };
+
+  recordAuditAction(
+    req,
+    "SYSTEM_SETTINGS_UPDATED",
+    "settings",
+    "system_config",
+    "Super Admin modified institutional system settings"
+  );
+  saveDB(db);
+
+  res.json({ success: true, message: "System settings updated successfully.", settings: db.system_settings });
+});
+
+// 33. Notification Read Handlers
+apiRouter.post('/notifications/mark-read', requireAuth, (req, res) => {
   const { notifId } = req.body || {};
   const db = getDB();
   const notif = (db.notifications || []).find(n => n.id === notifId);
@@ -941,11 +1356,10 @@ apiRouter.post('/notifications/mark-read', (req, res) => {
   res.json({ success: true });
 });
 
-apiRouter.post('/notifications/mark-all-read', (req, res) => {
-  const { userId } = req.body || {};
+apiRouter.post('/notifications/mark-all-read', requireAuth, (req, res) => {
   const db = getDB();
   (db.notifications || []).forEach(n => {
-    if (!userId || n.user_id === userId || n.user_id === "all") {
+    if (n.user_id === req.user.id || n.user_id === "all") {
       n.read = true;
     }
   });

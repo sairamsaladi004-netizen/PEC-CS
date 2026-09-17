@@ -70,7 +70,7 @@ const INITIAL_BACKEND_SEED = {
       facultyId: "FAC-CSE-AIML-01",
       email: "yamuna.l@pragati.ac.in",
       demoAlias: "coordinator.demo@pragati.ac.in",
-      role: "Club Coordinator",
+      role: "Faculty Coordinator",
       department: "CSE(AIML)",
       designation: "Assistant Professor & Faculty Coordinator",
       phone: "+91 884 2383305",
@@ -92,9 +92,10 @@ const INITIAL_BACKEND_SEED = {
       rollNo: "22CS142",
       email: "priya.patel@pragati.ac.in",
       demoAlias: "leader.demo@pragati.ac.in",
-      role: "Club Student Leader",
+      role: "Club Admin",
       studentLeaderRole: "President",
       clubId: "I4-08",
+      assignedClubs: ["I4-08"],
       department: "CSE(AIML)",
       year: "3rd Year",
       section: "A",
@@ -102,7 +103,7 @@ const INITIAL_BACKEND_SEED = {
       avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80",
       skills: ["Machine Learning", "Event Management", "Python", "Leadership"],
       interests: ["Tech Hackathons", "Community Building"],
-      bio: "Student President of AI&ML Turing Club organizing tech symposiums and workshops.",
+      bio: "Student President and Club Admin of AI&ML Turing Club organizing tech symposiums.",
       salt: DEFAULT_SALT,
       passwordHash: DEFAULT_PASSWORD_HASH,
       emailVerified: true,
@@ -129,6 +130,26 @@ const INITIAL_BACKEND_SEED = {
       emailVerified: true,
       membershipId: "PEC-ADMIN-2026-HQ-001",
       validUntil: "Lifetime",
+      isDemo: true
+    },
+    {
+      id: "guest-001",
+      name: "Public Guest",
+      email: "guest@pragati.ac.in",
+      demoAlias: "guest.demo@pragati.ac.in",
+      role: "Guest",
+      department: "General Public",
+      designation: "Prospective Student / Public Visitor",
+      phone: "+91 00000 00000",
+      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80",
+      skills: ["Visitor"],
+      interests: ["Technology Exploration"],
+      bio: "Public visitor exploring technical clubs at Pragati Engineering College.",
+      salt: DEFAULT_SALT,
+      passwordHash: DEFAULT_PASSWORD_HASH,
+      emailVerified: false,
+      membershipId: "PEC-GUEST-2026",
+      validUntil: "Session Only",
       isDemo: true
     }
   ],
@@ -532,7 +553,20 @@ export function getDB() {
       // Ensure all 35 official clubs are present
       if (!cachedDB.clubs || cachedDB.clubs.length < 35) {
         cachedDB.clubs = OFFICIAL_PEC_CLUBS;
-        saveDB(cachedDB);
+      }
+      // Ensure user roles are updated to standard RBAC roles
+      if (Array.isArray(cachedDB.users)) {
+        cachedDB.users.forEach(u => {
+          if (u.id === "coord-201" && u.role === "Club Coordinator") u.role = "Faculty Coordinator";
+          if (u.id === "std-102" && (u.role === "Club Student Leader" || !u.assignedClubs)) {
+            u.role = "Club Admin";
+            u.assignedClubs = ["I4-08"];
+          }
+        });
+        if (!cachedDB.users.some(u => u.id === "guest-001")) {
+          const guestSeed = INITIAL_BACKEND_SEED.users.find(u => u.id === "guest-001");
+          if (guestSeed) cachedDB.users.push(guestSeed);
+        }
       }
       return cachedDB;
     }
@@ -559,19 +593,51 @@ export function saveDB(data) {
   }
 }
 
-export function logAudit(user, action, affected_record, details) {
+export function logAudit(userOrObj, action, affected_record, details) {
   const db = getDB();
   const now = new Date();
   const timestamp = now.toISOString().replace("T", " ").substring(0, 19);
-  const logEntry = {
-    id: "log-" + Date.now(),
-    timestamp,
-    user,
-    action,
-    affected_record,
-    details
-  };
+  
+  let logEntry;
+  if (typeof userOrObj === 'object' && userOrObj !== null && !action) {
+    // Structured audit entry
+    logEntry = {
+      id: "log-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+      timestamp,
+      user_id: userOrObj.user_id || "system",
+      user_role: userOrObj.user_role || "System",
+      user_name: userOrObj.user_name || "System",
+      actor: userOrObj.actor || `${userOrObj.user_name || 'User'} (${userOrObj.user_role || 'System'})`,
+      user: userOrObj.actor || userOrObj.user_name || "System",
+      action: userOrObj.action || "ADMIN_ACTION",
+      resource: userOrObj.resource || "system",
+      resource_id: userOrObj.resource_id || "",
+      affected_record: userOrObj.affected_record || `${userOrObj.resource || 'Resource'}: ${userOrObj.resource_id || ''}`,
+      ip_address: userOrObj.ip_address || "127.0.0.1",
+      old_value: userOrObj.old_value !== undefined ? userOrObj.old_value : null,
+      new_value: userOrObj.new_value !== undefined ? userOrObj.new_value : null,
+      details: userOrObj.details || ""
+    };
+  } else {
+    // Legacy positional arguments
+    logEntry = {
+      id: "log-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+      timestamp,
+      user_id: "system",
+      user_role: "System",
+      user: userOrObj,
+      actor: userOrObj,
+      action: action || "ADMIN_ACTION",
+      resource: "system",
+      resource_id: "",
+      affected_record: affected_record || "",
+      details: details || "",
+      ip_address: "127.0.0.1"
+    };
+  }
+
   if (!Array.isArray(db.audit_logs)) db.audit_logs = [];
   db.audit_logs.unshift(logEntry);
   saveDB(db);
+  return logEntry;
 }
