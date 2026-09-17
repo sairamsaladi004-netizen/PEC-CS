@@ -2,6 +2,8 @@ import { getCurrentUser } from '../auth.js';
 import { getDB, apiRequest } from '../db.js';
 import { showToast } from '../components/toast.js';
 import { renderPeerCircleChat, attachPeerCircleChatEvents } from '../components/peerCircleChat.js';
+import { renderCertificate } from '../utils/certificateRenderer.js';
+import { renderCertificateHTML, initializeCertificateQR } from '../components/certificateTemplate.js';
 import {
   getStudentClubRecommendations,
   getEventParticipationPrediction,
@@ -274,6 +276,41 @@ export function renderStudentDashboardView(subSection = "dashboard") {
               Cancel
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- High-Fidelity Interactive Certificate Viewer Overlay Modal -->
+      <div id="student-cert-viewer-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-5xl w-full p-6 sm:p-8 shadow-2xl relative overflow-y-auto max-h-[90vh] space-y-4">
+          
+          <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div>
+              <h3 class="text-base font-black text-slate-950 tracking-tight">Accredited Digital Certificate</h3>
+              <p class="text-xs text-slate-500">Official verified institutional credential. Fully printable and downloadable.</p>
+            </div>
+            <button id="close-student-cert-modal" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-sm transition-colors cursor-pointer">✕</button>
+          </div>
+
+          <!-- Printable Wrapper & Area -->
+          <div id="student-cert-modal-render-zone" class="w-full flex justify-center">
+            <!-- Dynamic Certificate HTML gets rendered here -->
+          </div>
+
+          <!-- Actions Bar -->
+          <div class="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100">
+            <span class="text-[10px] text-slate-400 font-mono">Verified via Pragati CCTSC Cryptographic Registry</span>
+            <div class="flex items-center space-x-2">
+              <button id="student-modal-print-btn" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center space-x-2 cursor-pointer">
+                <span>🖨️</span>
+                <span>Print / Save PDF</span>
+              </button>
+              <button id="student-modal-download-btn" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-xl shadow-md shadow-indigo-500/20 transition-all flex items-center space-x-2 cursor-pointer">
+                <span>📥</span>
+                <span>Download PNG Image</span>
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -740,14 +777,14 @@ function renderSubSectionContent(tab, ctx) {
                 </div>
 
                 <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <a href="#/certificates?id=${c.certificateId || c.id}" class="text-blue-600 hover:underline font-bold text-[11px] flex items-center space-x-1">
+                  <button data-cert-id="${c.id}" class="view-student-cert-btn text-blue-600 hover:underline font-bold text-[11px] flex items-center space-x-1 cursor-pointer">
                     <span>View Certificate</span>
                     <span>→</span>
-                  </a>
-                  <a href="#/certificates?id=${c.certificateId || c.id}&print=true" class="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-[11px] flex items-center space-x-1 shadow-xs">
+                  </button>
+                  <button data-cert-id="${c.id}" data-print="true" class="view-student-cert-btn px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-[11px] flex items-center space-x-1 shadow-xs cursor-pointer">
                     <span>🖨️</span>
                     <span>Print / PDF</span>
-                  </a>
+                  </button>
                 </div>
               </div>
             `).join('') : `
@@ -1118,6 +1155,69 @@ function renderSubSectionContent(tab, ctx) {
 
 export function attachStudentDashboardEvents() {
   attachPeerCircleChatEvents();
+
+  // Certificate Modal View, Print & Download Handlers
+  const certModal = document.getElementById("student-cert-viewer-modal");
+  const closeCertBtn = document.getElementById("close-student-cert-modal");
+  const certRenderZone = document.getElementById("student-cert-modal-render-zone");
+  const modalPrintBtn = document.getElementById("student-modal-print-btn");
+  const modalDownloadBtn = document.getElementById("student-modal-download-btn");
+  let activeCertIdForDownload = null;
+
+  document.querySelectorAll(".view-student-cert-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const certId = btn.getAttribute("data-cert-id");
+      const db = getDB();
+      const cert = (db.certificates || []).find(c => c.id === certId || c.certificateId === certId);
+      if (cert && certRenderZone) {
+        activeCertIdForDownload = cert.id;
+        certRenderZone.innerHTML = renderCertificateHTML(cert);
+        initializeCertificateQR(cert.id, cert.qrHash || cert.id);
+        certModal?.classList.remove("hidden");
+
+        const shouldPrint = btn.getAttribute("data-print") === "true";
+        if (shouldPrint) {
+          setTimeout(() => {
+            window.print();
+          }, 350);
+        }
+      } else {
+        showToast("Error", "Could not load certificate data. Please try again.", "error");
+      }
+    });
+  });
+
+  closeCertBtn?.addEventListener("click", () => {
+    certModal?.classList.add("hidden");
+  });
+
+  modalPrintBtn?.addEventListener("click", () => {
+    window.print();
+  });
+
+  modalDownloadBtn?.addEventListener("click", async () => {
+    const activeCertSheet = document.querySelector("#student-cert-modal-render-zone .certificate-printable-wrapper");
+    if (activeCertSheet) {
+      modalDownloadBtn.disabled = true;
+      modalDownloadBtn.textContent = "Generating Image...";
+      try {
+        await renderCertificate(activeCertSheet, {
+          action: 'download',
+          scale: 3.0,
+          filename: `PEC-CERTIFICATE-${activeCertIdForDownload || 'STUDENT'}.png`
+        });
+        showToast("Success", "Certificate downloaded successfully!", "success");
+      } catch (err) {
+        console.error(err);
+        showToast("Error", "Failed to download certificate image.", "error");
+      } finally {
+        modalDownloadBtn.disabled = false;
+        modalDownloadBtn.innerHTML = `<span>📥</span><span>Download PNG Image</span>`;
+      }
+    } else {
+      showToast("Error", "Certificate element not found in modal.", "error");
+    }
+  });
 
   const modal = document.getElementById("scan-qr-modal");
   const openBtn = document.getElementById("open-scan-qr-btn");
