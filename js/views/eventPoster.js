@@ -320,12 +320,147 @@ export function renderEventPosterView(params = {}) {
   const user = getCurrentUser() || {};
   const defaultTheme = params.theme || "midnight";
   const eventId = params.eventId || params.id;
-  const selectedEvent = eventId ? db.events.find(e => e.id === eventId) : null;
+  const selectedEvent = eventId ? db.events.find(e => e.id === eventId) : (db.events && db.events[0]);
 
-  // Filter events for this coordinator if applicable
+  // Determine if user is a student (Read-only poster viewer)
+  const isStudent = (user.role === 'Student' || !user.role);
+
+  // Filter events for coordinator if applicable
   const assignedClubs = user.assignedClubs || (user.clubId ? [user.clubId] : []);
   const myClubEvents = (db.events || []).filter(e => assignedClubs.includes(e.club_id) || assignedClubs.includes(e.clubId));
 
+  if (isStudent) {
+    // -------------------------------------------------------------
+    // STUDENT VIEW: Clean, read-only poster gallery & viewer
+    // -------------------------------------------------------------
+    return `
+      <div class="space-y-6 pb-20 max-w-5xl mx-auto">
+        
+        <!-- Top Student Header -->
+        <div class="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+          <div>
+            <div class="flex items-center space-x-2 flex-wrap">
+              <span class="px-2.5 py-0.5 rounded-md bg-blue-100 text-blue-800 text-[10px] font-bold uppercase tracking-wider">
+                Campus Bulletin
+              </span>
+              <span class="text-slate-300">•</span>
+              <span class="text-xs text-blue-600 font-bold">
+                Official Club Event Posters
+              </span>
+              <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-medium font-mono">Student View</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1">
+              Campus Event Posters & Notices
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-500">
+              Browse official high-resolution technical posters, schedules, prizes, and event QR passes for Pragati Engineering College societies.
+            </p>
+          </div>
+
+          <!-- Student Quick Action Buttons -->
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="copy-poster-image-btn" class="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-colors flex items-center space-x-1.5 cursor-pointer shadow-2xs">
+              <span>📋</span>
+              <span>Copy Poster</span>
+            </button>
+            <button id="print-poster-btn" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors flex items-center space-x-1.5 cursor-pointer shadow-2xs">
+              <span>🖨️</span>
+              <span>Print</span>
+            </button>
+            <button id="download-poster-btn" class="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-black rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center space-x-1.5 cursor-pointer">
+              <span>📥</span>
+              <span>Download 4K Poster (PNG)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Event & Visual Theme Switcher Bar for Students -->
+        <div class="no-print bg-white p-4 rounded-3xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div class="flex items-center space-x-2 flex-1">
+            <span class="text-xs font-bold text-slate-700 shrink-0">Select Event:</span>
+            <select id="student-event-selector" class="w-full max-w-md p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500">
+              ${(db.events || []).map(e => `
+                <option value="${e.id}" ${selectedEvent && selectedEvent.id === e.id ? 'selected' : ''}>
+                  ${e.title} (${e.clubName || e.clubId})
+                </option>
+              `).join('')}
+            </select>
+          </div>
+
+          <!-- Quick Template Selector for Student Preview -->
+          <div class="flex items-center space-x-1 overflow-x-auto pb-1 md:pb-0">
+            <span class="text-xs font-bold text-slate-400 mr-1 shrink-0">Template:</span>
+            ${POSTER_DESIGNS.map(d => `
+              <button type="button" data-theme-id="${d.id}" class="poster-template-card px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer shrink-0 ${d.id === defaultTheme ? 'ring-2 ring-blue-600 bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                ${d.name.split(' ')[0]}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Centered Read-Only Poster Preview Display -->
+        <div class="flex flex-col items-center justify-start bg-slate-950 p-6 sm:p-10 rounded-3xl border border-slate-800 shadow-2xl overflow-hidden min-h-[650px] max-w-2xl mx-auto">
+          
+          <!-- View Indicator Bar -->
+          <div class="w-full flex items-center justify-between text-xs text-slate-400 font-mono mb-4 pb-3 border-b border-slate-800 flex-wrap gap-2">
+            <div class="flex items-center space-x-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span id="canvas-dim-indicator" class="font-bold text-slate-300">Official Campus Display Poster</span>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+              <div class="bg-slate-900 p-0.5 rounded-xl border border-slate-800 flex items-center">
+                <button type="button" id="preview-mode-canvas" class="px-2.5 py-1 rounded-lg font-bold text-[11px] bg-blue-600 text-white cursor-pointer transition-all">
+                  🎨 Poster Graphics
+                </button>
+                <button type="button" id="preview-mode-tailwind" class="px-2.5 py-1 rounded-lg font-semibold text-[11px] text-slate-400 hover:text-white cursor-pointer transition-all">
+                  💻 Card View
+                </button>
+              </div>
+              <span id="current-template-tag" class="px-2 py-0.5 rounded bg-blue-900/60 text-blue-300 text-[10px] font-bold uppercase">Midnight Sapphire</span>
+            </div>
+          </div>
+
+          <!-- Canvas View Mount -->
+          <div id="canvas-preview-wrapper" class="printable-area certificate-printable-wrapper w-full flex items-center justify-center p-2">
+            <canvas id="poster-canvas" width="600" height="800" class="rounded-2xl shadow-2xl max-w-full h-auto border border-slate-800 bg-slate-900 transition-all duration-300"></canvas>
+          </div>
+
+          <!-- Tailwind CSS Live Component View Mount -->
+          <div id="tailwind-preview-wrapper" class="hidden w-full max-w-[600px] flex items-center justify-center p-2">
+            <div id="tailwind-poster-card" class="w-full rounded-2xl p-6 transition-all duration-300"></div>
+          </div>
+
+          <!-- Hidden QR generation container -->
+          <div id="hidden-poster-qr-container" class="hidden"></div>
+
+          <!-- Bottom Notice -->
+          <div class="no-print mt-6 w-full max-w-md bg-slate-900/80 p-3 rounded-2xl border border-slate-800 flex items-center justify-around text-xs text-slate-300">
+            <span class="flex items-center space-x-1.5">
+              <span>🖨️</span>
+              <span>Official Print</span>
+            </span>
+            <span class="text-slate-700">•</span>
+            <span class="flex items-center space-x-1.5">
+              <span>📱</span>
+              <span>Gate QR Embedded</span>
+            </span>
+            <span class="text-slate-700">•</span>
+            <span class="flex items-center space-x-1.5">
+              <span>🛡️</span>
+              <span>PEC Autonomous Verified</span>
+            </span>
+          </div>
+
+        </div>
+
+      </div>
+    `;
+  }
+
+  // -------------------------------------------------------------
+  // COORDINATOR / ADMIN VIEW: Full AI Studio & Parameter Customizer
+  // -------------------------------------------------------------
   return `
     <div class="space-y-6 pb-20 max-w-7xl mx-auto">
       
@@ -443,130 +578,109 @@ export function renderEventPosterView(params = {}) {
             <div class="flex items-center space-x-2">
               <button type="button" id="enhance-copy-btn" class="text-xs text-purple-600 hover:text-purple-700 font-bold flex items-center space-x-1 cursor-pointer">
                 <span>✨</span>
-                <span>AI Enhance Copy</span>
+                <span>AI Enhance</span>
               </button>
-              <button id="reset-poster-defaults-btn" class="text-xs text-slate-400 hover:text-slate-600 font-semibold cursor-pointer">Reset</button>
+              <button type="button" id="reset-form-btn" class="text-xs text-slate-400 hover:text-slate-600 font-semibold cursor-pointer">
+                Reset
+              </button>
             </div>
           </div>
 
-          <form id="poster-editor-form" class="space-y-3.5 text-xs">
+          <form id="poster-editor-form" class="space-y-4 text-xs">
             
-            <!-- Quick Pre-load from DB -->
-            <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-              <div class="flex items-center justify-between">
-                <label class="block font-bold text-slate-800">Pre-load Event from Database:</label>
-                ${myClubEvents.length > 0 ? `<span class="px-2 py-0.5 rounded bg-purple-100 text-purple-800 text-[10px] font-bold">${myClubEvents.length} from your club</span>` : ''}
-              </div>
-              <select id="poster-event-preset" class="w-full p-2 bg-white rounded-xl border border-slate-200 font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500">
-                <option value="">-- Choose Existing Event --</option>
-                ${(db.events || []).map(e => `
+            <!-- Quick Preset Event Selector -->
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Populate From Existing Event</label>
+              <select id="poster-event-preset" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500">
+                <option value="">-- Choose Club Event --</option>
+                ${(myClubEvents.length > 0 ? myClubEvents : db.events || []).map(e => `
                   <option value="${e.id}" ${selectedEvent && selectedEvent.id === e.id ? 'selected' : ''}>
-                    ${e.title} (${e.clubName || e.clubId})
+                    ${e.title} (${e.date || 'TBD'})
                   </option>
                 `).join('')}
               </select>
             </div>
 
-            <!-- Event Title & Slogan -->
-            <div>
-              <label class="block font-semibold text-slate-700 mb-1">Event Main Title</label>
-              <input type="text" id="poster-title" value="${selectedEvent ? selectedEvent.title : 'ApexHacks 2026: 36h National Hackathon'}" class="w-full p-2.5 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500" />
-            </div>
-
-            <div>
-              <div class="flex items-center justify-between mb-1">
-                <label class="block font-semibold text-slate-700">Tagline / Slogan</label>
-                <button type="button" id="mini-slogan-btn" class="text-[10px] text-blue-600 font-bold hover:underline cursor-pointer">Suggest Slogan</button>
+            <!-- Event Title & Aspect Ratio -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="sm:col-span-2">
+                <label class="block font-bold text-slate-700 mb-1">Event Title *</label>
+                <input type="text" id="poster-title" value="${selectedEvent ? selectedEvent.title : 'ApexHacks 2026: 36h National Hackathon'}" class="w-full p-2.5 border border-slate-200 rounded-xl font-bold text-slate-900 focus:ring-2 focus:ring-blue-500" required />
               </div>
-              <input type="text" id="poster-tagline" value="Architecting Scalable Intelligence & Silicon Systems" class="w-full p-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-medium" />
-            </div>
-
-            <!-- Society & Category -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div>
-                <label class="block font-semibold text-slate-700 mb-1">Organizing Society</label>
-                <select id="poster-club" class="w-full p-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-blue-500">
-                  ${(db.clubs || []).map(c => `
-                    <option value="${c.name}" ${selectedEvent && selectedEvent.clubId === c.id ? 'selected' : ''}>${c.name}</option>
-                  `).join('')}
-                  <option value="Central Technical Societies Council (CCTSC)">Central Technical Council (CCTSC)</option>
-                  <option value="ACM Student Chapter & IEEE CS">ACM & IEEE CS Chapters</option>
-                  <option value="AI&ML Turing Club & Deep Learning Lab">AI&ML Turing Club</option>
-                </select>
-              </div>
-
-              <div>
-                <label class="block font-semibold text-slate-700 mb-1">Event Category / Format</label>
-                <select id="poster-category-type" class="w-full p-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-blue-500">
-                  <option value="36-Hour National Hackathon">36-Hour National Hackathon</option>
-                  <option value="Hands-On Technical Workshop">Hands-On Technical Workshop</option>
-                  <option value="National Technical Symposium">National Technical Symposium</option>
-                  <option value="Distinguished Keynote & Lecture">Distinguished Keynote Lecture</option>
-                  <option value="Project Exhibition & Tech Expo">Project Exhibition & Expo</option>
-                  <option value="Autonomous Drone & Robotics Derby">Robotics & Drone Derby</option>
+                <label class="block font-bold text-slate-700 mb-1">Ratio Format</label>
+                <select id="poster-aspect-ratio" class="w-full p-2.5 border border-slate-200 rounded-xl font-semibold text-slate-800">
+                  <option value="portrait">3:4 Poster</option>
+                  <option value="square">1:1 Square</option>
+                  <option value="story">9:16 Story</option>
                 </select>
               </div>
             </div>
 
-            <!-- Date, Time, Venue -->
-            <div class="grid grid-cols-2 gap-2.5">
+            <!-- Host Club & Category -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label class="block font-semibold text-slate-700 mb-1">Event Date(s)</label>
-                <input type="text" id="poster-date" value="${selectedEvent ? selectedEvent.date : 'October 18-19, 2026'}" class="w-full p-2 rounded-xl border border-slate-200 font-mono focus:ring-2 focus:ring-blue-500" />
+                <label class="block font-bold text-slate-700 mb-1">Host Club / Chapter</label>
+                <input type="text" id="poster-club" value="${selectedEvent ? (selectedEvent.clubName || 'AI&ML Turing Club') : 'Central Technical Societies Council'}" class="w-full p-2.5 border border-slate-200 rounded-xl font-medium" />
               </div>
               <div>
-                <label class="block font-semibold text-slate-700 mb-1">Timing</label>
-                <input type="text" id="poster-time" value="${selectedEvent ? selectedEvent.time : '09:00 AM - 08:00 PM'}" class="w-full p-2 rounded-xl border border-slate-200 font-mono focus:ring-2 focus:ring-blue-500" />
+                <label class="block font-bold text-slate-700 mb-1">Category / Headline</label>
+                <input type="text" id="poster-category-type" value="${selectedEvent ? (selectedEvent.category || 'National Level Hackathon') : '36-Hour National Autonomous Hackathon'}" class="w-full p-2.5 border border-slate-200 rounded-xl font-medium" />
               </div>
             </div>
 
+            <!-- Tagline / AI Hook -->
             <div>
-              <label class="block font-semibold text-slate-700 mb-1">Venue & Location</label>
-              <input type="text" id="poster-venue" value="${selectedEvent ? selectedEvent.venue : 'Central Auditorium & Turing AI Labs, Surampalem Campus'}" class="w-full p-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500" />
+              <label class="block font-bold text-slate-700 mb-1">Sub-headline / Tagline</label>
+              <input type="text" id="poster-tagline" value="${selectedEvent ? (selectedEvent.theme || 'Architect the Autonomous Future with Agentic AI') : 'Architect the Autonomous Future with Agentic AI'}" class="w-full p-2.5 border border-slate-200 rounded-xl font-medium" />
             </div>
 
-            <!-- Highlights, Perks & Cash Pool -->
-            <div class="grid grid-cols-2 gap-2.5">
+            <!-- Date & Time & Venue -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label class="block font-semibold text-slate-700 mb-1">Cash Prize Pool</label>
-                <input type="text" id="poster-prize" value="₹1,50,000 Cash Pool" class="w-full p-2 rounded-xl border border-slate-200 font-bold text-amber-600 focus:ring-2 focus:ring-blue-500" />
+                <label class="block font-bold text-slate-700 mb-1">Event Date</label>
+                <input type="text" id="poster-date" value="${selectedEvent ? selectedEvent.date : 'October 18-19, 2026'}" class="w-full p-2.5 border border-slate-200 rounded-xl font-medium" />
               </div>
               <div>
-                <label class="block font-semibold text-slate-700 mb-1">Perks & Certification</label>
-                <input type="text" id="poster-perks" value="NBA/IEEE Verified Certificates • Free Food" class="w-full p-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500" />
+                <label class="block font-bold text-slate-700 mb-1">Time</label>
+                <input type="text" id="poster-time" value="${selectedEvent ? (selectedEvent.start_time || '09:00 AM - 08:00 PM') : '09:00 AM - 08:00 PM'}" class="w-full p-2.5 border border-slate-200 rounded-xl font-medium" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Campus Venue</label>
+                <input type="text" id="poster-venue" value="${selectedEvent ? selectedEvent.venue : 'Central Auditorium, PEC Campus'}" class="w-full p-2.5 border border-slate-200 rounded-xl font-medium" />
               </div>
             </div>
 
-            <!-- Keynote / Chief Guest Section -->
-            <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+            <!-- Prize & Highlights -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Prize Pool / Incentive</label>
+                <input type="text" id="poster-prize" value="₹1,50,000 Cash Prize Pool" class="w-full p-2.5 border border-slate-200 rounded-xl font-medium" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Perks & Accreditation</label>
+                <input type="text" id="poster-perks" value="NBA/IEEE Verified Certificates • Free Food" class="w-full p-2.5 border border-slate-200 rounded-xl font-medium" />
+              </div>
+            </div>
+
+            <!-- Keynote Speaker (Optional) -->
+            <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
               <div class="flex items-center justify-between">
-                <label class="font-bold text-slate-700">Distinguished Keynote / Speaker</label>
-                <label class="inline-flex items-center cursor-pointer">
-                  <input type="checkbox" id="poster-show-speaker" checked class="sr-only peer">
-                  <div class="w-7 h-4 bg-slate-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
+                <label class="font-bold text-slate-800 flex items-center space-x-1.5 cursor-pointer">
+                  <input type="checkbox" id="poster-show-speaker" class="rounded text-blue-600" />
+                  <span>Highlight Industry Speaker / Mentor</span>
                 </label>
               </div>
-              <div id="speaker-inputs-group" class="grid grid-cols-2 gap-2 pt-1">
-                <input type="text" id="poster-speaker-name" value="Dr. Sundar Pichai (Honorary)" placeholder="Speaker Name" class="p-2 rounded-xl border border-slate-200 bg-white" />
-                <input type="text" id="poster-speaker-title" value="Principal AI Architect, Google Cloud" placeholder="Designation" class="p-2 rounded-xl border border-slate-200 bg-white" />
+              <div id="speaker-inputs-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2 opacity-50 pointer-events-none">
+                <input type="text" id="poster-speaker-name" placeholder="Speaker Name (e.g. Dr. K. Venkat)" class="p-2 border border-slate-200 rounded-xl bg-white text-xs" />
+                <input type="text" id="poster-speaker-title" placeholder="Title (e.g. AI Research Lead @ Google)" class="p-2 border border-slate-200 rounded-xl bg-white text-xs" />
               </div>
             </div>
 
-            <!-- Canvas Dimensions / Aspect Ratio -->
-            <div class="grid grid-cols-3 gap-2">
-              <div>
-                <label class="block font-semibold text-slate-700 mb-1">Aspect Ratio</label>
-                <select id="poster-aspect-ratio" class="w-full p-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-blue-500">
-                  <option value="portrait">3:4 Portrait (600×800)</option>
-                  <option value="square">1:1 Square (700×700)</option>
-                  <option value="story">9:16 Story (540×960)</option>
-                </select>
-              </div>
-
-              <div class="col-span-2">
-                <label class="block font-semibold text-slate-700 mb-1">Registration Portal URL (QR)</label>
-                <input type="text" id="poster-url" value="${window.location.origin}${window.location.pathname}#/events" class="w-full p-2 rounded-xl border border-slate-200 font-mono text-[10px] focus:ring-2 focus:ring-blue-500" />
-              </div>
+            <!-- QR URL Target -->
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Gate Pass / Registration URL</label>
+              <input type="text" id="poster-url" value="${window.location.origin}${window.location.pathname}#/events" class="w-full p-2.5 border border-slate-200 rounded-xl font-mono text-[11px] text-slate-600" />
             </div>
 
           </form>
@@ -681,16 +795,22 @@ export function attachEventPosterEvents(params = {}) {
     const isSquare = aspectKey === "square";
     const isStory = aspectKey === "story";
 
-    const title = document.getElementById("poster-title")?.value || "ApexHacks 2026: 36h Hackathon";
-    const tagline = document.getElementById("poster-tagline")?.value || theme.tagline;
-    const club = document.getElementById("poster-club")?.value || "Central Technical Societies Council";
-    const category = document.getElementById("poster-category-type")?.value || "36-Hour National Hackathon";
-    const date = document.getElementById("poster-date")?.value || "October 18-19, 2026";
-    const time = document.getElementById("poster-time")?.value || "09:00 AM - 08:00 PM";
-    const venue = document.getElementById("poster-venue")?.value || "Central Auditorium, Surampalem Campus";
+    const db = getDB();
+    const studentEventSelect = document.getElementById("student-event-selector");
+    const selectedEventId = studentEventSelect?.value || params.eventId || params.id;
+    const activeEvt = selectedEventId ? (db.events || []).find(e => e.id === selectedEventId) : (db.events && db.events[0]);
+    const activeClub = activeEvt ? (db.clubs || []).find(c => c.id === activeEvt.clubId || c.id === activeEvt.club_id) : null;
+
+    const title = document.getElementById("poster-title")?.value || (activeEvt ? activeEvt.title : "ApexHacks 2026: 36h Hackathon");
+    const tagline = document.getElementById("poster-tagline")?.value || (activeEvt?.theme || theme.tagline);
+    const club = document.getElementById("poster-club")?.value || (activeClub ? activeClub.name : (activeEvt?.clubName || "Central Technical Societies Council"));
+    const category = document.getElementById("poster-category-type")?.value || (activeEvt?.category || "36-Hour National Hackathon");
+    const date = document.getElementById("poster-date")?.value || (activeEvt ? activeEvt.date : "October 18-19, 2026");
+    const time = document.getElementById("poster-time")?.value || (activeEvt ? (activeEvt.start_time || activeEvt.time) : "09:00 AM - 08:00 PM");
+    const venue = document.getElementById("poster-venue")?.value || (activeEvt ? activeEvt.venue : "Central Auditorium, Surampalem Campus");
     const prize = document.getElementById("poster-prize")?.value || "₹1,50,000 Cash Prize Pool";
-    const perks = document.getElementById("poster-perks")?.value || "NBA/IEEE Verified Certificates • Free Food";
-    const showSpeaker = document.getElementById("poster-show-speaker")?.checked;
+    const perks = document.getElementById("poster-perks")?.value || (activeEvt?.tags ? activeEvt.tags.join(" • ") : "NBA/IEEE Verified Certificates • Free Food");
+    const showSpeaker = document.getElementById("poster-show-speaker") ? document.getElementById("poster-show-speaker").checked : false;
     const speakerName = document.getElementById("poster-speaker-name")?.value || "Distinguished Industry Mentor";
     const speakerTitle = document.getElementById("poster-speaker-title")?.value || "Keynote Speaker";
     const url = document.getElementById("poster-url")?.value || window.location.href;
@@ -1154,6 +1274,21 @@ export function attachEventPosterEvents(params = {}) {
       });
     }
   });
+
+  // Student Event Selector Handler
+  const studentEventSelect = document.getElementById("student-event-selector");
+  if (studentEventSelect) {
+    studentEventSelect.addEventListener("change", (e) => {
+      const db = getDB();
+      const evt = (db.events || []).find(ev => ev.id === e.target.value);
+      if (evt) {
+        const aiMatch = runAIPosterIntelligence(evt.title, db);
+        currentThemeId = aiMatch.themeId;
+        renderPoster();
+        showToast("Poster Updated", `Showing official poster for "${evt.title}"`, "info");
+      }
+    });
+  }
 
   // Preset Event Selector Handler
   const presetSelect = document.getElementById("poster-event-preset");

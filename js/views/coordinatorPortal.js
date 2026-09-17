@@ -1,5 +1,6 @@
 import { getCurrentUser } from '../auth.js';
-import { getDB, apiRequest } from '../db.js';
+import { getDB, saveDB, apiRequest, logAudit } from '../db.js';
+import { showToast } from '../components/toast.js';
 import { ROLES, normalizeRole } from '../rbac.js';
 import { renderAccessDenied, attachAccessDeniedEvents } from '../components/accessDenied.js';
 import {
@@ -14,6 +15,7 @@ import {
   getEngagementTrends,
   getActionableInsights,
   triggerIntelligenceRecalculate,
+  getClubCompatibilityBreakdown,
   INACTIVITY_CONFIG
 } from '../intelligenceEngine.js';
 
@@ -884,28 +886,54 @@ function renderCoordinatorTabContent(tab, ctx) {
                   <tr>
                     <th class="p-3">Student Name</th>
                     <th class="p-3">Roll No</th>
-                    <th class="p-3">Department</th>
-                    <th class="p-3">Application ID</th>
+                    <th class="p-3">Department & Skills</th>
+                    <th class="p-3">AI Fit & Top Reason</th>
                     <th class="p-3">Requested At</th>
-                    <th class="p-3 text-right">Actions</th>
+                    <th class="p-3 text-right">Decision Actions</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                   ${pendingMemberships.length > 0 ? pendingMemberships.map(m => {
                     const student = (db.users || []).find(u => u.id === m.student_id);
+                    const studentId = student?.id || m.student_id;
+                    const compat = getClubCompatibilityBreakdown(studentId, clubId, db);
+                    const skills = student?.skills || m.skills || [];
+
                     return `
                       <tr class="hover:bg-slate-50/60">
-                        <td class="p-3 font-bold text-slate-900">${student ? student.name : m.student_id}</td>
-                        <td class="p-3 font-mono font-semibold text-slate-700">${student ? student.rollNo : 'PEC'}</td>
-                        <td class="p-3 text-slate-600">${student ? student.department : 'CSE'}</td>
-                        <td class="p-3 font-mono text-slate-400">${m.membership_id}</td>
-                        <td class="p-3 text-slate-400">${m.requested_at ? m.requested_at.substring(0, 10) : 'Recent'}</td>
+                        <td class="p-3 font-bold text-slate-900">
+                          <div>${student ? student.name : (m.studentName || m.student_id)}</div>
+                          <div class="text-[10px] text-slate-400 font-normal font-mono">${m.membership_id}</div>
+                        </td>
+                        <td class="p-3 font-mono font-semibold text-slate-700">${student ? student.rollNo : (m.rollNo || 'PEC')}</td>
+                        <td class="p-3 text-slate-600">
+                          <div>${student ? student.department : (m.department || 'CSE')}</div>
+                          ${skills.length > 0 ? `
+                            <div class="flex flex-wrap gap-1 mt-0.5">
+                              ${skills.slice(0, 2).map(s => `<span class="px-1.5 py-0.2 rounded text-[9px] bg-slate-100 text-slate-700 border border-slate-200">${s}</span>`).join('')}
+                            </div>
+                          ` : ''}
+                        </td>
+                        <td class="p-3">
+                          <div class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-purple-50 text-purple-900 border border-purple-200 shadow-xs">
+                            <span class="font-mono font-black text-purple-700">${compat.compatibilityScore}%</span>
+                            <span class="text-[9px] font-black uppercase text-purple-800 px-1 bg-purple-200/60 rounded">
+                              ${compat.oneWordReason || 'Synergy'}
+                            </span>
+                          </div>
+                          <div class="text-[10px] text-slate-500 mt-0.5 max-w-xs truncate" title="${compat.activityEvidence}">
+                            ${compat.activityEvidence}
+                          </div>
+                        </td>
+                        <td class="p-3 text-slate-500">${m.requested_at ? m.requested_at.substring(0, 10) : 'Recent'}</td>
                         <td class="p-3 text-right space-x-1.5 whitespace-nowrap">
-                          <button data-review-id="${m.id}" data-action="approve" class="review-membership-btn px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all shadow-xs">
-                            ✓ Approve
+                          <button data-review-id="${m.id}" data-action="approve" class="review-membership-btn px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer inline-flex items-center space-x-1">
+                            <span>✓</span>
+                            <span>Accept</span>
                           </button>
-                          <button data-review-id="${m.id}" data-action="reject" class="review-membership-btn px-2.5 py-1 bg-slate-100 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-bold transition-all border border-slate-200">
-                            ✕ Reject
+                          <button data-review-id="${m.id}" data-action="reject" class="review-membership-btn px-2.5 py-1.5 bg-slate-100 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-bold transition-all border border-slate-200 cursor-pointer inline-flex items-center space-x-1">
+                            <span>✕</span>
+                            <span>Decline</span>
                           </button>
                         </td>
                       </tr>
@@ -1531,16 +1559,58 @@ export function attachCoordinatorPortalEvents() {
       const action = btn.getAttribute("data-action");
       const user = getCurrentUser();
 
-      const remarks = prompt(action === "approve" ? "Optional approval note for student:" : "Reason for decline:");
+      btn.disabled = true;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = `<span>⏳</span><span>Processing...</span>`;
+
+      // 1. Sync with backend API
       const res = await apiRequest('/api/memberships/review', 'POST', {
-        membershipId, action, reviewerName: user.name, remarks: remarks || undefined
+        membershipId,
+        action,
+        reviewerName: user.name,
+        remarks: action === "approve" ? "Application approved by faculty coordinator." : "Application declined by faculty coordinator."
       });
 
-      if (res && res.success) {
-        window.location.reload();
-      } else {
-        alert(res?.message || "Operation failed.");
+      // 2. Also ensure local database state is updated in case running client-only
+      const db = getDB();
+      const mem = (db.club_memberships || []).find(m => m.id === membershipId || m.membership_id === membershipId);
+      if (mem) {
+        if (action === "approve") {
+          mem.status = "Approved";
+          mem.approved_at = new Date().toISOString();
+          mem.approved_by = `${user.name} (${user.role})`;
+          mem.remarks = "Application approved by faculty coordinator.";
+          
+          const student = (db.users || []).find(u => u.id === mem.student_id);
+          if (student) {
+            if (!Array.isArray(student.clubs)) student.clubs = [];
+            if (!student.clubs.includes(mem.club_id)) student.clubs.push(mem.club_id);
+          }
+        } else if (action === "reject") {
+          mem.status = "Rejected";
+          mem.approved_at = new Date().toISOString();
+          mem.approved_by = `${user.name} (${user.role})`;
+          mem.remarks = "Application declined by faculty coordinator.";
+        }
+        saveDB(db);
       }
+
+      logAudit(
+        `${user.name} (${user.role})`,
+        action === "approve" ? "APPROVED_MEMBERSHIP" : "DECLINED_MEMBERSHIP",
+        membershipId,
+        `Faculty Coordinator ${action}d membership application ${membershipId}`
+      );
+
+      showToast(
+        action === "approve" ? "Membership Approved" : "Membership Declined",
+        action === "approve" ? "Student has been added to active club roster!" : "Student application declined.",
+        action === "approve" ? "success" : "info"
+      );
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 600);
     });
   });
 

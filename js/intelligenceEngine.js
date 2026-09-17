@@ -133,11 +133,23 @@ export function getClubCompatibilityBreakdown(studentId, clubId, db = null) {
   return {
     club,
     compatibilityScore: 74,
+    oneWordReason: 'Synergy',
     scoreBreakdown: { interestScore: 70, skillScore: 75, activityScore: 80, eventScore: 70, departmentScore: 75 },
     matchingInterests: [],
     matchingSkills: [],
     activityEvidence: 'Academic alignment with branch curriculum',
     explanation: { reasons: ['✓ Active student engineering domain'], missingOrWeakFactors: [] }
+  };
+}
+
+export function getStudentClubFitDescriptor(studentId, clubId, db = null) {
+  const breakdown = getClubCompatibilityBreakdown(studentId, clubId, db);
+  return {
+    score: breakdown.compatibilityScore || 75,
+    oneWordReason: breakdown.oneWordReason || 'Synergy',
+    tag: `${breakdown.compatibilityScore || 75}% Fit • ${breakdown.oneWordReason || 'Synergy'}`,
+    skills: breakdown.matchingSkills || [],
+    activityEvidence: breakdown.activityEvidence || 'Active campus student'
   };
 }
 
@@ -293,9 +305,30 @@ export function computeLocalRecommendations(student, db, customWeights = null) {
       missingOrWeakFactors.push(`• No submitted practical prototypes in this specific domain`);
     }
 
+    let oneWordReason = "Synergy";
+    if (matchingSkills.length > 0) {
+      const topSkill = matchingSkills[0].trim();
+      oneWordReason = topSkill.length > 15 ? topSkill.split(" ")[0] : topSkill.replace(/\s+/g, "");
+    } else if (myProjects.length > 0) {
+      oneWordReason = "ProjectBuilder";
+    } else if (relevantPastEvents.length > 0) {
+      oneWordReason = "ActiveAttendee";
+    } else if (studentSkills.length > 0) {
+      const sk = studentSkills[0].trim();
+      oneWordReason = sk.length > 15 ? sk.split(" ")[0] : sk.replace(/\s+/g, "");
+    } else if (matchingInterests.length > 0) {
+      const it = matchingInterests[0].trim();
+      oneWordReason = it.length > 15 ? it.split(" ")[0] : it.replace(/\s+/g, "");
+    } else if (deptMatch >= 0.85) {
+      oneWordReason = "DeptSynergy";
+    } else {
+      oneWordReason = "Enthusiast";
+    }
+
     return {
       club,
       compatibilityScore,
+      oneWordReason,
       scoreBreakdown: breakdown,
       matchingInterests,
       matchingSkills,

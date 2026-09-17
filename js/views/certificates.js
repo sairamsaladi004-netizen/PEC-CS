@@ -418,20 +418,35 @@ export function attachCertificatesEvents(params = {}) {
   const activeTab = params.tab || (certId ? "viewer" : "directory");
 
   // Print Handlers
+  const executePrint = () => {
+    try {
+      window.print();
+    } catch (e) {
+      console.warn("Print dialogue error:", e);
+    }
+  };
+
   const printBtn = document.getElementById("print-cert-btn");
   const secPrintBtn = document.getElementById("secondary-print-btn");
   if (printBtn) {
-    printBtn.addEventListener("click", () => window.print());
+    printBtn.addEventListener("click", executePrint);
   }
   if (secPrintBtn) {
-    secPrintBtn.addEventListener("click", () => window.print());
+    secPrintBtn.addEventListener("click", executePrint);
+  }
+
+  // Auto-print if opened with print=true parameter
+  if (params.print === "true" || params.print === true) {
+    setTimeout(() => {
+      executePrint();
+    }, 450);
   }
 
   // Keyboard shortcut Ctrl+P / Cmd+P listener
   const handleKeyDown = (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'p' && (certId || activeTab === "studio")) {
       e.preventDefault();
-      window.print();
+      executePrint();
     }
   };
   window.removeEventListener("keydown", handleKeyDown);

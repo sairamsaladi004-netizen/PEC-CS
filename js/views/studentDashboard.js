@@ -243,9 +243,11 @@ function renderSubSectionContent(tab, ctx) {
 
                         <!-- Compatibility Score Gauge -->
                         <div class="text-center shrink-0">
-                          <div class="w-16 h-16 rounded-2xl flex flex-col items-center justify-center border-2 ${scoreColor} shadow-xs">
-                            <span class="text-xl font-black font-mono leading-none">${compatibilityScore}%</span>
-                            <span class="text-[8px] uppercase font-bold tracking-tight mt-0.5">MATCH</span>
+                          <div class="w-20 h-16 rounded-2xl flex flex-col items-center justify-center border-2 ${scoreColor} shadow-xs px-1">
+                            <span class="text-lg font-black font-mono leading-none">${compatibilityScore}%</span>
+                            <span class="text-[9px] font-black tracking-tight text-slate-800 uppercase mt-0.5 max-w-[70px] truncate" title="AI Fit Reason: ${item.oneWordReason || 'Synergy'}">
+                              ${item.oneWordReason || 'Synergy'}
+                            </span>
                           </div>
                           <span class="text-[9px] font-bold text-slate-500 mt-1 block">${tierLabel}</span>
                         </div>
@@ -580,12 +582,14 @@ function renderSubSectionContent(tab, ctx) {
                 </div>
 
                 <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <a href="#/verify?id=${c.certificateId || c.id}" class="text-blue-600 hover:underline font-bold text-[11px]">
-                    Public Verification Link →
+                  <a href="#/certificates?id=${c.certificateId || c.id}" class="text-blue-600 hover:underline font-bold text-[11px] flex items-center space-x-1">
+                    <span>View Certificate</span>
+                    <span>→</span>
                   </a>
-                  <button onclick="window.print()" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 font-bold text-[11px]">
-                    Print / PDF
-                  </button>
+                  <a href="#/certificates?id=${c.certificateId || c.id}&print=true" class="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-[11px] flex items-center space-x-1 shadow-xs">
+                    <span>🖨️</span>
+                    <span>Print / PDF</span>
+                  </a>
                 </div>
               </div>
             `).join('') : `
