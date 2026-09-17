@@ -743,38 +743,89 @@ function renderSubSectionContent(tab, ctx) {
     case "resources":
       return `
         <div class="space-y-6">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <h2 class="text-lg font-bold text-slate-900">Learning Resources & Lab Guides</h2>
-              <p class="text-xs text-slate-500">Official technical society guides, lab manuals, code notebooks, and presentation decks.</p>
+              <span class="px-2.5 py-0.5 rounded-md bg-blue-100 text-blue-800 text-[10px] font-bold uppercase tracking-wider">Academic Repository</span>
+              <h2 class="text-xl font-black text-slate-900 mt-1">Learning Resources & Problem Sets</h2>
+              <p class="text-xs text-slate-500">Official technical society study guides, sample problem sets, lab manuals, and quiz templates.</p>
             </div>
-            <a href="#/lms" class="text-xs text-blue-600 hover:underline font-bold">Open Full LMS Hub →</a>
+            <div class="flex items-center space-x-2">
+              <a href="#/lms" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-xs">
+                Open Full LMS Hub →
+              </a>
+            </div>
+          </div>
+
+          <!-- Category Quick Stats -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 p-4 rounded-2xl flex items-center justify-between">
+              <div>
+                <div class="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Study Materials</div>
+                <div class="text-xl font-black text-slate-900 mt-0.5">${(db.resources || []).filter(r => (r.type || r.category || '').includes('Study') || (r.type || r.category || '').includes('Lab')).length} Guides</div>
+              </div>
+              <span class="text-2xl">📖</span>
+            </div>
+            <div class="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 p-4 rounded-2xl flex items-center justify-between">
+              <div>
+                <div class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Sample Problem Sets</div>
+                <div class="text-xl font-black text-slate-900 mt-0.5">${(db.resources || []).filter(r => (r.type || r.category || '').includes('Problem') || (r.type || r.category || '').includes('Code')).length} Benchmarks</div>
+              </div>
+              <span class="text-2xl">🧪</span>
+            </div>
+            <div class="bg-gradient-to-br from-purple-50 to-fuchsia-50 border border-purple-100 p-4 rounded-2xl flex items-center justify-between">
+              <div>
+                <div class="text-[10px] font-bold text-purple-700 uppercase tracking-wider">Quiz Templates</div>
+                <div class="text-xl font-black text-slate-900 mt-0.5">${(db.resources || []).filter(r => (r.type || r.category || '').includes('Quiz')).length} Assessments</div>
+              </div>
+              <span class="text-2xl">🎯</span>
+            </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             ${(db.resources || []).map(r => {
-              const club = (db.clubs || []).find(c => c.id === r.club_id);
+              const club = (db.clubs || []).find(c => c.id === r.club_id || c.id === r.clubId);
+              const type = r.type || r.category || 'Study Material';
+              let badgeBg = "bg-blue-100 text-blue-800";
+              if (type.includes("Problem")) badgeBg = "bg-emerald-100 text-emerald-800";
+              if (type.includes("Quiz")) badgeBg = "bg-purple-100 text-purple-800";
+
               return `
-                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
                   <div>
-                    <div class="flex items-center justify-between mb-2">
-                      <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-                        ${r.category || 'PDF'}
+                    <div class="flex items-center justify-between mb-2.5">
+                      <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full ${badgeBg}">
+                        ${type.toUpperCase()}
                       </span>
-                      <span class="text-[10px] text-slate-400">${r.target_semester || 'All Semesters'}</span>
+                      <span class="text-[10px] font-mono text-slate-400 font-semibold">${r.file_format || 'PDF'} • ${r.file_size || '3 MB'}</span>
                     </div>
-                    <h3 class="text-sm font-bold text-slate-900">${r.title}</h3>
-                    <p class="text-xs text-slate-500 mt-1 line-clamp-2">${r.description}</p>
-                    <div class="text-[11px] text-slate-400 mt-2">
-                      Club: <strong class="text-slate-700">${club ? club.name : r.club_id}</strong> • Author: ${r.uploaded_by || r.author}
+                    <h3 class="text-sm font-black text-slate-900 leading-snug">${r.title}</h3>
+                    <p class="text-xs text-slate-500 mt-1.5 line-clamp-2">${r.description}</p>
+                    
+                    <div class="mt-3 flex flex-wrap items-center gap-1.5">
+                      ${(r.tags || []).slice(0, 4).map(t => `<span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-mono font-medium">#${t}</span>`).join('')}
+                    </div>
+
+                    <div class="text-[11px] text-slate-400 mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+                      <span>Society: <strong class="text-slate-700">${club ? club.name : (r.club_name || r.club_id || 'PEC Society')}</strong></span>
+                      <span class="font-mono text-slate-500">📥 ${r.downloads || 120} downloads</span>
                     </div>
                   </div>
 
                   <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                    <span class="text-[10px] text-slate-400">${r.upload_date || r.dateAdded}</span>
-                    <a href="${r.file_url || r.link}" target="_blank" rel="noopener" class="px-3 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-bold">
-                      Open Resource ↗
-                    </a>
+                    <span class="text-[10px] font-semibold text-slate-400">By ${r.author || r.uploaded_by || 'Faculty Lead'}</span>
+                    ${type.includes("Quiz") ? `
+                      <a href="#/quizzes" class="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold shadow-xs">
+                        Attempt Quiz →
+                      </a>
+                    ` : type.includes("Problem") ? `
+                      <a href="#/practice" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-xs">
+                        Solve Problems →
+                      </a>
+                    ` : `
+                      <a href="${r.file_url || r.link || '#'}" target="_blank" rel="noopener" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-xs">
+                        View Study Material ↗
+                      </a>
+                    `}
                   </div>
                 </div>
               `;

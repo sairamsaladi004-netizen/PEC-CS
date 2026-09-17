@@ -18,7 +18,7 @@ export function renderCertificatesView(params = {}) {
 
   // Active certificate if viewing specific ID or in template studio
   const currentCert = certId 
-    ? ((db.certificates || []).find(c => c.id === certId) || db.certificates[0])
+    ? ((db.certificates || []).find(c => c.id === certId || c.certificateId === certId || (c.id && c.id.toLowerCase() === certId.toLowerCase())) || db.certificates[0])
     : (db.certificates && db.certificates[0] ? db.certificates[0] : {
         id: `CERT-PEC-${new Date().getFullYear()}-CSE-8921`,
         recipientName: user.name || "Aarav Sharma",
@@ -638,7 +638,7 @@ export function attachCertificatesEvents(params = {}) {
   // Initial QR Code Generation for the view
   if (certId || activeTab === "studio") {
     const db = getDB();
-    const cert = certId ? ((db.certificates || []).find(c => c.id === certId) || db.certificates[0]) : db.certificates[0];
+    const cert = certId ? ((db.certificates || []).find(c => c.id === certId || c.certificateId === certId || (c.id && c.id.toLowerCase() === certId.toLowerCase())) || db.certificates[0]) : db.certificates[0];
     if (cert) {
       initializeCertificateQR(cert.id, cert.qrHash || cert.id);
     }

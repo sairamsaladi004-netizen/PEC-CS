@@ -155,7 +155,7 @@ function renderDesktopNavForRole(role, currentHash) {
 
   if (norm === ROLES.SUPER_ADMIN) {
     return `
-      <a href="#/admin/dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/admin') ? 'bg-rose-600 text-white' : 'text-rose-300 hover:text-white hover:bg-rose-900/40'}">👑 Admin Console</a>
+      <a href="#/admin/dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/admin') ? 'bg-rose-600 text-white' : 'text-rose-300 hover:text-white hover:bg-rose-900/40'}">🏛️ Director Portal</a>
       <a href="#/admin/dashboard?tab=users" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Users & Roles</a>
       <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">All 35 Clubs</a>
       <a href="#/events" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Events</a>

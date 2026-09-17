@@ -78,18 +78,18 @@ export function renderLoginView() {
             </div>
           </button>
 
-          <!-- Super Admin Role Direct Login -->
-          <button type="button" class="demo-login-btn text-left p-4 rounded-2xl bg-slate-800/90 hover:bg-slate-800 border border-rose-500/40 hover:border-rose-400 transition-all hover:scale-[1.02] cursor-pointer group shadow-md" data-user-id="admin-001" data-demo-email="principal@pragati.ac.in" data-role="Super Admin">
+          <!-- Director (Academics) Role Direct Login -->
+          <button type="button" class="demo-login-btn text-left p-4 rounded-2xl bg-slate-800/90 hover:bg-slate-800 border border-rose-500/40 hover:border-rose-400 transition-all hover:scale-[1.02] cursor-pointer group shadow-md" data-user-id="admin-001" data-demo-email="director.academics@pragati.ac.in" data-role="Director (Academics)">
             <div class="flex items-center justify-between mb-1.5">
-              <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">👑 Super Admin</span>
+              <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">🏛️ Director (Academics)</span>
               <span class="text-[10px] font-mono text-rose-400 group-hover:underline">1-Click Login 🚀</span>
             </div>
             <div class="text-sm font-bold text-white">Dr. K. Satyanarayana</div>
-            <div class="text-[10px] font-mono text-slate-300 mt-0.5">principal@pragati.ac.in</div>
-            <div class="text-[10px] text-slate-400 font-mono mt-1">ID: <strong class="text-rose-300">FAC-PEC-001</strong></div>
+            <div class="text-[10px] font-mono text-slate-300 mt-0.5">director.academics@pragati.ac.in</div>
+            <div class="text-[10px] text-slate-400 font-mono mt-1">Faculty ID: <strong class="text-rose-300">FAC-PEC-001</strong></div>
             <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px]">
               <span class="text-slate-400">Target Portal:</span>
-              <span class="font-bold text-rose-400">Super Admin Panel</span>
+              <span class="font-bold text-rose-400">Directorate & Academic Council</span>
             </div>
           </button>
 
@@ -149,7 +149,7 @@ export function renderLoginView() {
                   <option value="Student">🎓 Student Member (Standard Portal Access)</option>
                   <option value="Club Admin">⚡ Club Admin / Student Leader (Club Management & Attendance)</option>
                   <option value="Faculty Coordinator">🏫 Faculty Coordinator (Council Approvals & Governance)</option>
-                  <option value="Super Admin">👑 Super Admin (Full Institutional Control)</option>
+                  <option value="Super Admin">🏛️ Director (Academics) / Super Admin (Full Institutional Control)</option>
                 </select>
                 <p id="reg-role-desc" class="text-[10px] text-slate-300">Classifies your account in Supabase database and grants role-appropriate permissions.</p>
               </div>

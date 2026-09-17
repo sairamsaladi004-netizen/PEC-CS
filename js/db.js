@@ -1,4 +1,5 @@
 import { OFFICIAL_PEC_CLUBS } from "./officialClubs.js";
+import { INITIAL_RESOURCES } from "../data/resources.js";
 
 export const DB_KEY = "campustech_pec_db_v3";
 
@@ -96,20 +97,20 @@ export const INITIAL_SEED = {
       id: "admin-001",
       name: "Dr. K. Satyanarayana",
       facultyId: "FAC-PEC-001",
-      email: "principal@pragati.ac.in",
-      demoAlias: "admin.demo@pragati.ac.in",
+      email: "director.academics@pragati.ac.in",
+      demoAlias: "principal@pragati.ac.in",
       role: "Super Admin",
       department: "CSE",
-      designation: "Principal & Head of Academic Council",
-      year: "Principal",
+      designation: "Director (Academics) & Head of Academic Council",
+      year: "Director (Academics)",
       semester: "Permanent",
       phone: "+91 884 2383305",
       avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&auto=format&fit=crop&q=80",
       clubs: ["I4-01", "I4-08", "CC-05"],
       skills: ["Academic Administration", "NBA / NAAC Accreditation", "Institutional Leadership"],
       interests: ["Higher Technical Education", "Outcome-Based Education"],
-      bio: "Principal, Pragati Engineering College (Autonomous), Surampalem.",
-      badges: ["Institutional Head", "Council President"],
+      bio: "Director (Academics), Pragati Engineering College (Autonomous), Surampalem.",
+      badges: ["Director (Academics)", "Institutional Head", "Council President"],
       membershipId: "PEC-ADMIN-2026-HQ-001",
       validUntil: "Lifetime",
       emailVerified: true,
@@ -825,50 +826,7 @@ export const INITIAL_SEED = {
     }
   ],
 
-  resources: [
-    {
-      id: "res-001",
-      title: "Modern Docker & Kubernetes Lab Guide for Cloud Native Microservices",
-      description: "Comprehensive tutorial on multi-stage Docker builds, Kubernetes manifests, and Helm charts.",
-      club_id: "I4-07",
-      clubId: "I4-07",
-      category: "Lab Guide",
-      uploaded_by: "Mr. K Siva Shankar",
-      author: "Mr. K Siva Shankar",
-      upload_date: "2026-09-01",
-      dateAdded: "2026-09-01",
-      file_url: "https://kubernetes.io/docs/home/",
-      link: "https://kubernetes.io/docs/home/",
-      target_semester: "5th Semester",
-      targetSemester: "5th Semester",
-      readTime: "45 mins lab",
-      domain: "Cloud Computing",
-      difficulty: "Intermediate",
-      bookmarks: 142,
-      completions: 89
-    },
-    {
-      id: "res-002",
-      title: "PyTorch Vision Transformers (ViT) & Transfer Learning Notebook",
-      description: "Hands-on Jupyter notebook covering attention heads, fine-tuning, and ONNX deployment.",
-      club_id: "I4-08",
-      clubId: "I4-08",
-      category: "Code Notebook",
-      uploaded_by: "Mrs. L. Yamuna",
-      author: "Mrs. L. Yamuna",
-      upload_date: "2026-08-20",
-      dateAdded: "2026-08-20",
-      file_url: "https://pytorch.org/tutorials/",
-      link: "https://pytorch.org/tutorials/",
-      target_semester: "6th Semester",
-      targetSemester: "6th Semester",
-      readTime: "60 mins lab",
-      domain: "Artificial Intelligence & ML",
-      difficulty: "Advanced",
-      bookmarks: 230,
-      completions: 164
-    }
-  ],
+  resources: INITIAL_RESOURCES,
 
   projects: [
     {
@@ -1302,7 +1260,7 @@ export function getDB() {
     if (!Array.isArray(data.event_registrations)) data.event_registrations = INITIAL_SEED.event_registrations;
     if (!Array.isArray(data.attendance)) data.attendance = INITIAL_SEED.attendance;
     if (!Array.isArray(data.feedback)) data.feedback = INITIAL_SEED.feedback;
-    if (!Array.isArray(data.resources) || data.resources.length === 0) data.resources = INITIAL_SEED.resources;
+    if (!Array.isArray(data.resources) || data.resources.length < 10) data.resources = JSON.parse(JSON.stringify(INITIAL_RESOURCES));
     if (!Array.isArray(data.activity_reports) || data.activity_reports.length === 0) data.activity_reports = INITIAL_SEED.activity_reports;
     if (!Array.isArray(data.audit_logs)) data.audit_logs = INITIAL_SEED.audit_logs;
     if (!Array.isArray(data.projects) || data.projects.length < 3) data.projects = INITIAL_SEED.projects;

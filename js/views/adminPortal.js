@@ -41,7 +41,7 @@ export function renderAdminPortalView(subSection = "dashboard") {
             <div class="flex items-center space-x-2 flex-wrap">
               <h1 class="text-xl font-black text-slate-900 tracking-tight">${user.name}</h1>
               <span class="px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 text-[10px] font-bold uppercase tracking-wider">
-                Super Admin
+                Director (Academics)
               </span>
               ${user.isDemo ? '<span class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-mono font-bold">DEMO ACCOUNT</span>' : ''}
             </div>

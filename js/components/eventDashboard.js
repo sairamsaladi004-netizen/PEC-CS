@@ -1575,7 +1575,7 @@ function attachCardAndRowActionListeners() {
         event_id: evt.id,
         studentId: user.id,
         student_id: user.id,
-        studentName: user.name,
+        studentName: user.name || "Aarav Sharma",
         rollNo: user.rollNo || "22CS101",
         ticketId: ticketId,
         ticket_id: ticketId,
@@ -1594,12 +1594,44 @@ function attachCardAndRowActionListeners() {
       logAudit(`${user.name} (${user.role})`, "Registered for Technical Event", evt.title, `Ticket ID: ${ticketId}`);
       showToast(`Pass confirmed for "${evt.title}"! Gate Pass: ${ticketId}`, "success");
 
-      // Re-render
+      // Auto-Pop QR Gate Pass Modal
+      const modal = document.getElementById("dashboard-ticket-modal");
+      const titleEl = document.getElementById("dashboard-ticket-event-title");
+      const idEl = document.getElementById("dashboard-ticket-id-display");
+      const studentEl = document.getElementById("dashboard-ticket-student-display");
+      const metaEl = document.getElementById("dashboard-ticket-meta-display");
+      const qrBox = document.getElementById("dashboard-modal-qr-box");
+
+      if (modal) {
+        if (titleEl) titleEl.textContent = evt.title;
+        if (idEl) idEl.textContent = `PASS ID: ${ticketId}`;
+        if (studentEl) studentEl.textContent = `${user.name || 'Aarav Sharma'} (${user.rollNo || '22CS101'})`;
+        if (metaEl) metaEl.textContent = `${evt.date} • ${evt.venue || 'Central Seminar Complex'}`;
+
+        if (qrBox) {
+          qrBox.innerHTML = "";
+          if (typeof QRCode !== 'undefined') {
+            new QRCode(qrBox, {
+              text: JSON.stringify({ ticketId, name: user.name, roll: user.rollNo || "22CS101", event: evt.title }),
+              width: 140,
+              height: 140,
+              colorDark: "#0f172a",
+              colorLight: "#ffffff",
+              correctLevel: QRCode.CorrectLevel.H
+            });
+          } else {
+            qrBox.innerHTML = `<div class="p-4 bg-slate-100 rounded-xl font-mono text-xs font-bold text-slate-700">${ticketId}</div>`;
+          }
+        }
+        modal.classList.remove("hidden");
+      }
+
+      // Re-render dashboard view to reflect updated registered count and button state
       setTimeout(() => {
         const catBtn = document.querySelector(".category-tab-btn.bg-slate-900, .category-tab-btn.bg-blue-600, .category-tab-btn.bg-emerald-600, .category-tab-btn.bg-purple-600");
         const activeCat = catBtn?.dataset?.category || "ALL";
         attachEventDashboardEvents({ defaultCategory: activeCat });
-      }, 300);
+      }, 500);
     });
   });
 
