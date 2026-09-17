@@ -162,6 +162,7 @@ function renderDesktopNavForRole(role, currentHash) {
       <a href="#/attendance" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Attendance</a>
       <a href="#/verify" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Certificates</a>
       <a href="#/reports" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Reports</a>
+      <a href="#/leaderboard" class="px-2.5 py-1.5 rounded-lg text-amber-300 hover:text-white hover:bg-amber-900/30 font-bold">🏆 Leaderboard</a>
       <a href="#/admin/dashboard?tab=audit" class="px-2.5 py-1.5 rounded-lg text-amber-300 hover:text-white hover:bg-amber-900/30 font-mono text-[11px]">Audit Logs</a>
     `;
   }
@@ -202,6 +203,7 @@ function renderDesktopNavForRole(role, currentHash) {
       <a href="#/study-circles" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Peer Circles</a>
       <a href="#/student/certificates" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Certificates</a>
       <a href="#/membership-card" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Digital ID</a>
+      <a href="#/leaderboard" class="px-2.5 py-1.5 rounded-lg text-amber-300 hover:text-white hover:bg-amber-900/30 font-bold">🏆 Leaderboard</a>
     `;
   }
 
@@ -210,6 +212,7 @@ function renderDesktopNavForRole(role, currentHash) {
     <a href="#/" class="px-2.5 py-1.5 rounded-lg text-white hover:bg-slate-800">Home</a>
     <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">35 Official Clubs</a>
     <a href="#/events" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Public Events</a>
+    <a href="#/leaderboard" class="px-2.5 py-1.5 rounded-lg text-amber-300 hover:text-white hover:bg-amber-900/30 font-bold">🏆 Leaderboard</a>
     <a href="#/announcements" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Public Notices</a>
     <a href="#/verify" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Verify Credential</a>
     <a href="#/about" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">About PEC</a>

@@ -225,17 +225,19 @@ export async function registerStudent(userData) {
 
   // 3. In-memory / local fallback
   const db = getDB();
-  const newId = "std-" + Date.now();
+  const newId = "usr-" + Date.now();
   const newUser = {
     id: newId,
     name: userData.name,
     rollNo: cleanRoll,
     email: cleanEmail,
-    role: "Student",
+    role: userData.role || "Student",
     department: cleanDept,
     year: userData.year || "1st Year",
     section: userData.section || "A",
     phone: userData.phone || "",
+    clubId: userData.assignedClub || "I4-08",
+    assignedClubs: userData.assignedClub ? [userData.assignedClub] : (userData.role === "Faculty Coordinator" ? ["I4-08", "I4-07", "I4-06"] : []),
     avatar: userData.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
     clubs: [],
     skills: userData.skills ? (Array.isArray(userData.skills) ? userData.skills : userData.skills.split(",").map(s => s.trim())) : ["Python", "Web Development"],

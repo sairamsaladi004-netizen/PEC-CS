@@ -316,8 +316,8 @@ export function renderClubsView(params = {}) {
                 <span>Club Metrics & Department Stats</span>
                 <span>→</span>
               </a>
-              <a href="#/membership-card" class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium transition-colors">
-                <span>View Digital Student Membership</span>
+              <a href="#/badges?clubId=${club.id}" class="flex items-center justify-between p-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold transition-colors">
+                <span>✨ Generate Holographic Club Badge</span>
                 <span>→</span>
               </a>
               <a href="#/reports" class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium transition-colors">

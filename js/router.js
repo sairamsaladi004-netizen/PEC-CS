@@ -9,6 +9,7 @@ import { renderAttendanceView, attachAttendanceEvents } from './views/attendance
 import { renderEventPosterView, attachEventPosterEvents } from './views/eventPoster.js';
 import { renderCertificatesView, attachCertificatesEvents } from './views/certificates.js';
 import { renderMembershipCardView, attachMembershipCardEvents } from './views/membershipCard.js';
+import { renderAttendanceScannerView, attachAttendanceScannerEvents } from './views/attendanceScanner.js';
 import { renderStudentProfileView, attachStudentProfileEvents } from './views/studentProfile.js';
 import { renderProjectsView, attachProjectsEvents } from './views/projects.js';
 import { renderLMSView, attachLMSEvents } from './views/lms.js';
@@ -22,6 +23,7 @@ import { renderVerificationView, attachVerificationEvents } from './views/verifi
 import { renderAdminView, attachAdminEvents } from './views/admin.js';
 import { renderClubAdminDashboardView, attachClubAdminDashboardEvents } from './views/clubAdminDashboard.js';
 import { renderAboutView, attachAboutEvents } from './views/about.js';
+import { renderLeaderboardView, attachLeaderboardEvents } from './views/leaderboard.js';
 
 // New Role-Specific Comprehensive Portals
 import { renderLoginView, attachLoginEvents } from './views/login.js';
@@ -126,6 +128,14 @@ export function handleRoute() {
       attachAttendanceEvents(params);
       break;
 
+    case "#/scanner":
+    case "#/attendance-scanner":
+    case "#/badge-scanner":
+    case "#/club-admin/scanner":
+      mountPoint.innerHTML = renderAttendanceScannerView(params);
+      attachAttendanceScannerEvents(params);
+      break;
+
     case "#/poster":
     case "#/event-poster":
       mountPoint.innerHTML = renderEventPosterView(params);
@@ -138,8 +148,11 @@ export function handleRoute() {
       break;
 
     case "#/membership-card":
-      mountPoint.innerHTML = renderMembershipCardView();
-      attachMembershipCardEvents();
+    case "#/badges":
+    case "#/badge-generator":
+    case "#/member-badge":
+      mountPoint.innerHTML = renderMembershipCardView(params);
+      attachMembershipCardEvents(params);
       break;
 
     case "#/student-profile":
@@ -182,6 +195,12 @@ export function handleRoute() {
     case "#/analytics":
       mountPoint.innerHTML = renderAnalyticsView();
       attachAnalyticsEvents();
+      break;
+
+    case "#/leaderboard":
+    case "#/scores":
+      mountPoint.innerHTML = renderLeaderboardView();
+      attachLeaderboardEvents();
       break;
 
     case "#/club-dashboard":

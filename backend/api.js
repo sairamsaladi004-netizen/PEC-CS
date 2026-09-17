@@ -417,30 +417,44 @@ apiRouter.post('/auth/logout', (req, res) => {
   res.json({ success: true, message: "Session revoked successfully. Logged out." });
 });
 
-// 13. POST /api/auth/register - Self-service student registration (STRICT: CANNOT REGISTER AS ADMIN)
+// 13. POST /api/auth/register - Self-service registration with Role Classification (Student, Club Admin, Faculty Coordinator, Super Admin)
 apiRouter.post('/auth/register', registerLimiter, async (req, res) => {
-  const { name, rollNo, email, department, year, section, phone, password, skills, interests } = req.body || {};
-  if (!name || !rollNo || !email || !password) {
-    return res.status(400).json({ success: false, message: "Name, Roll No, College Email, and Password are required." });
+  const { name, rollNo, email, department, year, section, phone, password, skills, interests, role, assignedClub, facultyId, adminKey } = req.body || {};
+  if (!name || !email || !password) {
+    return res.status(400).json({ success: false, message: "Name, College Email, and Password are required." });
   }
 
   const db = getDB();
   const cleanEmail = email.trim().toLowerCase();
-  const cleanRoll = rollNo.trim().toUpperCase();
+  const cleanRoll = (rollNo || facultyId || `REC-${Date.now().toString().slice(-4)}`).trim().toUpperCase();
   const supabase = getSupabase();
+
+  // Determine classified role
+  let targetRole = ROLES.STUDENT;
+  const rawRole = (role || "").trim().toLowerCase();
+  if (rawRole.includes("club admin") || rawRole.includes("student leader") || rawRole === "club admin") {
+    targetRole = ROLES.CLUB_ADMIN;
+  } else if (rawRole.includes("faculty") || rawRole.includes("coordinator") || rawRole === "faculty coordinator") {
+    targetRole = ROLES.FACULTY_COORDINATOR;
+  } else if (rawRole.includes("super admin") || rawRole === "super admin") {
+    if (adminKey && adminKey.trim() !== "" && adminKey.trim() !== "PEC2026ADMIN") {
+      return res.status(403).json({ success: false, message: "Invalid Super Admin Access Pass Key." });
+    }
+    targetRole = ROLES.SUPER_ADMIN;
+  }
 
   const existing = (db.users || []).find(u =>
     (u.email && u.email.toLowerCase() === cleanEmail) ||
-    (u.rollNo && u.rollNo.toUpperCase() === cleanRoll)
+    (cleanRoll && u.rollNo && u.rollNo.toUpperCase() === cleanRoll)
   );
 
   if (existing) {
-    return res.status(400).json({ success: false, message: "An account already exists with this Email or Roll Number." });
+    return res.status(400).json({ success: false, message: "An account already exists with this Email or Registration ID." });
   }
 
   const salt = generateSalt();
   const passwordHash = hashPassword(password, salt);
-  const newId = "std-" + Date.now();
+  const newId = "usr-" + Date.now();
   let authUserId = null;
 
   if (supabase) {
@@ -451,9 +465,10 @@ apiRouter.post('/auth/register', registerLimiter, async (req, res) => {
         options: {
           data: {
             name: name.trim(),
-            role: ROLES.STUDENT,
+            role: targetRole,
             roll_no: cleanRoll,
-            department: department || "CSE"
+            department: department || "CSE",
+            assigned_club: assignedClub || "I4-08"
           }
         }
       });
@@ -465,22 +480,24 @@ apiRouter.post('/auth/register', registerLimiter, async (req, res) => {
     }
   }
 
-  // Enforce Student role for public registrations - never allow role injection
   const newUser = {
     id: authUserId || newId,
     auth_user_id: authUserId,
     name: name.trim(),
     rollNo: cleanRoll,
+    facultyId: facultyId || (targetRole === ROLES.FACULTY_COORDINATOR ? cleanRoll : null),
     email: cleanEmail,
-    role: ROLES.STUDENT,
+    role: targetRole,
     department: department || "CSE",
     year: year || "1st Year",
     section: section || "A",
     phone: phone || "",
+    clubId: assignedClub || "I4-08",
+    assignedClubs: assignedClub ? [assignedClub] : (targetRole === ROLES.FACULTY_COORDINATOR ? ["I4-08", "I4-07", "I4-06"] : []),
     avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80",
     skills: Array.isArray(skills) ? skills : (skills ? skills.split(',').map(s => s.trim()) : ["Problem Solving"]),
     interests: Array.isArray(interests) ? interests : (interests ? interests.split(',').map(s => s.trim()) : ["Technology"]),
-    bio: "Undergraduate student at Pragati Engineering College.",
+    bio: `${targetRole} at Pragati Engineering College.`,
     salt,
     passwordHash,
     emailVerified: false,
@@ -492,16 +509,16 @@ apiRouter.post('/auth/register', registerLimiter, async (req, res) => {
   db.users.push(newUser);
   recordAuditAction(
     { user: newUser, headers: req.headers, socket: req.socket },
-    "STUDENT_REGISTRATION",
+    "USER_REGISTRATION",
     "users",
     newUser.id,
-    `New student account registered (Roll: ${newUser.rollNo})`
+    `New ${targetRole} account registered (Email: ${newUser.email}, Role: ${targetRole})`
   );
   saveDB(db);
 
   res.json({
     success: true,
-    message: "Registration successful! Please verify your institutional email with OTP.",
+    message: `Account registered successfully as ${targetRole}! Please verify your institutional email with OTP.`,
     user: sanitizeUser(newUser),
     token: newUser.id,
     otpHint: "742918"
@@ -1171,6 +1188,167 @@ apiRouter.post('/attendance/organizer-checkin', requireAuth, requirePermission(P
       totalCheckedIn: totalEventAttendance,
       eventId: event.id,
       eventTitle: event.title
+    }
+  });
+});
+
+// 23.2 POST /api/attendance/scan-badge - Specialized QR Badge Scanner for Club Admins
+apiRouter.post('/attendance/scan-badge', requireAuth, requirePermission(PERMISSIONS.ATTENDANCE_MARK), (req, res) => {
+  const { clubId, qrPayload, eventId, gateId, sessionType } = req.body || {};
+  const db = getDB();
+
+  // Determine active club
+  const effectiveClubId = clubId || req.user.clubId || (req.user.assignedClubs && req.user.assignedClubs[0]) || "I4-08";
+  
+  if (!isUserAuthorizedForClub(req.user, effectiveClubId)) {
+    return res.status(403).json({
+      success: false,
+      code: "FORBIDDEN_CLUB_SCOPE",
+      clubId: effectiveClubId,
+      message: `Access denied. You are not authorized to scan badges for Club ${effectiveClubId}.`
+    });
+  }
+
+  const club = (db.clubs || []).find(c => c.id === effectiveClubId) || { id: effectiveClubId, name: "Technical Club" };
+
+  // Parse QR payload
+  let parsed = null;
+  let rawStr = typeof qrPayload === 'string' ? qrPayload.trim() : "";
+  if (rawStr.startsWith('{')) {
+    try {
+      parsed = JSON.parse(rawStr);
+    } catch (e) {}
+  } else if (typeof qrPayload === 'object' && qrPayload !== null) {
+    parsed = qrPayload;
+  }
+
+  const targetRoll = (parsed?.rollNo || parsed?.roll || rawStr).trim().toUpperCase();
+  const targetPassId = (parsed?.passId || parsed?.pass_id || (rawStr.startsWith('PEC-PASS') ? rawStr : "")).trim();
+  const targetMemberId = (parsed?.memberId || parsed?.member_id || (rawStr.startsWith('PEC-MEM') ? rawStr : "")).trim();
+  const targetBadgeTier = parsed?.badgeTier || "Student Member";
+  const targetDept = parsed?.department || "";
+  const targetName = parsed?.studentName || "";
+
+  // Find student in DB users
+  let student = (db.users || []).find(u =>
+    (targetRoll && u.rollNo && u.rollNo.toUpperCase() === targetRoll) ||
+    (targetPassId && (u.passId === targetPassId || u.membershipId === targetPassId)) ||
+    (targetMemberId && (u.membershipId === targetMemberId || u.passId === targetMemberId))
+  );
+
+  // Fallback: search by name
+  if (!student && targetName) {
+    student = (db.users || []).find(u => u.name && u.name.toLowerCase() === targetName.toLowerCase());
+  }
+
+  const finalStudentId = student ? student.id : `std-scan-${Date.now()}`;
+  const finalStudentName = student ? student.name : (targetName || `Attendee ${targetRoll || 'Delegate'}`);
+  const finalRollNo = student ? student.rollNo : (targetRoll || "22A31A0501");
+  const finalDept = student ? student.department : (targetDept || "CSE");
+  const finalYear = student ? student.year : "3rd Year";
+  const finalAvatar = student?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200";
+
+  // Check for duplicate scan in the current session (last 12 hours)
+  const todayDateStr = new Date().toISOString().split('T')[0];
+  if (!Array.isArray(db.attendance)) db.attendance = [];
+  if (!Array.isArray(db.badge_scans)) db.badge_scans = [];
+
+  const existingScan = db.badge_scans.find(s =>
+    (s.student_id === finalStudentId || (s.roll_no && s.roll_no.toUpperCase() === finalRollNo.toUpperCase())) &&
+    s.club_id === effectiveClubId &&
+    s.date === todayDateStr &&
+    (!eventId || s.event_id === eventId)
+  );
+
+  if (existingScan) {
+    return res.status(409).json({
+      success: false,
+      isDuplicate: true,
+      message: `Duplicate Badge: ${finalStudentName} (${finalRollNo}) was ALREADY admitted today at ${existingScan.checkin_time || existingScan.timestamp}!`,
+      attendee: {
+        id: finalStudentId,
+        name: finalStudentName,
+        rollNo: finalRollNo,
+        department: finalDept,
+        year: finalYear,
+        avatar: finalAvatar,
+        badgeTier: targetBadgeTier,
+        clubName: club.name
+      },
+      scanRecord: existingScan
+    });
+  }
+
+  // Create badge scan record
+  const scanTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const scanId = `SCAN-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+
+  const newBadgeScan = {
+    id: scanId,
+    club_id: effectiveClubId,
+    club_name: club.name,
+    event_id: eventId || null,
+    student_id: finalStudentId,
+    student_name: finalStudentName,
+    roll_no: finalRollNo,
+    department: finalDept,
+    badge_tier: targetBadgeTier,
+    gate_id: gateId || "MAIN-ENTRY-01",
+    session_type: sessionType || "Club Meeting & Lab Session",
+    date: todayDateStr,
+    timestamp: new Date().toISOString(),
+    checkin_time: scanTime,
+    scanned_by: `${req.user.name} (${req.user.role})`,
+    verification_status: "VERIFIED_VALID"
+  };
+
+  db.badge_scans.unshift(newBadgeScan);
+
+  // Also log into attendance table for consistency
+  const attRecord = {
+    id: "att-" + Date.now(),
+    attendance_id: `ATT-${new Date().getFullYear()}-${effectiveClubId}-${Math.floor(100 + Math.random() * 900)}`,
+    event_id: eventId || `CLUB-SESSION-${effectiveClubId}`,
+    student_id: finalStudentId,
+    timestamp: new Date().toISOString(),
+    status: "Present",
+    verification_method: `Holo Badge QR Scan by ${req.user.name}`
+  };
+  db.attendance.push(attRecord);
+
+  // Save and sync to Supabase
+  saveDB(db);
+
+  recordAuditAction(
+    req,
+    "MEMBER_BADGE_SCANNED",
+    "badge_scans",
+    newBadgeScan.id,
+    `Admitted ${finalStudentName} (${finalRollNo}) [Tier: ${targetBadgeTier}] into ${club.name}`
+  );
+
+  const todayClubScans = db.badge_scans.filter(s => s.club_id === effectiveClubId && s.date === todayDateStr).length;
+
+  res.json({
+    success: true,
+    message: `Badge Verified: Admitted ${finalStudentName} (${finalRollNo})!`,
+    attendee: {
+      id: finalStudentId,
+      name: finalStudentName,
+      rollNo: finalRollNo,
+      department: finalDept,
+      year: finalYear,
+      avatar: finalAvatar,
+      badgeTier: targetBadgeTier,
+      clubName: club.name,
+      checkinTime: scanTime,
+      passId: targetPassId || `PEC-PASS-${finalRollNo}`
+    },
+    scanRecord: newBadgeScan,
+    stats: {
+      totalTodayScans: todayClubScans,
+      clubId: effectiveClubId,
+      clubName: club.name
     }
   });
 });

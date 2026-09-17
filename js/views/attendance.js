@@ -30,6 +30,10 @@ export function renderAttendanceView() {
 
         <!-- Event Selector & Online / Offline Toggle -->
         <div class="flex flex-wrap items-center gap-2">
+          <a href="#/attendance-scanner" class="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center space-x-1.5">
+            <span>📷 Club Badge Scanner</span>
+          </a>
+
           <div class="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm text-xs">
             <span id="network-status-indicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
             <span id="network-status-text" class="font-bold text-slate-700">Online Mode</span>

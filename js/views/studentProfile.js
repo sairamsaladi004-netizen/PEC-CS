@@ -58,9 +58,9 @@ export function renderStudentProfileView() {
               <span>⚡</span>
               <span>Run AI Profiler</span>
             </button>
-            <a href="#/membership-card" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center space-x-2">
-              <span>🪪</span>
-              <span>Open Redesigned Digital ID</span>
+            <a href="#/badges" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center space-x-2">
+              <span>✨</span>
+              <span>Holographic Club Badges</span>
             </a>
           </div>
         </div>

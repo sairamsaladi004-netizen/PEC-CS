@@ -61,8 +61,9 @@ export function renderStudentDashboardView(subSection = "dashboard") {
             <span>📷</span>
             <span>Scan Attendance QR</span>
           </button>
-          <a href="#/membership-card" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all">
-            Digital ID
+          <a href="#/badges" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold transition-all flex items-center space-x-1 shadow-sm">
+            <span>✨</span>
+            <span>Holo Badge</span>
           </a>
           <a href="#/student-profile" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all">
             Edit Profile

@@ -1,6 +1,6 @@
 {
   "name": "CampusTech - PEC-CS",
   "description": "Pragati Engineering College Student Club Management System: unified digital platform for 35 official technical societies, Industry 4.0 clubs, event management, and accredited credentials.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
