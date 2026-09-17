@@ -1262,28 +1262,39 @@ export const INITIAL_SEED = {
 INITIAL_SEED.auditLogs = INITIAL_SEED.audit_logs;
 INITIAL_SEED.auditLog = INITIAL_SEED.audit_logs;
 
-// Database Access & Persistence Layer
+import { initSupabaseClient, getSupabaseClient } from './supabaseClient.js';
+
+// In-memory single source of truth for runtime database
+let memoryDB = null;
+let isDbInitialized = false;
+
+// Database Access & Persistence Layer backed by Supabase & Express API
 export function getDB() {
+  if (memoryDB) return memoryDB;
+
   try {
     const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(DB_KEY) : null;
     let data;
-    if (!raw) {
-      data = JSON.parse(JSON.stringify(INITIAL_SEED));
-      saveDB(data);
-      return data;
-    }
-    data = JSON.parse(raw);
-    
-    // Auto-migration: Ensure all 35 official Pragati Engineering College clubs are loaded
-    if (!data.clubs || data.clubs.length < 35 || data.clubs.some(c => c.id === "acm" || c.id === "gdsc")) {
-      data.clubs = JSON.parse(JSON.stringify(OFFICIAL_PEC_CLUBS));
-      saveDB(data);
+    if (raw) {
+      try {
+        data = JSON.parse(raw);
+      } catch (e) {
+        data = null;
+      }
     }
 
-    // Auto-migration: Ensure events across all categories exist
+    if (!data) {
+      data = JSON.parse(JSON.stringify(INITIAL_SEED));
+    }
+    
+    // Ensure all 35 official Pragati Engineering College clubs are loaded
+    if (!data.clubs || data.clubs.length < 35 || data.clubs.some(c => c.id === "acm" || c.id === "gdsc")) {
+      data.clubs = JSON.parse(JSON.stringify(OFFICIAL_PEC_CLUBS));
+    }
+
+    // Ensure events across all categories exist
     if (!Array.isArray(data.events) || data.events.length < 10) {
       data.events = JSON.parse(JSON.stringify(INITIAL_SEED.events));
-      saveDB(data);
     }
 
     // Ensure all relational arrays exist
@@ -1297,7 +1308,6 @@ export function getDB() {
     if (!Array.isArray(data.projects) || data.projects.length < 3) data.projects = INITIAL_SEED.projects;
     if (!Array.isArray(data.certificates) || data.certificates.length < 3) {
       data.certificates = INITIAL_SEED.certificates;
-      saveDB(data);
     }
 
     // Ensure all certificate records have consistent dual naming fields
@@ -1331,20 +1341,46 @@ export function getDB() {
     data.auditLogs = data.audit_logs;
     data.auditLog = data.audit_logs;
 
-    return data;
+    memoryDB = data;
+
+    // Trigger async initialization from Supabase/Backend if not yet run
+    if (!isDbInitialized) {
+      initDB();
+    }
+
+    return memoryDB;
   } catch (err) {
-    console.error("Error reading database from localStorage:", err);
-    return JSON.parse(JSON.stringify(INITIAL_SEED));
+    console.error("Error initializing in-memory database:", err);
+    memoryDB = JSON.parse(JSON.stringify(INITIAL_SEED));
+    return memoryDB;
   }
 }
 
 export function saveDB(data) {
+  memoryDB = data;
+
+  // Persist asynchronously to the backend / Supabase PostgreSQL
+  if (typeof fetch !== 'undefined') {
+    apiRequest('/api/db/sync', 'POST', {
+      feedback: data.feedback,
+      notifications: data.notifications,
+      events: data.events,
+      announcements: data.announcements,
+      resources: data.resources,
+      projects: data.projects,
+      attendance: data.attendance
+    }).catch(err => {
+      console.warn("[SaveDB] Asynchronous sync notice:", err.message);
+    });
+  }
+
+  // Backup cache in localStorage strictly for instantaneous offline resume
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(DB_KEY, JSON.stringify(data));
     }
   } catch (err) {
-    console.error("Error saving database to localStorage:", err);
+    // Ignore storage quota warnings
   }
 }
 
@@ -1355,6 +1391,7 @@ export function resetDB() {
     localStorage.removeItem("campustech_pec_db_v1");
   }
   const clean = JSON.parse(JSON.stringify(INITIAL_SEED));
+  memoryDB = clean;
   saveDB(clean);
   return clean;
 }
@@ -1377,25 +1414,63 @@ export function logAudit(actor, action, target, details) {
   db.audit_logs.unshift(logEntry);
   db.auditLogs = db.audit_logs;
   db.auditLog = db.audit_logs;
-  saveDB(db);
+
+  // Dispatch directly to the audit log API in backend/Supabase
+  if (typeof fetch !== 'undefined') {
+    apiRequest('/api/audit-logs', 'POST', {
+      action,
+      affected_record: target,
+      details,
+      actor
+    }).catch(() => {});
+  }
+
+  return logEntry;
 }
 
-export function initDB() {
-  // Sync in background with /api/db if server is up
+export async function initDB() {
+  isDbInitialized = true;
+
+  // Initialize Supabase browser client
+  try {
+    await initSupabaseClient();
+  } catch (err) {
+    console.warn("[InitDB] Supabase client init notice:", err);
+  }
+
+  // Fetch live synchronized database from the backend Express API backed by Supabase
   if (typeof fetch !== 'undefined') {
-    fetch('/api/db')
-      .then(r => r.ok ? r.json() : null)
-      .then(serverData => {
+    try {
+      const activeUserId = typeof localStorage !== 'undefined' ? localStorage.getItem("campustech_active_user_id") : null;
+      const headers = { "Content-Type": "application/json" };
+      if (activeUserId) {
+        headers['x-user-id'] = activeUserId;
+        headers['Authorization'] = `Bearer ${activeUserId}`;
+      }
+
+      const res = await fetch('/api/db', { headers });
+      if (res.ok) {
+        const serverData = await res.json();
         if (serverData && serverData.clubs && serverData.clubs.length >= 35) {
-          const local = getDB();
-          // Merge server data with local preservation
-          const merged = { ...local, ...serverData };
-          saveDB(merged);
+          const current = memoryDB || getDB();
+          memoryDB = {
+            ...current,
+            ...serverData,
+            // Retain local client preferences if any
+            preferences: current.preferences || {}
+          };
+          // Update cache
+          try {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem(DB_KEY, JSON.stringify(memoryDB));
+            }
+          } catch (e) {}
+          console.log(`[InitDB] Synchronized ${memoryDB.clubs.length} clubs and ${memoryDB.events?.length || 0} events from Supabase backend.`);
         }
-      })
-      .catch(err => {
-        // Silently use cached local db
-      });
+      }
+    } catch (err) {
+      console.warn("[InitDB] Backend fetch notice:", err.message);
+    }
   }
   return getDB();
 }
@@ -1407,11 +1482,29 @@ export async function apiRequest(endpoint, method = "GET", body = null) {
       method,
       headers: { "Content-Type": "application/json" }
     };
-    const activeUserId = typeof localStorage !== 'undefined' ? localStorage.getItem("campustech_active_user_id") : null;
-    if (activeUserId) {
-      opts.headers['x-user-id'] = activeUserId;
-      opts.headers['Authorization'] = `Bearer ${activeUserId}`;
+    
+    // Check for Supabase Auth Session token first
+    let token = null;
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          token = session.access_token;
+        }
+      } catch (e) {}
     }
+
+    const activeUserId = typeof localStorage !== 'undefined' ? localStorage.getItem("campustech_active_user_id") : null;
+    if (!token && activeUserId) {
+      token = activeUserId;
+    }
+
+    if (token) {
+      opts.headers['x-user-id'] = activeUserId || token;
+      opts.headers['Authorization'] = `Bearer ${token}`;
+    }
+
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(endpoint, opts);
     const data = await res.json();

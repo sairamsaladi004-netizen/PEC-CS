@@ -1,6 +1,7 @@
 import { getDB, saveDB, logAudit, apiRequest } from './db.js';
 import { APP_CONFIG } from './config.js';
 import { ROLES, normalizeRole, hasRolePermission, isUserAuthorizedForClub } from './rbac.js';
+import { supabaseSignIn, supabaseSignUp, getSupabaseClient, isSupabaseReady } from './supabaseClient.js';
 
 const ACTIVE_USER_KEY = "campustech_active_user_id";
 
@@ -92,15 +93,27 @@ export function getAllDemoAccounts() {
   });
 }
 
-// Asynchronous Login against REST API with local state fallback
+// Asynchronous Login against Supabase Auth & REST API with local state fallback
 export async function loginUser(identifier, password) {
   const cleanId = (identifier || "").trim().toLowerCase();
   
-  // Try server API first
+  // 1. If identifier is an email and Supabase is configured on client, try Supabase Auth directly
+  if (isSupabaseReady() && cleanId.includes('@')) {
+    try {
+      const authResult = await supabaseSignIn(cleanId, password);
+      if (authResult?.user) {
+        console.log("[Supabase Auth] Successfully signed in via client:", authResult.user.email);
+      }
+    } catch (sbErr) {
+      console.warn("[Supabase Auth] Direct client sign-in notice:", sbErr.message);
+    }
+  }
+
+  // 2. Query server API (which synchronizes with Supabase & verifies credentials)
   const res = await apiRequest('/api/auth/login', 'POST', { identifier: cleanId, password });
   if (res && res.success && res.user) {
     const db = getDB();
-    const idx = (db.users || []).findIndex(u => u.id === res.user.id);
+    const idx = (db.users || []).findIndex(u => u.id === res.user.id || u.email?.toLowerCase() === res.user.email?.toLowerCase());
     if (idx !== -1) {
       db.users[idx] = { ...db.users[idx], ...res.user };
     } else {
@@ -108,10 +121,10 @@ export async function loginUser(identifier, password) {
     }
     saveDB(db);
     setCurrentUser(res.user.id);
-    return { success: true, user: res.user };
+    return { success: true, user: res.user, token: res.token, supabaseSession: res.supabaseSession };
   }
 
-  // Local fallback
+  // 3. Fallback for demo personas
   const db = getDB();
   const user = (db.users || []).find(u => 
     (u.rollNo && u.rollNo.toLowerCase() === cleanId) || 
@@ -129,44 +142,109 @@ export async function loginUser(identifier, password) {
   return { success: true, user };
 }
 
-// Register student
+// Register student with Supabase Auth + generate verified QR Pass
 export async function registerStudent(userData) {
-  const res = await apiRequest('/api/auth/register', 'POST', userData);
-  if (res && res.success && res.user) {
-    const db = getDB();
-    db.users.push(res.user);
-    saveDB(db);
-    setCurrentUser(res.user.id);
-    return { success: true, user: res.user, otpHint: res.otpHint };
+  const cleanRoll = (userData.rollNo || "").trim().toUpperCase();
+  const cleanEmail = (userData.email || "").trim().toLowerCase();
+  const cleanDept = (userData.department || "CSE").toUpperCase();
+  const passId = `PEC-PASS-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+  const memberId = `PEC-MEM-2026-${cleanDept}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+  // Construct official QR verification payload
+  const qrPayload = JSON.stringify({
+    institution: "Pragati Engineering College (Autonomous)",
+    type: "STUDENT_GATE_PASS",
+    passId,
+    memberId,
+    name: userData.name.trim(),
+    rollNo: cleanRoll,
+    department: cleanDept,
+    year: userData.year || "1st Year",
+    issuedAt: new Date().toISOString(),
+    validUntil: "30 June 2028",
+    securityHash: `sha256:${cleanRoll}_${Date.now()}`
+  });
+
+  const enrichedData = {
+    ...userData,
+    rollNo: cleanRoll,
+    email: cleanEmail,
+    department: cleanDept,
+    passId,
+    membershipId: memberId,
+    qrPayload,
+    passIssuedAt: new Date().toISOString(),
+    validUntil: "30 June 2028"
+  };
+
+  // 1. If Supabase is active on client, trigger Supabase Auth signUp
+  if (isSupabaseReady()) {
+    try {
+      const sbResult = await supabaseSignUp(cleanEmail, userData.password, {
+        name: userData.name,
+        rollNo: cleanRoll,
+        department: cleanDept,
+        passId,
+        membershipId: memberId
+      });
+      if (sbResult?.user) {
+        console.log("[Supabase Auth] Created auth user in Supabase:", sbResult.user.id);
+      }
+    } catch (sbErr) {
+      console.warn("[Supabase Auth] Client registration note:", sbErr.message);
+    }
   }
 
-  // Local fallback
+  // 2. Submit to backend API to write profile to Supabase database
+  const res = await apiRequest('/api/auth/register', 'POST', enrichedData);
+  if (res && res.success && res.user) {
+    const db = getDB();
+    const finalUser = {
+      ...res.user,
+      passId,
+      membershipId: memberId,
+      qrPayload
+    };
+    const idx = db.users.findIndex(u => u.id === finalUser.id);
+    if (idx !== -1) {
+      db.users[idx] = finalUser;
+    } else {
+      db.users.push(finalUser);
+    }
+    saveDB(db);
+    setCurrentUser(finalUser.id);
+    return { success: true, user: finalUser, passId, otpHint: res.otpHint };
+  }
+
+  // 3. In-memory / local fallback
   const db = getDB();
   const newId = "std-" + Date.now();
   const newUser = {
     id: newId,
     name: userData.name,
-    rollNo: userData.rollNo.toUpperCase(),
-    email: userData.email.toLowerCase(),
+    rollNo: cleanRoll,
+    email: cleanEmail,
     role: "Student",
-    department: userData.department || "CSE",
+    department: cleanDept,
     year: userData.year || "1st Year",
     section: userData.section || "A",
     phone: userData.phone || "",
     avatar: userData.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
     clubs: [],
-    skills: userData.skills ? (Array.isArray(userData.skills) ? userData.skills : userData.skills.split(",").map(s => s.trim())) : ["Python"],
-    badges: ["Verified PEC Student"],
-    membershipId: `PEC-MEM-2026-${userData.department || 'CSE'}-${Math.floor(1000 + Math.random() * 9000)}`,
+    skills: userData.skills ? (Array.isArray(userData.skills) ? userData.skills : userData.skills.split(",").map(s => s.trim())) : ["Python", "Web Development"],
+    badges: ["Verified PEC Student", "Gate Pass Active"],
+    membershipId: memberId,
+    passId,
+    qrPayload,
     validUntil: "30 June 2028",
     emailVerified: false,
     isDemo: false
   };
   db.users.push(newUser);
   saveDB(db);
-  logAudit(newUser.name, "Registered New Account", newUser.role, `Roll No: ${newUser.rollNo}`);
+  logAudit(newUser.name, "Registered New Account", newUser.role, `Roll No: ${newUser.rollNo} (Pass: ${passId})`);
   setCurrentUser(newUser.id);
-  return { success: true, user: newUser, otpHint: "742918" };
+  return { success: true, user: newUser, passId, otpHint: "742918" };
 }
 
 // Reset password

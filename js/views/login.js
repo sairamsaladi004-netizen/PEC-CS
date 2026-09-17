@@ -186,22 +186,29 @@ export function renderLoginView() {
       <div id="otp-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl space-y-4">
           <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl mx-auto">
-            ✉️
+            🎫
           </div>
           <div class="text-center">
-            <h3 class="text-lg font-bold text-slate-900">Institutional Email Verification</h3>
+            <h3 class="text-lg font-bold text-slate-900">Student Gate Pass & Verification</h3>
             <p class="text-xs text-slate-500 mt-1">
-              A 6-digit verification code has been dispatched to your Pragati institutional email address.
+              Your official Digital Pass has been generated. Enter the 6-digit verification code sent to your Pragati email to activate your account.
             </p>
           </div>
+
+          <div id="generated-pass-banner" class="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 text-center space-y-1">
+            <div class="text-[10px] font-bold text-blue-600 uppercase tracking-wider font-mono">Assigned Digital Pass ID</div>
+            <div id="assigned-pass-id-display" class="text-sm font-black text-slate-900 font-mono">PEC-PASS-2026-ACTIVE</div>
+            <div class="text-[10px] text-slate-500">QR Gate Pass is ready and synced to your student profile.</div>
+          </div>
+
           <div id="otp-alert" class="hidden p-2.5 rounded-xl text-xs font-medium"></div>
           <div>
-            <input type="text" id="otp-input" maxlength="6" placeholder="Enter 6-digit OTP (e.g. 742918)" class="w-full text-center tracking-widest text-lg font-mono font-bold py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500" />
-            <p class="text-[11px] text-center text-slate-400 mt-1.5 font-mono">Demo evaluation OTP: <strong class="text-emerald-700">742918</strong></p>
+            <input type="text" id="otp-input" maxlength="6" value="742918" placeholder="Enter 6-digit OTP (e.g. 742918)" class="w-full text-center tracking-widest text-lg font-mono font-bold py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500" />
+            <p class="text-[11px] text-center text-slate-400 mt-1.5 font-mono">Demo evaluation OTP: <strong class="text-emerald-700 font-bold">742918</strong></p>
           </div>
           <div class="flex space-x-2">
-            <button id="verify-otp-btn" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all">
-              Verify & Enter Portal
+            <button id="verify-otp-btn" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-md">
+              Verify & Open Pass Profile
             </button>
             <button id="cancel-otp-btn" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold">
               Cancel
@@ -319,6 +326,10 @@ export function attachLoginEvents() {
     const res = await registerStudent({ name, rollNo, email, phone, department, year, section, password, skills });
     if (res.success) {
       pendingUserId = res.user.id;
+      const passDisplay = document.getElementById("assigned-pass-id-display");
+      if (passDisplay) {
+        passDisplay.textContent = res.passId || res.user.passId || `PEC-PASS-2026-${res.user.rollNo}`;
+      }
       document.getElementById("otp-modal").classList.remove("hidden");
     } else {
       alertBox.className = "p-3 rounded-xl text-xs font-medium bg-rose-50 text-rose-700 block";
@@ -335,9 +346,9 @@ export function attachLoginEvents() {
     const res = await verifyEmailWithOTP(pendingUserId, otp);
     if (res.success) {
       alertBox.className = "p-2.5 rounded-xl text-xs font-medium bg-emerald-50 text-emerald-700 block";
-      alertBox.textContent = "Email verified! Launching student dashboard...";
+      alertBox.textContent = "Pass activated! Opening your official Digital Identity...";
       setTimeout(() => {
-        window.location.hash = "#/student/dashboard";
+        window.location.hash = "#/student/profile";
       }, 500);
     } else {
       alertBox.className = "p-2.5 rounded-xl text-xs font-medium bg-rose-50 text-rose-700 block";

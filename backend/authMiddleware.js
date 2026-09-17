@@ -1,11 +1,12 @@
-import { getDB, logAudit } from './db.js';
+import { getDB, logAudit, getSupabase } from './db.js';
 import { ROLES, normalizeRole, hasRolePermission, isUserAuthorizedForClub } from './rbac.js';
 
-// Resolve caller authentication from headers
-export function authenticateUser(req, res, next) {
+// Resolve caller authentication from headers (supports Supabase Auth JWTs & Persona Tokens)
+export async function authenticateUser(req, res, next) {
   const authHeader = req.headers['authorization'];
   const xUserId = req.headers['x-user-id'];
   const db = getDB();
+  const supabase = getSupabase();
 
   let tokenOrId = null;
   if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -15,6 +16,45 @@ export function authenticateUser(req, res, next) {
   }
 
   if (tokenOrId && tokenOrId !== 'guest') {
+    // Check if token is a Supabase JWT (format: xxx.yyy.zzz)
+    if (supabase && tokenOrId.includes('.') && tokenOrId.split('.').length === 3) {
+      try {
+        const { data: { user: authUser }, error } = await supabase.auth.getUser(tokenOrId);
+        if (authUser && !error) {
+          let profile = (db.users || []).find(u =>
+            (u.auth_user_id && u.auth_user_id === authUser.id) ||
+            (u.id === authUser.id) ||
+            (u.email && u.email.toLowerCase() === (authUser.email || '').toLowerCase())
+          );
+
+          if (!profile) {
+            // Profile created from Supabase Auth identity
+            profile = {
+              id: authUser.id,
+              auth_user_id: authUser.id,
+              email: authUser.email,
+              name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email.split('@')[0],
+              role: authUser.user_metadata?.role || ROLES.STUDENT,
+              emailVerified: !!authUser.email_confirmed_at,
+              department: authUser.user_metadata?.department || "CSE"
+            };
+            if (!Array.isArray(db.users)) db.users = [];
+            db.users.push(profile);
+          }
+
+          req.user = {
+            ...profile,
+            role: normalizeRole(profile.role),
+            supabaseAuthUser: authUser
+          };
+          return next();
+        }
+      } catch (err) {
+        console.warn("[Auth Middleware] Supabase JWT verification warning:", err.message);
+      }
+    }
+
+    // Lookup by user ID / email / rollNo in database
     const user = (db.users || []).find(u =>
       u.id === tokenOrId ||
       (u.email && u.email.toLowerCase() === tokenOrId.toLowerCase()) ||

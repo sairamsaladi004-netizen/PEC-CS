@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { apiRouter } from './backend/api.js';
+import { fetchFullDatabaseFromSupabase, isSupabaseConfigured } from './backend/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -9,6 +10,13 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 const HOST = '0.0.0.0';
+
+// Trigger initial Supabase synchronization if credentials present
+if (isSupabaseConfigured()) {
+  fetchFullDatabaseFromSupabase().catch(err => {
+    console.warn("[Server Startup] Supabase warm-up notice:", err.message);
+  });
+}
 
 // Body parser
 app.use(express.json());

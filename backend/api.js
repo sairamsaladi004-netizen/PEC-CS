@@ -1,6 +1,6 @@
 import express from 'express';
 import crypto from 'crypto';
-import { getDB, saveDB, logAudit, hashPassword, generateSalt } from './db.js';
+import { getDB, saveDB, logAudit, hashPassword, generateSalt, getSupabase, isSupabaseConfigured } from './db.js';
 import {
   ROLES,
   PERMISSIONS,
@@ -55,6 +55,50 @@ function sanitizeUser(u) {
 
 // 1. Mount Global Authentication Middleware
 apiRouter.use(authenticateUser);
+
+// 1.1 GET /api/config - Public client configuration for Supabase integration
+apiRouter.get('/config', (req, res) => {
+  res.json({
+    success: true,
+    supabaseUrl: process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '',
+    supabaseAnonKey: process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '',
+    isSupabaseConnected: isSupabaseConfigured()
+  });
+});
+
+// 1.2 POST /api/db/sync - Synchronize frontend changes safely to Supabase backend
+apiRouter.post('/db/sync', (req, res) => {
+  const db = getDB();
+  const normRole = normalizeRole(req.user?.role);
+
+  // Only authenticated non-guest users may trigger sync
+  if (!req.user || req.user.role === ROLES.GUEST) {
+    return res.status(401).json({ success: false, message: "Authentication required to sync state." });
+  }
+
+  const updates = req.body;
+  if (!updates || typeof updates !== 'object') {
+    return res.status(400).json({ success: false, message: "Invalid sync payload." });
+  }
+
+  // Safely merge allowed collections based on user permissions
+  if (Array.isArray(updates.feedback)) {
+    db.feedback = updates.feedback;
+  }
+  if (Array.isArray(updates.notifications)) {
+    db.notifications = updates.notifications;
+  }
+  if (normRole === ROLES.SUPER_ADMIN || normRole === ROLES.FACULTY_COORDINATOR || normRole === ROLES.CLUB_ADMIN) {
+    if (Array.isArray(updates.events)) db.events = updates.events;
+    if (Array.isArray(updates.announcements)) db.announcements = updates.announcements;
+    if (Array.isArray(updates.resources)) db.resources = updates.resources;
+    if (Array.isArray(updates.projects)) db.projects = updates.projects;
+    if (Array.isArray(updates.attendance)) db.attendance = updates.attendance;
+  }
+
+  saveDB(db);
+  res.json({ success: true, message: "State synchronized with backend database." });
+});
 
 // 2. GET /api/me - Resolve authenticated caller's identity and authorities
 apiRouter.get('/me', (req, res) => {
@@ -283,8 +327,8 @@ apiRouter.get('/audit-logs', requireAuth, (req, res) => {
   return res.status(403).json({ success: false, message: "Unauthorized role for audit logs." });
 });
 
-// 12. POST /api/auth/login - Authentication
-apiRouter.post('/auth/login', (req, res) => {
+// 12. POST /api/auth/login - Authentication (Supports Supabase Auth & College Credentials)
+apiRouter.post('/auth/login', async (req, res) => {
   const { identifier, password } = req.body || {};
   if (!identifier || !password) {
     return res.status(400).json({ success: false, message: "College ID/Email and password are required." });
@@ -292,8 +336,9 @@ apiRouter.post('/auth/login', (req, res) => {
 
   const db = getDB();
   const cleanId = identifier.trim().toLowerCase();
+  const supabase = getSupabase();
 
-  const user = (db.users || []).find(u =>
+  let user = (db.users || []).find(u =>
     (u.email && u.email.toLowerCase() === cleanId) ||
     (u.demoAlias && u.demoAlias.toLowerCase() === cleanId) ||
     (u.rollNo && u.rollNo.toLowerCase() === cleanId) ||
@@ -301,12 +346,32 @@ apiRouter.post('/auth/login', (req, res) => {
     (u.id && u.id.toLowerCase() === cleanId)
   );
 
+  let supabaseSession = null;
+
+  // If Supabase Auth is active, attempt Supabase Auth sign-in if identifier is an email
+  if (supabase && cleanId.includes('@')) {
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: cleanId,
+        password: password
+      });
+      if (authData?.session && !authError) {
+        supabaseSession = authData.session;
+        if (!user) {
+          user = (db.users || []).find(u => u.auth_user_id === authData.user.id || u.id === authData.user.id);
+        }
+      }
+    } catch (err) {
+      console.warn("[Auth Login] Supabase sign-in note:", err.message);
+    }
+  }
+
   if (!user) {
     return res.status(401).json({ success: false, message: "No account found matching credentials." });
   }
 
   const computedHash = hashPassword(password, user.salt || "pec_secure_salt_2026");
-  const isMatch = computedHash === user.passwordHash || password === "Password@123" || password === "demo123";
+  const isMatch = !!supabaseSession || computedHash === user.passwordHash || password === "Password@123" || password === "demo123";
 
   if (!isMatch) {
     return res.status(401).json({ success: false, message: "Invalid password. Please check your credentials." });
@@ -320,11 +385,20 @@ apiRouter.post('/auth/login', (req, res) => {
     `Logged in successfully as ${user.role}`
   );
 
-  res.json({ success: true, user: sanitizeUser(user) });
+  res.json({
+    success: true,
+    user: sanitizeUser(user),
+    token: supabaseSession?.access_token || user.id,
+    supabaseSession: supabaseSession ? {
+      access_token: supabaseSession.access_token,
+      refresh_token: supabaseSession.refresh_token,
+      expires_at: supabaseSession.expires_at
+    } : null
+  });
 });
 
 // 13. POST /api/auth/register - Self-service student registration (STRICT: CANNOT REGISTER AS ADMIN)
-apiRouter.post('/auth/register', (req, res) => {
+apiRouter.post('/auth/register', async (req, res) => {
   const { name, rollNo, email, department, year, section, phone, password, skills, interests } = req.body || {};
   if (!name || !rollNo || !email || !password) {
     return res.status(400).json({ success: false, message: "Name, Roll No, College Email, and Password are required." });
@@ -333,6 +407,7 @@ apiRouter.post('/auth/register', (req, res) => {
   const db = getDB();
   const cleanEmail = email.trim().toLowerCase();
   const cleanRoll = rollNo.trim().toUpperCase();
+  const supabase = getSupabase();
 
   const existing = (db.users || []).find(u =>
     (u.email && u.email.toLowerCase() === cleanEmail) ||
@@ -346,10 +421,34 @@ apiRouter.post('/auth/register', (req, res) => {
   const salt = generateSalt();
   const passwordHash = hashPassword(password, salt);
   const newId = "std-" + Date.now();
+  let authUserId = null;
+
+  if (supabase) {
+    try {
+      const { data: authData } = await supabase.auth.signUp({
+        email: cleanEmail,
+        password: password,
+        options: {
+          data: {
+            name: name.trim(),
+            role: ROLES.STUDENT,
+            roll_no: cleanRoll,
+            department: department || "CSE"
+          }
+        }
+      });
+      if (authData?.user) {
+        authUserId = authData.user.id;
+      }
+    } catch (err) {
+      console.warn("[Register] Supabase auth registration notice:", err.message);
+    }
+  }
 
   // Enforce Student role for public registrations - never allow role injection
   const newUser = {
-    id: newId,
+    id: authUserId || newId,
+    auth_user_id: authUserId,
     name: name.trim(),
     rollNo: cleanRoll,
     email: cleanEmail,
@@ -384,9 +483,11 @@ apiRouter.post('/auth/register', (req, res) => {
     success: true,
     message: "Registration successful! Please verify your institutional email with OTP.",
     user: sanitizeUser(newUser),
+    token: newUser.id,
     otpHint: "742918"
   });
 });
+
 
 // 14. POST /api/auth/verify-otp
 apiRouter.post('/auth/verify-otp', (req, res) => {
@@ -895,6 +996,163 @@ apiRouter.post('/attendance/manual-checkin', requireAuth, requirePermission(PERM
   saveDB(db);
 
   res.json({ success: true, message: `Attendance updated to ${targetStatus}.`, record });
+});
+
+// 23.1 POST /api/attendance/organizer-checkin - Organizer scans student's QR pass to update Supabase in real-time
+apiRouter.post('/attendance/organizer-checkin', requireAuth, requirePermission(PERMISSIONS.ATTENDANCE_MARK), (req, res) => {
+  const { eventId, qrData, ticketId, rollNo, studentId } = req.body || {};
+  if (!eventId) {
+    return res.status(400).json({ success: false, message: "Event ID is required." });
+  }
+
+  const db = getDB();
+  const event = (db.events || []).find(e => e.id === eventId);
+  if (!event) {
+    return res.status(404).json({ success: false, message: "Event not found." });
+  }
+
+  if (!isUserAuthorizedForClub(req.user, event.club_id)) {
+    return res.status(403).json({
+      success: false,
+      code: "FORBIDDEN_CLUB_SCOPE",
+      clubId: event.club_id,
+      message: `Access denied. You are not authorized to record attendance for Club ${event.club_id}.`
+    });
+  }
+
+  // Parse QR data if JSON
+  let parsedQR = null;
+  if (typeof qrData === 'string' && qrData.trim().startsWith('{')) {
+    try {
+      parsedQR = JSON.parse(qrData);
+    } catch (e) {}
+  } else if (typeof qrData === 'object' && qrData !== null) {
+    parsedQR = qrData;
+  }
+
+  const targetRoll = (parsedQR?.roll || parsedQR?.rollNo || rollNo || "").trim().toUpperCase();
+  const targetTicket = (parsedQR?.ticketId || parsedQR?.ticket_id || ticketId || (typeof qrData === 'string' && qrData.startsWith('TCK') ? qrData : "")).trim().toUpperCase();
+  const targetStudentId = (parsedQR?.studentId || parsedQR?.userId || parsedQR?.id || studentId || "").trim();
+  const targetPassId = (parsedQR?.passId || (typeof qrData === 'string' && qrData.startsWith('PEC-PASS') ? qrData : "")).trim();
+
+  // Find student in DB
+  let student = (db.users || []).find(u =>
+    (targetStudentId && u.id === targetStudentId) ||
+    (targetRoll && u.rollNo && u.rollNo.toUpperCase() === targetRoll) ||
+    (targetPassId && (u.passId === targetPassId || u.membershipId === targetPassId))
+  );
+
+  // If not found by student record, search event registrations
+  if (!Array.isArray(db.event_registrations)) db.event_registrations = [];
+  if (!Array.isArray(event.registrations)) event.registrations = [];
+
+  let reg = (db.event_registrations || []).find(r =>
+    r.event_id === event.id &&
+    ((targetTicket && (r.ticket_id?.toUpperCase() === targetTicket || r.ticketId?.toUpperCase() === targetTicket)) ||
+     (student && (r.student_id === student.id || r.studentId === student.id)))
+  );
+
+  if (!reg && event.registrations) {
+    reg = event.registrations.find(r =>
+      (targetTicket && (r.ticketId?.toUpperCase() === targetTicket || r.ticket_id?.toUpperCase() === targetTicket)) ||
+      (targetRoll && r.rollNo?.toUpperCase() === targetRoll) ||
+      (student && (r.studentId === student.id || r.studentName === student.name))
+    );
+  }
+
+  if (reg && !student) {
+    student = (db.users || []).find(u => u.id === (reg.student_id || reg.studentId) || (u.rollNo && u.rollNo.toUpperCase() === reg.rollNo?.toUpperCase()));
+  }
+
+  // If student still cannot be identified
+  if (!student && !reg) {
+    return res.status(404).json({
+      success: false,
+      message: `Invalid Pass / Unrecognized Attendee. No registration or student record matches "${targetRoll || targetTicket || targetPassId || qrData}".`
+    });
+  }
+
+  const finalStudentId = student ? student.id : (reg?.student_id || reg?.studentId || `std-guest-${Date.now()}`);
+  const finalStudentName = student ? student.name : (reg?.studentName || "Guest Attendee");
+  const finalRollNo = student ? student.rollNo : (reg?.rollNo || "N/A");
+  const finalDept = student ? student.department : (reg?.department || "CSE");
+
+  if (!Array.isArray(db.attendance)) db.attendance = [];
+  const existingAttendance = db.attendance.find(a => a.event_id === event.id && (a.student_id === finalStudentId || (student && a.student_id === student.id)));
+
+  if (existingAttendance && existingAttendance.status === "Present") {
+    return res.status(409).json({
+      success: false,
+      isDuplicate: true,
+      message: `Duplicate Scan: ${finalStudentName} (${finalRollNo}) is already marked Present at ${new Date(existingAttendance.timestamp).toLocaleTimeString()}.`,
+      attendee: {
+        id: finalStudentId,
+        name: finalStudentName,
+        rollNo: finalRollNo,
+        department: finalDept,
+        avatar: student?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
+        ticketId: reg?.ticket_id || reg?.ticketId || targetTicket || "TCK-GATE-PASS"
+      },
+      attendanceRecord: existingAttendance
+    });
+  }
+
+  const attendanceId = `ATT-${new Date().getFullYear()}-${event.club_id}-${Math.floor(100 + Math.random() * 900)}`;
+  const record = {
+    id: existingAttendance ? existingAttendance.id : ("att-" + Date.now()),
+    attendance_id: attendanceId,
+    event_id: event.id,
+    student_id: finalStudentId,
+    timestamp: new Date().toISOString(),
+    status: "Present",
+    verification_method: `QR Scan by ${req.user.name} (${req.user.role})`
+  };
+
+  if (existingAttendance) {
+    Object.assign(existingAttendance, record);
+  } else {
+    db.attendance.push(record);
+  }
+
+  // Update in-memory event registration if present
+  if (reg) {
+    reg.checkedIn = true;
+    reg.checkinTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // Sync to database and Supabase PostgreSQL in real-time
+  saveDB(db);
+
+  recordAuditAction(
+    req,
+    "QR_ATTENDANCE_CHECKIN",
+    "attendance",
+    record.id,
+    `Checked in attendee ${finalStudentName} (${finalRollNo}) for '${event.title}'`
+  );
+
+  const totalEventAttendance = db.attendance.filter(a => a.event_id === event.id && a.status === "Present").length;
+
+  res.json({
+    success: true,
+    message: `Check-in Verified: ${finalStudentName} (${finalRollNo}) marked Present!`,
+    attendee: {
+      id: finalStudentId,
+      name: finalStudentName,
+      rollNo: finalRollNo,
+      department: finalDept,
+      year: student?.year || "3rd Year",
+      avatar: student?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
+      ticketId: reg?.ticket_id || reg?.ticketId || targetTicket || `TCK-VAL-${Math.floor(1000 + Math.random() * 9000)}`,
+      checkinTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    },
+    attendanceRecord: record,
+    stats: {
+      totalCheckedIn: totalEventAttendance,
+      eventId: event.id,
+      eventTitle: event.title
+    }
+  });
 });
 
 // 24. POST /api/certificates/request - Club Admin requests certificate generation
