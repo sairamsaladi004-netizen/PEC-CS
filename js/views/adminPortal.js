@@ -286,24 +286,30 @@ function renderAdminTabContent(tab, ctx) {
                     <th class="p-3">Department</th>
                     <th class="p-3">Designated Faculty Coordinator</th>
                     <th class="p-3">Classification</th>
-                    <th class="p-3 text-right">Charter</th>
+                    <th class="p-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                  ${(db.clubs || []).map(c => `
+                  ${(db.clubs || []).map(c => {
+                    const facultyName = typeof c.facultyCoordinator === 'object' ? c.facultyCoordinator.name : (c.facultyCoordinator || "Coordinator");
+                    return `
                     <tr class="hover:bg-slate-50/60">
                       <td class="p-3 font-mono font-bold text-slate-700">${c.id}</td>
                       <td class="p-3 font-bold text-slate-900">${c.name}</td>
                       <td class="p-3 font-semibold text-blue-700">${c.department}</td>
-                      <td class="p-3 text-slate-700 font-medium">${c.facultyCoordinator}</td>
+                      <td class="p-3 text-slate-700 font-medium">${facultyName}</td>
                       <td class="p-3 text-slate-500">${c.category}</td>
-                      <td class="p-3 text-right">
+                      <td class="p-3 text-right space-x-1">
                         <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
                           CHARTERED
                         </span>
+                        <a href="#/club-dashboard?id=${c.id}" class="inline-block px-2.5 py-1 rounded-lg bg-slate-900 text-white text-[10px] font-bold hover:bg-slate-800 transition-colors">
+                          Open Dashboard
+                        </a>
                       </td>
                     </tr>
-                  `).join('')}
+                    `;
+                  }).join('')}
                 </tbody>
               </table>
             </div>

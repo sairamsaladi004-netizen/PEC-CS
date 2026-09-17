@@ -79,10 +79,10 @@ export function requirePermission(permission) {
   };
 }
 
-// Enforce Club Scope: User must be Super Admin or authorized for the specific clubId
+// Enforce Club Scope: User must be Super Admin, Department Admin (for dept clubs), Faculty Coordinator (for assigned clubs), or Club Admin (for own club)
 export function requireClubScope(getClubIdFn) {
   return (req, res, next) => {
-    const clubId = typeof getClubIdFn === 'function' ? getClubIdFn(req) : (req.params.clubId || req.body.club_id || req.body.clubId);
+    const clubId = typeof getClubIdFn === 'function' ? getClubIdFn(req) : (req.params.clubId || req.params.id || req.body.club_id || req.body.clubId || req.query.clubId || req.query.id);
 
     if (!clubId) {
       return res.status(400).json({
@@ -91,13 +91,14 @@ export function requireClubScope(getClubIdFn) {
       });
     }
 
-    if (!isUserAuthorizedForClub(req.user, clubId)) {
+    const db = getDB();
+    if (!isUserAuthorizedForClub(req.user, clubId, db)) {
       return res.status(403).json({
         success: false,
         code: "FORBIDDEN_CLUB_SCOPE",
         clubId,
         userRole: req.user.role,
-        message: `Cross-club access violation. You are not authorized to access or manage records for Club ${clubId}.`
+        message: `Cross-club access violation. As a ${req.user.role}, you are not authorized to access or manage records for Club ${clubId}.`
       });
     }
 

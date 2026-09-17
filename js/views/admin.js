@@ -1,6 +1,7 @@
 import { getDB, saveDB, logAudit, resetDB } from '../db.js';
 import { getCurrentUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
+import { showConfirmModal } from '../components/confirmModal.js';
 
 export function renderAdminView(params = {}) {
   const db = getDB();
@@ -631,11 +632,15 @@ export function attachAdminEvents() {
   const resetBtn = document.getElementById("reset-db-btn");
   if (resetBtn) {
     resetBtn.addEventListener("click", () => {
-      if (confirm("Reset database to initial baseline seed?")) {
-        resetDB();
-        showToast("Database Reset", "Seed restored.", "info");
-        setTimeout(() => window.location.reload(), 300);
-      }
+      showConfirmModal(
+        "Reset Database",
+        "Are you sure you want to reset the database to the initial baseline seed? This action cannot be undone and will erase all current data.",
+        () => {
+          resetDB();
+          showToast("Database Reset", "Seed restored.", "info");
+          setTimeout(() => window.location.reload(), 300);
+        }
+      );
     });
   }
 
