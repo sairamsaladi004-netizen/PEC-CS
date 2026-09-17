@@ -1,5 +1,5 @@
 import { getCurrentUser } from '../auth.js';
-import { getDB, apiRequest } from '../db.js';
+import { getDB, apiRequest, saveDB } from '../db.js';
 import { showToast } from '../components/toast.js';
 import { renderPeerCircleChat, attachPeerCircleChatEvents } from '../components/peerCircleChat.js';
 import { renderCertificate } from '../utils/certificateRenderer.js';
@@ -155,6 +155,9 @@ export function renderStudentDashboardView(subSection = "dashboard") {
         qr_hash: "7e2b10ca4589d36184a2098e72c841b5903bcaef421975e810a43bc92fe98341"
       }
     ];
+    if (!db.certificates) db.certificates = [];
+    db.certificates.push(...rawCertificates);
+    saveDB();
   }
 
   const myCertificates = rawCertificates;
@@ -1182,7 +1185,7 @@ export function attachStudentDashboardEvents() {
           }, 350);
         }
       } else {
-        showToast("Error", "Could not load certificate data. Please try again.", "error");
+        showToast("Could not load certificate data. Please try again.", "error");
       }
     });
   });
@@ -1209,13 +1212,13 @@ export function attachStudentDashboardEvents() {
         showToast("Success", "Certificate downloaded successfully!", "success");
       } catch (err) {
         console.error(err);
-        showToast("Error", "Failed to download certificate image.", "error");
+        showToast("Failed to download certificate image.", "error");
       } finally {
         modalDownloadBtn.disabled = false;
         modalDownloadBtn.innerHTML = `<span>📥</span><span>Download PNG Image</span>`;
       }
     } else {
-      showToast("Error", "Certificate element not found in modal.", "error");
+      showToast("Certificate element not found in modal.", "error");
     }
   });
 

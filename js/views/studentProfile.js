@@ -558,7 +558,7 @@ export function attachStudentProfileEvents() {
           filename: `PEC-PROFILE-CERTIFICATE-${rollNumber}.png`
         });
       } else {
-        showToast("Error", "Could not locate student profile component.", "error");
+        showToast("Could not locate student profile component.", "error");
       }
     });
   }
