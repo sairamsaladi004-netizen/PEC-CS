@@ -359,11 +359,15 @@ export function attachNavbarEvents() {
   const searchTrigger = document.getElementById("nav-search-trigger");
   if (searchTrigger) {
     searchTrigger.addEventListener("click", () => {
-      const searchModal = document.getElementById("search-modal");
-      if (searchModal) {
-        searchModal.classList.remove("hidden");
-        const input = document.getElementById("search-input");
-        if (input) input.focus();
+      if (typeof window.openGlobalSearch === 'function') {
+        window.openGlobalSearch();
+      } else {
+        const modal = document.getElementById("global-search-modal");
+        if (modal) {
+          modal.classList.remove("hidden");
+          const input = document.getElementById("global-search-input");
+          if (input) input.focus();
+        }
       }
     });
   }

@@ -1,5 +1,5 @@
 import { renderNavbar, attachNavbarEvents } from './components/navbar.js';
-import { renderSearchModal } from './components/searchModal.js';
+import { renderSearchModal, attachSearchModalEvents } from './components/searchModal.js';
 import { renderAuthModal, attachAuthModalEvents } from './components/authModal.js';
 
 import { renderHomeView, attachHomeEvents } from './views/home.js';
@@ -63,6 +63,7 @@ export function handleRoute() {
 
   attachNavbarEvents();
   attachAuthModalEvents();
+  attachSearchModalEvents();
 
   const mountPoint = document.getElementById("view-container");
   if (!mountPoint) return;

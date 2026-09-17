@@ -3,6 +3,8 @@ import { getCurrentUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 import { APP_CONFIG } from '../config.js';
 import { getClubCompatibilityBreakdown } from '../intelligenceEngine.js';
+import { PermissionGuard, renderApprovalsGuard, applyDOMPermissionGuards } from '../components/permissionGuard.js';
+import { ROLES } from '../rbac.js';
 
 export function renderClubsView(params = {}) {
   const db = getDB();
@@ -165,11 +167,15 @@ export function renderClubsView(params = {}) {
               <div class="space-y-3">
                 <div class="flex items-center justify-between">
                   <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Student Executive Committee</h3>
-                  ${isClubAdmin ? `
-                    <button id="add-team-member-btn" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[11px] font-bold transition-colors">
-                      + Nominate Student
-                    </button>
-                  ` : ''}
+                  ${PermissionGuard({
+                    roles: [ROLES.CLUB_ADMIN, ROLES.FACULTY_COORDINATOR, ROLES.SUPER_ADMIN],
+                    clubId: club.id,
+                    content: `
+                      <button id="add-team-member-btn" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[11px] font-bold transition-colors">
+                        + Nominate Student
+                      </button>
+                    `
+                  })}
                 </div>
 
                 ${executiveTeam.length === 0 ? `
@@ -186,7 +192,7 @@ export function renderClubsView(params = {}) {
                           <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800">${exec.role}</span>
                         </div>
                         <div class="text-[11px] text-slate-500 font-mono">${exec.year || 'Student Member'} • ${exec.email || 'Email on file'}</div>
-                        ${(isFaculty && exec.status === 'Pending Faculty Approval') ? `
+                        ${exec.status === 'Pending Faculty Approval' ? renderApprovalsGuard(`
                           <div class="pt-2 border-t border-slate-200 flex items-center justify-end space-x-2">
                             <button data-clubid="${club.id}" data-memberindex="${idx}" class="approve-exec-btn px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px] font-bold">
                               Approve
@@ -195,7 +201,7 @@ export function renderClubsView(params = {}) {
                               Decline
                             </button>
                           </div>
-                        ` : ''}
+                        `) : ''}
                       </div>
                     `).join('')}
                   </div>

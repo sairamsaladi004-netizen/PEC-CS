@@ -1336,13 +1336,16 @@ apiRouter.get('/certificates/verify/:certId', (req, res) => {
 
 // 27. POST /api/announcements/create - Create targeted announcement (SCOPE ENFORCED)
 apiRouter.post('/announcements/create', requireAuth, requirePermission(PERMISSIONS.ANNOUNCEMENTS_CREATE), (req, res) => {
-  const { title, message, target_audience, target_id, attachment_url, pinned } = req.body || {};
-  if (!title || !message) {
-    return res.status(400).json({ success: false, message: "Title and message are required." });
+  const { title, message, content, target_audience, target_id, targetRole, department, priority, attachment_url, attachment, pinned, author } = req.body || {};
+  const effectiveMessage = (message || content || "").trim();
+  if (!title || !effectiveMessage) {
+    return res.status(400).json({ success: false, message: "Title and message/content are required." });
   }
 
+  const normRole = normalizeRole(req.user.role);
+
   // If announcement targets a specific club, check scope
-  if (target_id && target_id !== "all") {
+  if (target_id && target_id !== "all" && !target_id.startsWith("dept-")) {
     if (!isUserAuthorizedForClub(req.user, target_id)) {
       return res.status(403).json({
         success: false,
@@ -1353,26 +1356,25 @@ apiRouter.post('/announcements/create', requireAuth, requirePermission(PERMISSIO
     }
   }
 
-  // Only Super Admin can broadcast institutional/all-campus announcements
-  if (target_id === "all" && normalizeRole(req.user.role) !== ROLES.SUPER_ADMIN) {
-    return res.status(403).json({
-      success: false,
-      message: "Only Super Admin can publish campus-wide announcements."
-    });
-  }
-
   const db = getDB();
   const newAnn = {
     id: "ann-" + Date.now(),
     title: title.trim(),
-    message: message.trim(),
-    target_audience: target_audience || (target_id === "all" ? "All Campus Students" : `Club ${target_id}`),
+    content: effectiveMessage,
+    message: effectiveMessage,
+    target_audience: target_audience || (target_id === "all" ? "All Campus Students & Faculty" : `Club ${target_id}`),
+    targetRole: targetRole || "All Students & Faculty",
     target_id: target_id || "all",
+    department: department || req.user.department || "All Departments",
+    priority: priority || "normal",
+    attachment: attachment || (attachment_url ? { name: "Official_Notification.pdf", url: attachment_url } : null),
     attachment_url: attachment_url || "",
+    date: new Date().toISOString().split('T')[0],
     created_date: new Date().toISOString(),
+    author: author || `${req.user.name} (${req.user.role})`,
     created_by: `${req.user.name} (${req.user.role})`,
     expiry_date: "2026-12-31",
-    pinned: Boolean(pinned)
+    pinned: Boolean(pinned || priority === "critical")
   };
 
   if (!Array.isArray(db.announcements)) db.announcements = [];
@@ -1383,7 +1385,7 @@ apiRouter.post('/announcements/create', requireAuth, requirePermission(PERMISSIO
     "ANNOUNCEMENT_CREATED",
     "announcements",
     newAnn.id,
-    `Published notice '${newAnn.title}' (Target: ${newAnn.target_audience})`
+    `Published notice '${newAnn.title}' (Target: ${newAnn.target_audience}, Priority: ${newAnn.priority})`
   );
   saveDB(db);
 
