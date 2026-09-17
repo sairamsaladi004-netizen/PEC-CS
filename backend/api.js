@@ -1,13 +1,15 @@
 import express from 'express';
 import crypto from 'crypto';
-import { getDB, saveDB, logAudit, hashPassword, generateSalt, getSupabase, isSupabaseConfigured } from './db.js';
+import { getDB, saveDB, logAudit, hashPassword, generateSalt, verifyPassword, getSupabase, isSupabaseConfigured } from './db.js';
+import { createSession, resolveSession, revokeSession } from './sessions.js';
 import {
   ROLES,
   PERMISSIONS,
   normalizeRole,
   hasRolePermission,
   isUserAuthorizedForClub,
-  isUserAuthorizedForUserData
+  isUserAuthorizedForUserData,
+  scopeDatabaseForUser
 } from './rbac.js';
 import {
   authenticateUser,
@@ -40,6 +42,12 @@ import {
   generateAINudgeMessage,
   classifyStudentWithAI
 } from './geminiIntegration.js';
+import {
+  loginLimiter,
+  registerLimiter,
+  otpLimiter,
+  aiLimiter
+} from './rateLimiter.js';
 
 export const apiRouter = express.Router();
 
@@ -120,36 +128,10 @@ apiRouter.get('/me', (req, res) => {
   });
 });
 
-// 3. GET /api/db - Get complete sanitized database (with role-based access filtering)
+// 3. GET /api/db - Get sanitized database filtered strictly by user role and scope
 apiRouter.get('/db', (req, res) => {
   const db = getDB();
-  const normRole = normalizeRole(req.user.role);
-
-  // If student or guest, strip administrative audit logs and private details
-  let auditLogsForUser = [];
-  if (normRole === ROLES.SUPER_ADMIN) {
-    auditLogsForUser = db.audit_logs || [];
-  } else if (normRole === ROLES.FACULTY_COORDINATOR) {
-    const assigned = req.user.assignedClubs || [];
-    auditLogsForUser = (db.audit_logs || []).filter(l =>
-      assigned.some(c => (l.resource_id && l.resource_id.includes(c)) || (l.details && l.details.includes(c))) ||
-      l.user_id === req.user.id
-    );
-  } else if (normRole === ROLES.CLUB_ADMIN) {
-    const clubId = req.user.clubId || (req.user.assignedClubs && req.user.assignedClubs[0]);
-    auditLogsForUser = (db.audit_logs || []).filter(l =>
-      (clubId && ((l.resource_id && l.resource_id.includes(clubId)) || (l.details && l.details.includes(clubId)))) ||
-      l.user_id === req.user.id
-    );
-  }
-
-  const safeDB = {
-    ...db,
-    users: (db.users || []).map(sanitizeUser),
-    audit_logs: auditLogsForUser,
-    auditLogs: auditLogsForUser,
-    auditLog: auditLogsForUser
-  };
+  const safeDB = scopeDatabaseForUser(db, req.user);
   res.json(safeDB);
 });
 
@@ -327,8 +309,8 @@ apiRouter.get('/audit-logs', requireAuth, (req, res) => {
   return res.status(403).json({ success: false, message: "Unauthorized role for audit logs." });
 });
 
-// 12. POST /api/auth/login - Authentication (Supports Supabase Auth & College Credentials)
-apiRouter.post('/auth/login', async (req, res) => {
+// 12. POST /api/auth/login - Authentication (Issues cryptographically secure Session Tokens)
+apiRouter.post('/auth/login', loginLimiter, async (req, res) => {
   const { identifier, password } = req.body || {};
   if (!identifier || !password) {
     return res.status(400).json({ success: false, message: "College ID/Email and password are required." });
@@ -370,25 +352,36 @@ apiRouter.post('/auth/login', async (req, res) => {
     return res.status(401).json({ success: false, message: "No account found matching credentials." });
   }
 
-  const computedHash = hashPassword(password, user.salt || "pec_secure_salt_2026");
-  const isMatch = !!supabaseSession || computedHash === user.passwordHash || password === "Password@123" || password === "demo123";
+  const verifyResult = verifyPassword(password, user.passwordHash, user.salt);
+  const isMatch = !!supabaseSession || (verifyResult && verifyResult.valid);
 
   if (!isMatch) {
     return res.status(401).json({ success: false, message: "Invalid password. Please check your credentials." });
   }
+
+  // Automatic Migration: re-hash password with individual salt & scryptSync on successful login
+  if (verifyResult && verifyResult.needsRehash) {
+    const newSalt = generateSalt();
+    user.salt = newSalt;
+    user.passwordHash = hashPassword(password, newSalt);
+    saveDB(db);
+  }
+
+  // Create cryptographically secure 8-hour session token
+  const session = createSession(user.id);
 
   recordAuditAction(
     { user: { ...user, role: normalizeRole(user.role) }, headers: req.headers, socket: req.socket },
     "USER_LOGIN",
     "auth",
     user.id,
-    `Logged in successfully as ${user.role}`
+    `Logged in successfully as ${user.role} (Session Token Issued)`
   );
 
   res.json({
     success: true,
+    token: session.token,
     user: sanitizeUser(user),
-    token: supabaseSession?.access_token || user.id,
     supabaseSession: supabaseSession ? {
       access_token: supabaseSession.access_token,
       refresh_token: supabaseSession.refresh_token,
@@ -397,8 +390,35 @@ apiRouter.post('/auth/login', async (req, res) => {
   });
 });
 
+// 12.1 POST /api/auth/logout - Revoke session token
+apiRouter.post('/auth/logout', (req, res) => {
+  const authHeader = req.headers['authorization'];
+  let token = null;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7).trim();
+  } else if (req.body && req.body.token) {
+    token = req.body.token;
+  }
+
+  if (token) {
+    revokeSession(token);
+  }
+
+  if (req.user && req.user.role !== ROLES.GUEST) {
+    recordAuditAction(
+      { user: req.user, headers: req.headers, socket: req.socket },
+      "USER_LOGOUT",
+      "auth",
+      req.user.id,
+      `User ${req.user.name} signed out and revoked session token.`
+    );
+  }
+
+  res.json({ success: true, message: "Session revoked successfully. Logged out." });
+});
+
 // 13. POST /api/auth/register - Self-service student registration (STRICT: CANNOT REGISTER AS ADMIN)
-apiRouter.post('/auth/register', async (req, res) => {
+apiRouter.post('/auth/register', registerLimiter, async (req, res) => {
   const { name, rollNo, email, department, year, section, phone, password, skills, interests } = req.body || {};
   if (!name || !rollNo || !email || !password) {
     return res.status(400).json({ success: false, message: "Name, Roll No, College Email, and Password are required." });
@@ -490,7 +510,7 @@ apiRouter.post('/auth/register', async (req, res) => {
 
 
 // 14. POST /api/auth/verify-otp
-apiRouter.post('/auth/verify-otp', (req, res) => {
+apiRouter.post('/auth/verify-otp', otpLimiter, (req, res) => {
   const { userId, otp } = req.body || {};
   const db = getDB();
   const user = (db.users || []).find(u => u.id === userId);
@@ -516,7 +536,7 @@ apiRouter.post('/auth/verify-otp', (req, res) => {
 });
 
 // 15. POST /api/auth/reset-password
-apiRouter.post('/auth/reset-password', (req, res) => {
+apiRouter.post('/auth/reset-password', otpLimiter, (req, res) => {
   const { identifier, newPassword } = req.body || {};
   if (!identifier || !newPassword) {
     return res.status(400).json({ success: false, message: "Identifier and new password required." });
@@ -1950,9 +1970,10 @@ apiRouter.get('/dashboard/guest', (req, res) => {
 // =========================================================================
 
 // 1. AI Student-Club Recommendations
-apiRouter.get('/intelligence/recommendations/student/:studentId', (req, res) => {
+apiRouter.get('/intelligence/recommendations/student/:studentId', requireAuth, (req, res) => {
   const db = getDB();
   const studentId = req.params.studentId;
+  const normRole = normalizeRole(req.user.role);
   const student = (db.users || []).find(u => u.id === studentId);
 
   if (!student) {
@@ -1960,6 +1981,19 @@ apiRouter.get('/intelligence/recommendations/student/:studentId', (req, res) => 
       success: false,
       message: "Student record not found"
     });
+  }
+
+  // RBAC scope check: Student can only view self; Coordinator/Club Admin can view students in their clubs; Super Admin can view all
+  if (normRole === ROLES.STUDENT && req.user.id !== studentId) {
+    return res.status(403).json({ success: false, message: "Access denied. Cannot view recommendations for other students." });
+  }
+  if (normRole === ROLES.CLUB_ADMIN || normRole === ROLES.FACULTY_COORDINATOR) {
+    const studentClubs = student.clubs || [];
+    const userClubs = Array.isArray(req.user.assignedClubs) ? req.user.assignedClubs : (req.user.clubId ? [req.user.clubId] : []);
+    const hasOverlap = studentClubs.some(c => userClubs.includes(c));
+    if (!hasOverlap && req.user.id !== studentId && normRole !== ROLES.SUPER_ADMIN) {
+      return res.status(403).json({ success: false, message: "Access denied. Student is not in your assigned clubs." });
+    }
   }
 
   const limit = parseInt(req.query.limit || '10', 10);
@@ -1976,10 +2010,11 @@ apiRouter.get('/intelligence/recommendations/student/:studentId', (req, res) => 
   });
 });
 
-apiRouter.get('/intelligence/recommendations', (req, res) => {
+apiRouter.get('/intelligence/recommendations', requireAuth, (req, res) => {
   const db = getDB();
-  const targetId = req.query.studentId || (req.user ? req.user.id : "std-101");
-  const student = (db.users || []).find(u => u.id === targetId) || (db.users && db.users[0]);
+  const normRole = normalizeRole(req.user.role);
+  const targetId = (normRole === ROLES.STUDENT) ? req.user.id : (req.query.studentId || req.user.id);
+  const student = (db.users || []).find(u => u.id === targetId) || req.user;
 
   if (!student) {
     return res.status(404).json({
@@ -2003,7 +2038,7 @@ apiRouter.get('/intelligence/recommendations', (req, res) => {
 });
 
 // 2. Event Participation Prediction Engine
-apiRouter.get('/intelligence/events/:eventId/predictions', (req, res) => {
+apiRouter.get('/intelligence/events/:eventId/predictions', requireAuth, (req, res) => {
   const db = getDB();
   const eventId = req.params.eventId;
   const prediction = predictEventParticipation(eventId, db);
@@ -2023,16 +2058,29 @@ apiRouter.get('/intelligence/events/:eventId/predictions', (req, res) => {
 });
 
 // 3. Inactive Member Detection
-apiRouter.get('/intelligence/clubs/:clubId/inactive-members', (req, res) => {
+apiRouter.get('/intelligence/clubs/:clubId/inactive-members', requireAuth, requirePermission(PERMISSIONS.MEMBERS_VIEW), (req, res) => {
   const db = getDB();
-  const clubId = req.params.clubId === 'all' ? null : req.params.clubId;
-  const thresholdDays = parseInt(req.query.threshold || '30', 10);
+  const requestedClubId = req.params.clubId === 'all' ? null : req.params.clubId;
+  const normRole = normalizeRole(req.user.role);
 
-  const inactiveMembers = detectInactiveMembers(clubId, db, { thresholdDays });
+  if (requestedClubId && !isUserAuthorizedForClub(req.user, requestedClubId)) {
+    return res.status(403).json({ success: false, message: `Access denied. You are not authorized for club ${requestedClubId}.` });
+  }
+
+  const thresholdDays = parseInt(req.query.threshold || '30', 10);
+  let inactiveMembers = detectInactiveMembers(requestedClubId, db, { thresholdDays });
+
+  if (!requestedClubId && normRole === ROLES.FACULTY_COORDINATOR) {
+    const assigned = Array.isArray(req.user.assignedClubs) ? req.user.assignedClubs : [];
+    inactiveMembers = inactiveMembers.filter(m => assigned.includes(m.clubId));
+  } else if (!requestedClubId && normRole === ROLES.CLUB_ADMIN) {
+    const clubId = req.user.clubId || (req.user.assignedClubs && req.user.assignedClubs[0]);
+    inactiveMembers = inactiveMembers.filter(m => m.clubId === clubId);
+  }
 
   res.json({
     success: true,
-    clubId: clubId || "all",
+    clubId: requestedClubId || "all",
     thresholdDays,
     totalInactiveCount: inactiveMembers.length,
     highRiskCount: inactiveMembers.filter(m => m.riskTier === "High Risk").length,
@@ -2243,8 +2291,15 @@ const handleCoordinatorOverview = (req, res) => {
   const user = req.user || {};
   const normRole = normalizeRole(user.role);
 
+  if (normRole !== ROLES.SUPER_ADMIN && normRole !== ROLES.FACULTY_COORDINATOR && normRole !== ROLES.CLUB_ADMIN) {
+    return res.status(403).json({ success: false, message: "Access denied. Requires coordinator or administrative privileges." });
+  }
+
   let assignedClubIds = [];
   if (req.query.clubId) {
+    if (!isUserAuthorizedForClub(req.user, req.query.clubId)) {
+      return res.status(403).json({ success: false, message: `Access denied for club ${req.query.clubId}.` });
+    }
     assignedClubIds = [req.query.clubId];
   } else if (normRole === ROLES.SUPER_ADMIN) {
     assignedClubIds = (db.clubs || []).map(c => c.id);
@@ -2265,16 +2320,23 @@ const handleCoordinatorOverview = (req, res) => {
   });
 };
 
-apiRouter.get('/intelligence/coordinator-overview', handleCoordinatorOverview);
-apiRouter.get('/intelligence/coordinator/overview', handleCoordinatorOverview);
+apiRouter.get('/intelligence/coordinator-overview', requireAuth, handleCoordinatorOverview);
+apiRouter.get('/intelligence/coordinator/overview', requireAuth, handleCoordinatorOverview);
 
 // Standard Aliases as specified in Round 2 Master Requirements:
 
 // Recommendations: GET /api/recommendations/clubs/:studentId and /api/recommendations/clubs
-apiRouter.get('/recommendations/clubs/:studentId', (req, res) => {
+apiRouter.get('/recommendations/clubs/:studentId', requireAuth, (req, res) => {
   const db = getDB();
-  const student = (db.users || []).find(u => u.id === req.params.studentId);
+  const studentId = req.params.studentId;
+  const normRole = normalizeRole(req.user.role);
+  const student = (db.users || []).find(u => u.id === studentId);
   if (!student) return res.status(404).json({ success: false, message: "Student record not found" });
+
+  if (normRole === ROLES.STUDENT && req.user.id !== studentId) {
+    return res.status(403).json({ success: false, message: "Access denied. Cannot view recommendations for other students." });
+  }
+
   const limit = parseInt(req.query.limit || '12', 10);
   const recommendations = recommendClubsForStudent(student, db, { limit });
   res.json({
@@ -2288,9 +2350,10 @@ apiRouter.get('/recommendations/clubs/:studentId', (req, res) => {
   });
 });
 
-apiRouter.get('/recommendations/clubs', (req, res) => {
+apiRouter.get('/recommendations/clubs', requireAuth, (req, res) => {
   const db = getDB();
-  const targetId = req.query.studentId || (req.user ? req.user.id : "std-101");
+  const normRole = normalizeRole(req.user.role);
+  const targetId = (normRole === ROLES.STUDENT) ? req.user.id : (req.query.studentId || req.user.id);
   const student = (db.users || []).find(u => u.id === targetId) || (db.users && db.users[0]);
   if (!student) return res.status(404).json({ success: false, message: "Student record not found" });
   const limit = parseInt(req.query.limit || '12', 10);
@@ -2332,18 +2395,33 @@ const handleEventPrediction = (req, res) => {
   });
 };
 
-apiRouter.get('/predictions/events/:eventId', handleEventPrediction);
-apiRouter.get('/events/:eventId/intelligence', handleEventPrediction);
+apiRouter.get('/predictions/events/:eventId', requireAuth, handleEventPrediction);
+apiRouter.get('/events/:eventId/intelligence', requireAuth, handleEventPrediction);
 
 // Inactive members: GET /api/students/inactive
-apiRouter.get('/students/inactive', (req, res) => {
+apiRouter.get('/students/inactive', requireAuth, requirePermission(PERMISSIONS.MEMBERS_VIEW), (req, res) => {
   const db = getDB();
-  const clubId = req.query.clubId || null;
+  const requestedClubId = req.query.clubId || null;
+  const normRole = normalizeRole(req.user.role);
+
+  if (requestedClubId && !isUserAuthorizedForClub(req.user, requestedClubId)) {
+    return res.status(403).json({ success: false, message: `Access denied. Not authorized for club ${requestedClubId}.` });
+  }
+
   const threshold = parseInt(req.query.threshold || '60', 10);
-  const inactiveMembers = detectInactiveMembers(clubId, db, { thresholdDays: threshold });
+  let inactiveMembers = detectInactiveMembers(requestedClubId, db, { thresholdDays: threshold });
+
+  if (!requestedClubId && normRole === ROLES.FACULTY_COORDINATOR) {
+    const assigned = Array.isArray(req.user.assignedClubs) ? req.user.assignedClubs : [];
+    inactiveMembers = inactiveMembers.filter(m => assigned.includes(m.clubId));
+  } else if (!requestedClubId && normRole === ROLES.CLUB_ADMIN) {
+    const clubId = req.user.clubId || (req.user.assignedClubs && req.user.assignedClubs[0]);
+    inactiveMembers = inactiveMembers.filter(m => m.clubId === clubId);
+  }
+
   res.json({
     success: true,
-    clubId: clubId || 'all',
+    clubId: requestedClubId || 'all',
     totalInactive: inactiveMembers.length,
     thresholdDays: threshold,
     inactiveMembers,
@@ -2353,7 +2431,7 @@ apiRouter.get('/students/inactive', (req, res) => {
 });
 
 // Club engagement: GET /api/clubs/:clubId/engagement
-apiRouter.get('/clubs/:clubId/engagement', (req, res) => {
+apiRouter.get('/clubs/:clubId/engagement', requireAuth, (req, res) => {
   const db = getDB();
   const clubId = req.params.clubId;
   const scorecard = calculateClubEngagementScore(clubId, db);
@@ -2372,9 +2450,19 @@ apiRouter.get('/clubs/:clubId/engagement', (req, res) => {
 });
 
 // Feature 7: Advanced Analytics: GET /api/analytics/clubs
-apiRouter.get('/analytics/clubs', (req, res) => {
+apiRouter.get('/analytics/clubs', requireAuth, (req, res) => {
   const db = getDB();
-  const comparison = calculateClubComparison(db);
+  const normRole = normalizeRole(req.user.role);
+  let comparison = calculateClubComparison(db);
+
+  if (normRole === ROLES.FACULTY_COORDINATOR) {
+    const assigned = Array.isArray(req.user.assignedClubs) ? req.user.assignedClubs : [];
+    comparison = comparison.filter(c => assigned.includes(c.id));
+  } else if (normRole === ROLES.CLUB_ADMIN) {
+    const clubId = req.user.clubId || (req.user.assignedClubs && req.user.assignedClubs[0]);
+    comparison = comparison.filter(c => c.id === clubId);
+  }
+
   res.json({
     success: true,
     totalClubs: comparison.length,
@@ -2384,7 +2472,7 @@ apiRouter.get('/analytics/clubs', (req, res) => {
 });
 
 // Feature 8: Trend Analysis: GET /api/analytics/trends
-apiRouter.get('/analytics/trends', (req, res) => {
+apiRouter.get('/analytics/trends', requireAuth, (req, res) => {
   const db = getDB();
   const clubId = req.query.clubId || "I4-08";
   const trends = calculateEngagementTrends(clubId, db);
@@ -2397,7 +2485,7 @@ apiRouter.get('/analytics/trends', (req, res) => {
 });
 
 // Feature 9: Actionable Insights: GET /api/analytics/insights
-apiRouter.get('/analytics/insights', (req, res) => {
+apiRouter.get('/analytics/insights', requireAuth, (req, res) => {
   const db = getDB();
   const clubId = req.query.clubId || null;
   const insights = generateActionableInsights(clubId, db);
@@ -2411,7 +2499,7 @@ apiRouter.get('/analytics/insights', (req, res) => {
 });
 
 // Recalculate snapshot: POST /api/intelligence/recalculate
-apiRouter.post('/intelligence/recalculate', (req, res) => {
+apiRouter.post('/intelligence/recalculate', requireAuth, requirePermission(PERMISSIONS.ANALYTICS_VIEW), (req, res) => {
   const db = getDB();
   const result = recalculateIntelligenceSnapshot(db);
   recordAuditAction(
@@ -2526,7 +2614,7 @@ apiRouter.get('/intelligence/ai/status', (req, res) => {
 });
 
 // 2. Real AI Student Career & Society Advisor
-apiRouter.post('/intelligence/ai/advisor', async (req, res) => {
+apiRouter.post('/intelligence/ai/advisor', aiLimiter, async (req, res) => {
   try {
     const db = getDB();
     const targetStudentId = req.body?.studentId || (req.user ? req.user.id : null);
@@ -2580,7 +2668,7 @@ apiRouter.post('/intelligence/ai/advisor', async (req, res) => {
 });
 
 // 3. Real AI Event Copilot & Curriculum Optimizer
-apiRouter.post('/intelligence/ai/optimize-event', async (req, res) => {
+apiRouter.post('/intelligence/ai/optimize-event', aiLimiter, async (req, res) => {
   try {
     const db = getDB();
     const { eventId, title, clubId, category, recommendedWindow } = req.body || {};
@@ -2624,7 +2712,7 @@ apiRouter.post('/intelligence/ai/optimize-event', async (req, res) => {
 });
 
 // 4. Real AI Empathetic Re-engagement Nudge Generator
-apiRouter.post('/intelligence/ai/reengagement-nudge', async (req, res) => {
+apiRouter.post('/intelligence/ai/reengagement-nudge', aiLimiter, async (req, res) => {
   try {
     const db = getDB();
     const { studentId, clubId, daysInactive, factors } = req.body || {};
@@ -2674,7 +2762,7 @@ apiRouter.post('/intelligence/ai/reengagement-nudge', async (req, res) => {
 });
 
 // 5. Real AI Student Classification & Dynamic Society Profiling
-apiRouter.post('/intelligence/classify-student', async (req, res) => {
+apiRouter.post('/intelligence/classify-student', aiLimiter, async (req, res) => {
   try {
     const db = getDB();
     const payload = req.body || {};

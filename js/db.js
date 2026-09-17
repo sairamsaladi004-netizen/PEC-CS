@@ -1441,11 +1441,10 @@ export async function initDB() {
   // Fetch live synchronized database from the backend Express API backed by Supabase
   if (typeof fetch !== 'undefined') {
     try {
-      const activeUserId = typeof localStorage !== 'undefined' ? localStorage.getItem("campustech_active_user_id") : null;
+      const sessionToken = typeof localStorage !== 'undefined' ? localStorage.getItem("campustech_session_token") : null;
       const headers = { "Content-Type": "application/json" };
-      if (activeUserId) {
-        headers['x-user-id'] = activeUserId;
-        headers['Authorization'] = `Bearer ${activeUserId}`;
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
       }
 
       const res = await fetch('/api/db', { headers });
@@ -1483,8 +1482,8 @@ export async function apiRequest(endpoint, method = "GET", body = null) {
       headers: { "Content-Type": "application/json" }
     };
     
-    // Check for Supabase Auth Session token first
-    let token = null;
+    // Check for session token: Supabase Auth Session token or secure session token
+    let token = typeof localStorage !== 'undefined' ? localStorage.getItem("campustech_session_token") : null;
     const supabase = getSupabaseClient();
     if (supabase) {
       try {
@@ -1495,18 +1494,25 @@ export async function apiRequest(endpoint, method = "GET", body = null) {
       } catch (e) {}
     }
 
-    const activeUserId = typeof localStorage !== 'undefined' ? localStorage.getItem("campustech_active_user_id") : null;
-    if (!token && activeUserId) {
-      token = activeUserId;
-    }
-
     if (token) {
-      opts.headers['x-user-id'] = activeUserId || token;
       opts.headers['Authorization'] = `Bearer ${token}`;
     }
 
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(endpoint, opts);
+
+    // Handle 401 Unauthorized: clear invalid session token
+    if (res.status === 401 && token) {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem("campustech_session_token");
+        localStorage.removeItem("campustech_active_user_id");
+      }
+      if (typeof window !== 'undefined' && window.location.hash !== '#/login') {
+        window.dispatchEvent(new CustomEvent("auth-changed", { detail: null }));
+        window.location.hash = "#/login";
+      }
+    }
+
     const data = await res.json();
     if (data && typeof data === 'object') {
       data._httpStatus = res.status;
@@ -1520,3 +1526,6 @@ export async function apiRequest(endpoint, method = "GET", body = null) {
     return null;
   }
 }
+
+export { escapeHtml, sanitizeUrl } from "./utils.js";
+

@@ -1,6 +1,7 @@
 import { getCurrentUser, switchUser, getAllDemoAccounts } from '../auth.js';
 import { ROLES, normalizeRole } from '../rbac.js';
 import { getNotificationsForUser, getUnreadCount } from '../notifications.js';
+import { escapeHtml, sanitizeUrl } from '../utils.js';
 
 export function renderNavbar() {
   const user = getCurrentUser() || {};
@@ -290,12 +291,12 @@ function renderNotifList() {
   return notifs.map(n => `
     <div class="p-3 hover:bg-slate-800/60 transition-colors ${!n.read ? 'bg-blue-950/20' : ''}">
       <div class="flex items-start justify-between gap-2">
-        <div class="font-bold text-slate-200 text-xs">${n.title}</div>
-        <span class="text-[10px] text-slate-400 shrink-0 font-mono">${n.time}</span>
+        <div class="font-bold text-slate-200 text-xs">${escapeHtml(n.title)}</div>
+        <span class="text-[10px] text-slate-400 shrink-0 font-mono">${escapeHtml(n.time)}</span>
       </div>
-      <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">${n.message}</p>
+      <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">${escapeHtml(n.message)}</p>
       ${n.link ? `
-        <a href="${n.link}" class="notif-link inline-block mt-1.5 text-[10px] text-blue-400 hover:text-blue-300 font-semibold" data-id="${n.id}">
+        <a href="${sanitizeUrl(n.link)}" class="notif-link inline-block mt-1.5 text-[10px] text-blue-400 hover:text-blue-300 font-semibold" data-id="${escapeHtml(n.id)}">
           View details →
         </a>
       ` : ''}
@@ -307,16 +308,16 @@ export function attachNavbarEvents() {
   // Persona switcher
   const switcher = document.getElementById("persona-switcher-select");
   if (switcher) {
-    switcher.addEventListener("change", (e) => {
-      switchUser(e.target.value);
+    switcher.addEventListener("change", async (e) => {
+      await switchUser(e.target.value);
       window.location.reload();
     });
   }
 
   const mobileSwitcher = document.getElementById("mobile-persona-select");
   if (mobileSwitcher) {
-    mobileSwitcher.addEventListener("change", (e) => {
-      switchUser(e.target.value);
+    mobileSwitcher.addEventListener("change", async (e) => {
+      await switchUser(e.target.value);
       window.location.reload();
     });
   }

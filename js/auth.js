@@ -4,11 +4,14 @@ import { ROLES, normalizeRole, hasRolePermission, isUserAuthorizedForClub } from
 import { supabaseSignIn, supabaseSignUp, getSupabaseClient, isSupabaseReady } from './supabaseClient.js';
 
 const ACTIVE_USER_KEY = "campustech_active_user_id";
+const SESSION_TOKEN_KEY = "campustech_session_token";
 
 export function getCurrentUser() {
   const db = getDB();
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem(SESSION_TOKEN_KEY) : null;
   const activeId = typeof localStorage !== 'undefined' ? localStorage.getItem(ACTIVE_USER_KEY) : null;
-  if (activeId) {
+
+  if (token && activeId) {
     const found = (db.users || []).find(u => u.id === activeId);
     if (found) {
       return {
@@ -17,14 +20,7 @@ export function getCurrentUser() {
       };
     }
   }
-  // Default to first student if available, else guest
-  const defaultUser = (db.users || []).find(u => u.id === "std-101") || (db.users && db.users[0]);
-  if (defaultUser) {
-    return {
-      ...defaultUser,
-      role: normalizeRole(defaultUser.role)
-    };
-  }
+
   return {
     id: "guest-001",
     name: "Public Guest",
@@ -33,21 +29,33 @@ export function getCurrentUser() {
   };
 }
 
-export function setCurrentUser(userId) {
+export function setCurrentUser(userId, token = null) {
   const db = getDB();
   const user = (db.users || []).find(u => u.id === userId);
   if (user) {
     user.role = normalizeRole(user.role);
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(ACTIVE_USER_KEY, user.id);
+      if (token) {
+        localStorage.setItem(SESSION_TOKEN_KEY, token);
+      }
     }
     logAudit(`${user.name} (${user.role})`, "Role Switch / Session Start", user.role, "Switched active persona session.");
     window.dispatchEvent(new CustomEvent("auth-changed", { detail: user }));
   }
 }
 
-export function switchUser(userId) {
-  setCurrentUser(userId);
+export async function switchUser(userId) {
+  const db = getDB();
+  const user = (db.users || []).find(u => u.id === userId);
+  if (user) {
+    const identifier = user.email || user.rollNo || user.facultyId || user.demoAlias || user.id;
+    const res = await loginUser(identifier, "Password@123");
+    if (res && res.success) {
+      return res.user;
+    }
+  }
+  return null;
 }
 
 export function hasPermission(permission) {
@@ -111,7 +119,7 @@ export async function loginUser(identifier, password) {
 
   // 2. Query server API (which synchronizes with Supabase & verifies credentials)
   const res = await apiRequest('/api/auth/login', 'POST', { identifier: cleanId, password });
-  if (res && res.success && res.user) {
+  if (res && res.success && res.user && res.token) {
     const db = getDB();
     const idx = (db.users || []).findIndex(u => u.id === res.user.id || u.email?.toLowerCase() === res.user.email?.toLowerCase());
     if (idx !== -1) {
@@ -120,11 +128,11 @@ export async function loginUser(identifier, password) {
       db.users.push(res.user);
     }
     saveDB(db);
-    setCurrentUser(res.user.id);
+    setCurrentUser(res.user.id, res.token);
     return { success: true, user: res.user, token: res.token, supabaseSession: res.supabaseSession };
   }
 
-  // 3. Fallback for demo personas
+  // 3. Fallback for demo personas if offline/local
   const db = getDB();
   const user = (db.users || []).find(u => 
     (u.rollNo && u.rollNo.toLowerCase() === cleanId) || 
@@ -138,8 +146,7 @@ export async function loginUser(identifier, password) {
     return { success: false, message: res?.message || "No account found matching this College ID or Email." };
   }
 
-  setCurrentUser(user.id);
-  return { success: true, user };
+  return { success: false, message: res?.message || "Invalid password credentials." };
 }
 
 // Register student with Supabase Auth + generate verified QR Pass
@@ -285,9 +292,13 @@ export async function verifyEmailWithOTP(userId, otp) {
 }
 
 // Logout
-export function logoutUser() {
+export async function logoutUser() {
+  try {
+    await apiRequest('/api/auth/logout', 'POST');
+  } catch (e) {}
   if (typeof localStorage !== 'undefined') {
     localStorage.removeItem(ACTIVE_USER_KEY);
+    localStorage.removeItem(SESSION_TOKEN_KEY);
   }
   window.dispatchEvent(new CustomEvent("auth-changed", { detail: null }));
   window.location.hash = "#/login";
@@ -316,8 +327,5 @@ export async function updateProfile(updatedData) {
 
 export function initAuth() {
   const user = getCurrentUser();
-  if (user && typeof localStorage !== 'undefined' && !localStorage.getItem(ACTIVE_USER_KEY)) {
-    localStorage.setItem(ACTIVE_USER_KEY, user.id);
-  }
   return user;
 }

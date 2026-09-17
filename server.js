@@ -11,6 +11,17 @@ const app = express();
 const PORT = 3000;
 const HOST = '0.0.0.0';
 
+// Security hardening
+app.disable('x-powered-by');
+
+// Security headers middleware
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
 // Trigger initial Supabase synchronization if credentials present
 if (isSupabaseConfigured()) {
   fetchFullDatabaseFromSupabase().catch(err => {

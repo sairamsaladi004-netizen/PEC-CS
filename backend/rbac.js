@@ -236,3 +236,169 @@ export function isUserAuthorizedForUserData(requestingUser, targetUserId) {
 
   return false;
 }
+
+/**
+ * Filter whole database object strictly based on user's authenticated role & club scopes.
+ * Guarantees zero sensitive data leakage across cross-student / cross-club / guest boundaries.
+ */
+export function scopeDatabaseForUser(db, user) {
+  if (!db) return {};
+  const normRole = normalizeRole(user?.role);
+
+  // Helper: sanitize user object
+  const sanitizeUser = (u) => {
+    if (!u) return null;
+    const { salt, passwordHash, sessions, ...safe } = u;
+    return {
+      ...safe,
+      role: normalizeRole(safe.role)
+    };
+  };
+
+  // Helper: minimal public user projection (for fellow students / member directory preview)
+  const minimalUser = (u) => {
+    if (!u) return null;
+    return {
+      id: u.id,
+      name: u.name,
+      department: u.department,
+      avatar: u.avatar,
+      role: normalizeRole(u.role)
+    };
+  };
+
+  // 1. GUEST SCOPE: Zero PII, zero memberships, zero attendance/cert records
+  if (normRole === ROLES.GUEST || !user || user.isGuest) {
+    return {
+      departments: db.departments || [],
+      clubs: db.clubs || [],
+      events: (db.events || []).filter(e => e.is_public !== false),
+      announcements: (db.announcements || []).filter(a => a.target_audience === 'All' || !a.target_audience),
+      resources: db.resources || [],
+      gallery: db.gallery || [],
+      roadmaps: db.roadmaps || [],
+      users: [],
+      club_memberships: [],
+      attendance: [],
+      certificates: [],
+      event_registrations: [],
+      notifications: [],
+      audit_logs: [],
+      auditLogs: [],
+      projects: (db.projects || []).filter(p => p.status === 'Approved'),
+      feedback: []
+    };
+  }
+
+  // 2. SUPER ADMIN SCOPE: Full institutional database access (sanitized PII)
+  if (normRole === ROLES.SUPER_ADMIN) {
+    return {
+      ...db,
+      users: (db.users || []).map(sanitizeUser),
+      audit_logs: db.audit_logs || [],
+      auditLogs: db.audit_logs || []
+    };
+  }
+
+  // 3. FACULTY COORDINATOR SCOPE: Full access for assigned clubs
+  if (normRole === ROLES.FACULTY_COORDINATOR) {
+    const assigned = Array.isArray(user.assignedClubs) ? user.assignedClubs : [];
+    const scopedMemberships = (db.club_memberships || []).filter(m => assigned.includes(m.club_id));
+    const studentIdsInAssignedClubs = new Set(scopedMemberships.map(m => m.student_id));
+    studentIdsInAssignedClubs.add(user.id);
+
+    const scopedUsers = (db.users || []).map(u => {
+      if (studentIdsInAssignedClubs.has(u.id)) {
+        return sanitizeUser(u);
+      }
+      return minimalUser(u);
+    });
+
+    const scopedAuditLogs = (db.audit_logs || []).filter(l =>
+      assigned.some(c => (l.resource_id && l.resource_id.includes(c)) || (l.details && l.details.includes(c))) ||
+      l.user_id === user.id
+    );
+
+    return {
+      ...db,
+      users: scopedUsers,
+      club_memberships: scopedMemberships,
+      attendance: (db.attendance || []).filter(a => assigned.includes(a.club_id)),
+      certificates: (db.certificates || []).filter(c => assigned.includes(c.club_id)),
+      event_registrations: (db.event_registrations || []).filter(r => assigned.includes(r.club_id)),
+      notifications: (db.notifications || []).filter(n => n.user_id === user.id || n.user_id === 'all' || n.targetRole === 'Coordinator'),
+      audit_logs: scopedAuditLogs,
+      auditLogs: scopedAuditLogs
+    };
+  }
+
+  // 4. CLUB ADMIN SCOPE: Full access for their specific club
+  if (normRole === ROLES.CLUB_ADMIN) {
+    const clubId = user.clubId || (user.assignedClubs && user.assignedClubs[0]);
+    const assigned = Array.isArray(user.assignedClubs) ? user.assignedClubs : (clubId ? [clubId] : []);
+    const scopedMemberships = (db.club_memberships || []).filter(m => assigned.includes(m.club_id) || m.student_id === user.id);
+    const studentIdsInClub = new Set(scopedMemberships.map(m => m.student_id));
+    studentIdsInClub.add(user.id);
+
+    const scopedUsers = (db.users || []).map(u => {
+      if (studentIdsInClub.has(u.id)) {
+        return sanitizeUser(u);
+      }
+      return minimalUser(u);
+    });
+
+    const scopedAuditLogs = (db.audit_logs || []).filter(l =>
+      assigned.some(c => (l.resource_id && l.resource_id.includes(c)) || (l.details && l.details.includes(c))) ||
+      l.user_id === user.id
+    );
+
+    return {
+      ...db,
+      users: scopedUsers,
+      club_memberships: scopedMemberships,
+      attendance: (db.attendance || []).filter(a => assigned.includes(a.club_id) || a.student_id === user.id),
+      certificates: (db.certificates || []).filter(c => assigned.includes(c.club_id) || c.student_id === user.id),
+      event_registrations: (db.event_registrations || []).filter(r => assigned.includes(r.club_id) || r.student_id === user.id),
+      notifications: (db.notifications || []).filter(n => n.user_id === user.id || n.user_id === 'all' || n.targetRole === 'Club Admin'),
+      audit_logs: scopedAuditLogs,
+      auditLogs: scopedAuditLogs
+    };
+  }
+
+  // 5. STUDENT SCOPE: Own personal records only
+  if (normRole === ROLES.STUDENT) {
+    const scopedUsers = (db.users || []).map(u => {
+      if (u.id === user.id) {
+        return sanitizeUser(u);
+      }
+      return minimalUser(u);
+    });
+
+    return {
+      ...db,
+      users: scopedUsers,
+      club_memberships: (db.club_memberships || []).filter(m => m.student_id === user.id),
+      attendance: (db.attendance || []).filter(a => a.student_id === user.id),
+      certificates: (db.certificates || []).filter(c => c.student_id === user.id),
+      event_registrations: (db.event_registrations || []).filter(r => r.student_id === user.id),
+      notifications: (db.notifications || []).filter(n => n.user_id === user.id || n.user_id === 'all' || n.targetRole === 'Student'),
+      audit_logs: [],
+      auditLogs: [],
+      projects: (db.projects || []).filter(p => p.student_id === user.id || (Array.isArray(p.team_members) && p.team_members.some(tm => tm.includes(user.name) || tm.includes(user.rollNo))) || p.status === 'Approved')
+    };
+  }
+
+  return {
+    departments: db.departments || [],
+    clubs: db.clubs || [],
+    events: db.events || [],
+    announcements: db.announcements || [],
+    users: [],
+    club_memberships: [],
+    attendance: [],
+    certificates: [],
+    event_registrations: [],
+    notifications: [],
+    audit_logs: []
+  };
+}

@@ -1,25 +1,23 @@
 import { getDB, logAudit, getSupabase } from './db.js';
 import { ROLES, normalizeRole, hasRolePermission, isUserAuthorizedForClub } from './rbac.js';
+import { resolveSession } from './sessions.js';
 
-// Resolve caller authentication from headers (supports Supabase Auth JWTs & Persona Tokens)
+// Resolve caller authentication from Bearer header exclusively (valid cryptographically generated session tokens or Supabase JWTs)
 export async function authenticateUser(req, res, next) {
   const authHeader = req.headers['authorization'];
-  const xUserId = req.headers['x-user-id'];
   const db = getDB();
   const supabase = getSupabase();
 
-  let tokenOrId = null;
+  let token = null;
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    tokenOrId = authHeader.substring(7).trim();
-  } else if (xUserId) {
-    tokenOrId = xUserId.trim();
+    token = authHeader.substring(7).trim();
   }
 
-  if (tokenOrId && tokenOrId !== 'guest') {
-    // Check if token is a Supabase JWT (format: xxx.yyy.zzz)
-    if (supabase && tokenOrId.includes('.') && tokenOrId.split('.').length === 3) {
+  if (token && token !== 'guest') {
+    // 1. Check if token is a valid Supabase JWT (format: xxx.yyy.zzz)
+    if (supabase && token.includes('.') && token.split('.').length === 3) {
       try {
-        const { data: { user: authUser }, error } = await supabase.auth.getUser(tokenOrId);
+        const { data: { user: authUser }, error } = await supabase.auth.getUser(token);
         if (authUser && !error) {
           let profile = (db.users || []).find(u =>
             (u.auth_user_id && u.auth_user_id === authUser.id) ||
@@ -28,7 +26,6 @@ export async function authenticateUser(req, res, next) {
           );
 
           if (!profile) {
-            // Profile created from Supabase Auth identity
             profile = {
               id: authUser.id,
               auth_user_id: authUser.id,
@@ -54,23 +51,22 @@ export async function authenticateUser(req, res, next) {
       }
     }
 
-    // Lookup by user ID / email / rollNo in database
-    const user = (db.users || []).find(u =>
-      u.id === tokenOrId ||
-      (u.email && u.email.toLowerCase() === tokenOrId.toLowerCase()) ||
-      (u.rollNo && u.rollNo.toUpperCase() === tokenOrId.toUpperCase())
-    );
-
-    if (user) {
-      req.user = {
-        ...user,
-        role: normalizeRole(user.role)
-      };
-      return next();
+    // 2. Resolve cryptographically generated session token via sessions table
+    const activeSession = resolveSession(token);
+    if (activeSession && activeSession.user_id) {
+      const user = (db.users || []).find(u => u.id === activeSession.user_id);
+      if (user) {
+        req.user = {
+          ...user,
+          role: normalizeRole(user.role),
+          sessionId: activeSession.token
+        };
+        return next();
+      }
     }
   }
 
-  // Default to Guest persona if no valid token
+  // Default to unauthenticated Guest persona if no valid session token
   req.user = {
     id: "guest",
     name: "Public Visitor",
