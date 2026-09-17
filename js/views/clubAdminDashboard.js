@@ -53,6 +53,19 @@ export function renderClubAdminDashboardView(params = {}) {
   // Events related to this club
   const clubEvents = (db.events || []).filter(e => e.club_id === club.id || e.clubId === club.id);
 
+  // Compute dynamic members and events for selected club
+  const clubMemberships = (db.club_memberships || []).filter(m => (m.club_id === club.id || m.clubId === club.id));
+  const approvedMembers = clubMemberships.filter(m => m.status === "Approved");
+  const pendingMembers = clubMemberships.filter(m => m.status === "Pending");
+  const totalMemberCount = Math.max(club.memberCount || 0, approvedMembers.length);
+
+  // Events related to this club
+  const clubEvents = (db.events || []).filter(e => e.club_id === club.id || e.clubId === club.id || e.clubName === club.name);
+  const todayStr = new Date().toISOString().split("T")[0];
+  
+  const upcomingEvents = clubEvents.filter(e => (e.date >= todayStr || e.status === "Upcoming" || e.status === "Approved"));
+  const previousEvents = clubEvents.filter(e => (e.date < todayStr || e.status === "Completed"));
+
   return `
     <div class="space-y-6 pb-16">
       
@@ -79,21 +92,27 @@ export function renderClubAdminDashboardView(params = {}) {
 
         <!-- Club Selector Dropdown & Quick Actions -->
         <div class="flex flex-wrap items-center gap-3">
-          <div class="flex items-center space-x-2 bg-slate-50 px-3 py-2 rounded-2xl border border-slate-200">
-            <span class="text-xs font-bold text-slate-500">Managing Chapter:</span>
-            <select id="club-switcher-select" class="bg-white text-slate-800 text-xs font-bold rounded-xl px-3 py-1.5 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
-              ${authorizedClubs.map(c => `
-                <option value="${c.id}" ${c.id === club.id ? 'selected' : ''}>
-                  ${c.id} - ${c.name}
-                </option>
-              `).join('')}
-            </select>
-          </div>
+          ${authorizedClubs.length > 1 ? `
+            <div class="flex items-center space-x-2 bg-slate-50 px-3 py-2 rounded-2xl border border-slate-200">
+              <span class="text-xs font-bold text-slate-500">Managing Chapter:</span>
+              <select id="club-switcher-select" class="bg-white text-slate-800 text-xs font-bold rounded-xl px-3 py-1.5 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                ${authorizedClubs.map(c => `
+                  <option value="${c.id}" ${c.id === club.id ? 'selected' : ''}>
+                    ${c.id} - ${c.name}
+                  </option>
+                `).join('')}
+              </select>
+            </div>
+          ` : `
+            <div class="px-3 py-1.5 rounded-xl bg-blue-50 text-blue-800 font-bold text-xs border border-blue-200">
+              Official Admin • ${club.id}
+            </div>
+          `}
 
           <a href="#/attendance" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center space-x-1.5">
             <span>📷 QR Kiosk</span>
           </a>
-          <button id="open-club-broadcast-btn" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-500/20 transition-all flex items-center space-x-1.5">
+          <button id="open-club-broadcast-btn" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-500/20 transition-all flex items-center space-x-1.5 cursor-pointer">
             <span>📢 Send Notice</span>
           </button>
         </div>
@@ -106,10 +125,10 @@ export function renderClubAdminDashboardView(params = {}) {
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1 hover:border-blue-300 transition-colors">
           <div class="flex items-center justify-between text-xs text-slate-500 font-semibold">
             <span>Enrolled Members</span>
-            <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold font-mono">↑ 18% QoQ</span>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold font-mono">${pendingMembers.length} Pending</span>
           </div>
-          <div class="text-2xl sm:text-3xl font-black text-slate-900">${club.memberCount}</div>
-          <div class="text-[11px] text-slate-400 font-mono">Across 5 Eng. Depts</div>
+          <div class="text-2xl sm:text-3xl font-black text-slate-900">${totalMemberCount}</div>
+          <div class="text-[11px] text-slate-400 font-mono">${approvedMembers.length} Verified Applications</div>
         </div>
 
         <!-- Attendance / Turnout Rate -->
@@ -125,11 +144,11 @@ export function renderClubAdminDashboardView(params = {}) {
         <!-- Activities Hosted -->
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1 hover:border-blue-300 transition-colors">
           <div class="flex items-center justify-between text-xs text-slate-500 font-semibold">
-            <span>Conducted Events</span>
-            <span class="text-[10px] px-2 py-0.5 rounded bg-purple-50 text-purple-700 font-bold font-mono">NBA Tier-1</span>
+            <span>Scheduled Activities</span>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-purple-50 text-purple-700 font-bold font-mono">${upcomingEvents.length} Upcoming</span>
           </div>
-          <div class="text-2xl sm:text-3xl font-black text-purple-600">${Math.max(4, clubEvents.length)} Events</div>
-          <div class="text-[11px] text-slate-400 font-mono">1,240 Total Check-ins</div>
+          <div class="text-2xl sm:text-3xl font-black text-purple-600">${clubEvents.length} Events</div>
+          <div class="text-[11px] text-slate-400 font-mono">${previousEvents.length} Conducted</div>
         </div>
 
         <!-- Annual Budget Health -->
@@ -144,6 +163,221 @@ export function renderClubAdminDashboardView(params = {}) {
 
       </div>
 
+      <!-- Real-Time Student Registration & Pending Membership Requests Alert Banner -->
+      ${pendingMembers.length > 0 ? `
+        <div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-3xl p-6 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="w-3 h-3 rounded-full bg-amber-500 animate-ping"></span>
+              <h2 class="text-sm font-black text-amber-900">⚡ Real-Time Membership Alerts (${pendingMembers.length} Pending Application${pendingMembers.length === 1 ? '' : 's'})</h2>
+            </div>
+            <span class="text-xs text-amber-700 font-mono font-bold">Action Required</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            ${pendingMembers.map(m => `
+              <div class="bg-white p-4 rounded-2xl border border-amber-200 shadow-xs flex flex-col justify-between space-y-2">
+                <div>
+                  <div class="flex items-center justify-between font-bold text-slate-900">
+                    <span>${m.studentName || m.student_id}</span>
+                    <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px]">${m.department || 'Engineering'}</span>
+                  </div>
+                  <div class="text-slate-500 text-[11px] font-mono mt-0.5">Roll No: ${m.rollNo || '22A31A0501'} • ID: ${m.membership_id || m.id}</div>
+                  <p class="text-slate-600 text-[11px] mt-1.5 italic bg-slate-50 p-2 rounded-xl">"${m.statement || 'Submitted interest in joining technical society workshops.'}"</p>
+                </div>
+                <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
+                  <button data-memid="${m.id}" class="approve-mem-btn px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-[11px] transition-colors cursor-pointer">
+                    ✓ Approve Access
+                  </button>
+                  <button data-memid="${m.id}" class="reject-mem-btn px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-[11px] border border-rose-200 transition-colors cursor-pointer">
+                    ✕ Decline
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : `
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between text-xs text-slate-600">
+          <div class="flex items-center space-x-2">
+            <span class="text-emerald-500 font-bold">✓</span>
+            <span>Real-Time Student Application Stream: All student membership applications are up to date.</span>
+          </div>
+          <span class="text-slate-400 font-mono text-[11px]">${approvedMembers.length} Active Members Enrolled</span>
+        </div>
+      `}
+
+      <!-- CLUB DETAILS & ENROLLED MEMBERSHIP ROSTER -->
+      <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+              <h2 class="text-base font-bold text-slate-900">Club Details & Member Roster (${approvedMembers.length} Verified)</h2>
+            </div>
+            <p class="text-xs text-slate-500">Institutional record of enrolled students, roles, and academic departments</p>
+          </div>
+          <a href="#/clubs?id=${club.id}" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-200 transition-colors">
+            View Public Page ↗
+          </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Department</span>
+            <div class="font-bold text-slate-900 text-sm">${club.department}</div>
+            <p class="text-slate-500 text-[11px]">Primary host branch under Academic Council</p>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Faculty Coordinator</span>
+            <div class="font-bold text-slate-900 text-sm">${typeof club.facultyCoordinator === 'object' ? club.facultyCoordinator.name : (club.facultyCoordinator || 'Designated Coordinator')}</div>
+            <p class="text-slate-500 text-[11px]">Official mentor & budget signatory</p>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Core Focus Areas</span>
+            <div class="flex flex-wrap gap-1 mt-1">
+              ${(club.focusAreas || ['Technology', 'Skills']).map(f => `
+                <span class="px-2 py-0.5 bg-white text-slate-800 font-bold rounded border border-slate-200 text-[10px]">${f}</span>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- Enrolled Members Table -->
+        <div class="overflow-x-auto pt-2">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-400 uppercase text-[10px] font-bold border-b border-slate-200">
+              <tr>
+                <th class="p-3 pl-4">Member Name</th>
+                <th class="p-3">Roll Number</th>
+                <th class="p-3">Department</th>
+                <th class="p-3">Role</th>
+                <th class="p-3">Joined Date</th>
+                <th class="p-3 text-right pr-4">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+              ${approvedMembers.length === 0 ? `
+                <tr>
+                  <td colspan="6" class="p-6 text-center text-slate-400">No student members registered yet.</td>
+                </tr>
+              ` : approvedMembers.map(m => `
+                <tr class="hover:bg-slate-50">
+                  <td class="p-3 pl-4 font-bold text-slate-900">${m.studentName || m.student_id}</td>
+                  <td class="p-3 font-mono text-slate-500">${m.rollNo || '22A31A0501'}</td>
+                  <td class="p-3">${m.department || club.department}</td>
+                  <td class="p-3"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-bold text-[10px]">${m.role || 'Member'}</span></td>
+                  <td class="p-3 font-mono text-slate-400 text-[11px]">${(m.appliedDate || m.requested_at || '2026-08-15').split('T')[0]}</td>
+                  <td class="p-3 text-right pr-4"><span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold text-[10px]">● Active</span></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- UPCOMING & PREVIOUS EVENTS DETAILS -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- UPCOMING EVENTS SECTION -->
+        <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Upcoming Scheduled Events (${upcomingEvents.length})</h2>
+              <p class="text-xs text-slate-500">Upcoming workshops, hackathons & technical conclaves</p>
+            </div>
+            <a href="#/events" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition-colors">
+              + New Event
+            </a>
+          </div>
+
+          ${upcomingEvents.length === 0 ? `
+            <div class="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-500 space-y-1">
+              <div class="font-bold text-slate-700">No Upcoming Events Scheduled</div>
+              <div class="text-xs text-slate-400">Click '+ New Event' to schedule workshops for delegates.</div>
+            </div>
+          ` : `
+            <div class="space-y-3">
+              ${upcomingEvents.map(evt => `
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                  <div class="flex items-start justify-between">
+                    <div>
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-100 text-purple-800">${evt.category || evt.type || 'Workshop'}</span>
+                      <h3 class="font-black text-slate-900 text-sm mt-1">${evt.title}</h3>
+                    </div>
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      ${evt.status || 'Scheduled'}
+                    </span>
+                  </div>
+
+                  <div class="text-xs text-slate-600 font-mono space-y-0.5">
+                    <div>📅 Date: <strong>${evt.date}</strong> • 🕒 Time: <strong>${evt.time || '10:00 AM'}</strong></div>
+                    <div>📍 Venue: <strong>${evt.venue || 'Central Lab'}</strong></div>
+                    <div>👥 Registered: <strong>${evt.registeredCount || evt.registered || 140} delegates</strong></div>
+                  </div>
+
+                  <div class="pt-2 border-t border-slate-200 flex items-center justify-between text-xs">
+                    <a href="#/attendance" class="text-blue-600 hover:underline font-bold">
+                      Launch Gate QR Scanner →
+                    </a>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+
+        <!-- PREVIOUS (PAST) EVENTS DETAILS -->
+        <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Previous Events & Turnout Ledger (${previousEvents.length})</h2>
+              <p class="text-xs text-slate-500">Completed activities with verified QR attendance numbers</p>
+            </div>
+            <span class="px-2.5 py-0.5 bg-slate-100 text-slate-700 font-bold font-mono text-[10px] rounded-full">
+              Historical Record
+            </span>
+          </div>
+
+          ${previousEvents.length === 0 ? `
+            <div class="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-500">
+              No historical events recorded yet.
+            </div>
+          ` : `
+            <div class="space-y-3">
+              ${previousEvents.map(evt => {
+                const reg = evt.registeredCount || evt.registered || 180;
+                const att = evt.attendedCount || evt.attended || 162;
+                const ratio = Math.round((att / reg) * 100);
+                return `
+                  <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div class="flex items-start justify-between">
+                      <div>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-200 text-slate-800">${evt.category || evt.type || 'Conducted'}</span>
+                        <h3 class="font-black text-slate-900 text-sm mt-1">${evt.title}</h3>
+                      </div>
+                      <span class="text-xs font-bold text-emerald-600 font-mono">${ratio}% Turnout</span>
+                    </div>
+
+                    <div class="text-xs text-slate-600 font-mono space-y-0.5">
+                      <div>📅 Conducted: <strong>${evt.date}</strong> • 📍 ${evt.venue || 'Lab 3'}</div>
+                      <div>Check-ins: <strong>${att} / ${reg} delegates</strong> verified</div>
+                    </div>
+
+                    <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                      <div class="bg-emerald-500 h-1.5 rounded-full" style="width: ${ratio}%"></div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `}
+        </div>
+
+      </div>
+
       <!-- Core Visualizations Grid (Chart.js) -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
@@ -154,28 +388,10 @@ export function renderClubAdminDashboardView(params = {}) {
               <h2 class="text-base font-bold text-slate-900">Event Participation & Attendance Trends</h2>
               <p class="text-xs text-slate-500">Tracking registered delegates vs verified QR gate check-ins</p>
             </div>
-            <div class="flex items-center space-x-1.5">
-              <button data-range="6" class="chart-filter-btn px-2.5 py-1 text-[11px] font-bold rounded-lg bg-blue-600 text-white transition-colors">Last 6 Events</button>
-              <button data-range="12" class="chart-filter-btn px-2.5 py-1 text-[11px] font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Full AY</button>
-            </div>
           </div>
 
           <div class="h-72 w-full relative">
             <canvas id="chart-participation-trend"></canvas>
-          </div>
-
-          <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-            <div class="flex items-center space-x-4">
-              <span class="flex items-center space-x-1.5">
-                <span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span>
-                <span>Registered</span>
-              </span>
-              <span class="flex items-center space-x-1.5">
-                <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
-                <span>Actual Turnout</span>
-              </span>
-            </div>
-            <span class="font-mono font-bold text-emerald-600">Avg No-Show Rate: 10.6%</span>
           </div>
         </div>
 
@@ -186,149 +402,13 @@ export function renderClubAdminDashboardView(params = {}) {
               <h2 class="text-base font-bold text-slate-900">Member Distribution Across Departments</h2>
               <p class="text-xs text-slate-500">Interdisciplinary student enrollment breakdown</p>
             </div>
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 text-slate-700">
-              5 Departments
-            </span>
           </div>
 
           <div class="h-72 w-full relative flex items-center justify-center">
             <canvas id="chart-dept-distribution"></canvas>
           </div>
-
-          <div class="pt-2 border-t border-slate-100 grid grid-cols-3 sm:grid-cols-5 gap-2 text-center text-[10px] font-mono">
-            <div class="p-2 bg-slate-50 rounded-xl">
-              <span class="block font-bold text-blue-600">CSE</span>
-              <span class="text-slate-500">42% (192)</span>
-            </div>
-            <div class="p-2 bg-slate-50 rounded-xl">
-              <span class="block font-bold text-emerald-600">IT</span>
-              <span class="text-slate-500">26% (120)</span>
-            </div>
-            <div class="p-2 bg-slate-50 rounded-xl">
-              <span class="block font-bold text-purple-600">AIDS</span>
-              <span class="text-slate-500">18% (82)</span>
-            </div>
-            <div class="p-2 bg-slate-50 rounded-xl">
-              <span class="block font-bold text-amber-600">ECE</span>
-              <span class="text-slate-500">9% (42)</span>
-            </div>
-            <div class="p-2 bg-slate-50 rounded-xl">
-              <span class="block font-bold text-rose-600">MECH</span>
-              <span class="text-slate-500">5% (24)</span>
-            </div>
-          </div>
         </div>
 
-      </div>
-
-      <!-- Secondary Visualizations Grid: Year of Study & Workshop Ratings -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        <!-- CHART 3: Year of Study Demographics -->
-        <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-          <div>
-            <h2 class="text-base font-bold text-slate-900">Cohort Demographics by Academic Year</h2>
-            <p class="text-xs text-slate-500">Distribution across 1st, 2nd, 3rd, and 4th-year engineering delegates</p>
-          </div>
-
-          <div class="h-64 w-full relative">
-            <canvas id="chart-year-demographics"></canvas>
-          </div>
-
-          <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>Primary Contributor Cohort: <strong class="text-slate-800">2nd & 3rd Year (64%)</strong></span>
-            <span class="text-blue-600 font-mono font-bold">110 Freshmen Inducted</span>
-          </div>
-        </div>
-
-        <!-- CHART 4: Workshop Feedback & Satisfaction Scores -->
-        <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-          <div>
-            <h2 class="text-base font-bold text-slate-900">Workshop & Activity Satisfaction Ratings</h2>
-            <p class="text-xs text-slate-500">Anonymous post-event attendee feedback (Scale: 1.0 to 5.0 Stars)</p>
-          </div>
-
-          <div class="h-64 w-full relative">
-            <canvas id="chart-ratings-bar"></canvas>
-          </div>
-
-          <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>Overall Chapter Rating: <strong class="text-amber-600 font-mono">4.82 / 5.0 ★</strong></span>
-            <span class="text-emerald-600 font-bold font-mono">98.2% Positive Response</span>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Detailed Event Participation Ledger Table -->
-      <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm space-y-2">
-        <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 class="text-base font-bold text-slate-900">Recent Chapter Activities & Turnout Audit</h2>
-            <p class="text-xs text-slate-500">Comprehensive attendance figures with QR scanner telemetry</p>
-          </div>
-          <div class="flex items-center space-x-2">
-            <button id="export-club-metrics-btn" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5">
-              <span>📥 Export CSV Report</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs">
-            <thead class="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase font-semibold text-[10px]">
-              <tr>
-                <th class="p-4 pl-6">Event Activity</th>
-                <th class="p-4">Category</th>
-                <th class="p-4">Date & Time</th>
-                <th class="p-4">Registered</th>
-                <th class="p-4">Turnout Check-in</th>
-                <th class="p-4">Turnout Ratio</th>
-                <th class="p-4 text-right pr-6">Kiosk Roster</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
-              ${[
-                { title: "Google Cloud & Docker Study Jam", cat: "workshop", date: "2026-09-18", time: "09:00 AM", reg: 220, attended: 198, venue: "Lab 3" },
-                { title: "Cross-Platform Flutter Bootcamp", cat: "bootcamp", date: "2026-09-05", time: "10:00 AM", reg: 160, attended: 142, venue: "Hall A" },
-                { title: "DevHack 2026: 36-Hour Hackathon", cat: "hackathon", date: "2026-08-22", time: "08:30 AM", reg: 310, attended: 285, venue: "Auditorium" },
-                { title: "Android Jetpack Compose Sprints", cat: "workshop", date: "2026-08-10", time: "02:00 PM", reg: 180, attended: 156, venue: "Lab 2" },
-                { title: "Git, GitHub & Open Source Kickoff", cat: "seminar", date: "2026-07-28", time: "11:00 AM", reg: 120, attended: 108, venue: "Seminar Hall" }
-              ].map(evt => {
-                const ratio = Math.round((evt.attended / evt.reg) * 100);
-                return `
-                  <tr class="hover:bg-slate-50/80 transition-colors">
-                    <td class="p-4 pl-6">
-                      <div class="font-bold text-slate-900">${evt.title}</div>
-                      <div class="text-[11px] text-slate-400 font-mono">📍 ${evt.venue}</div>
-                    </td>
-                    <td class="p-4">
-                      <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase bg-blue-50 text-blue-700">
-                        ${evt.cat}
-                      </span>
-                    </td>
-                    <td class="p-4 font-mono text-slate-600 text-[11px]">${evt.date}<br><span class="text-slate-400">${evt.time}</span></td>
-                    <td class="p-4 font-mono font-bold text-slate-800">${evt.reg} delegates</td>
-                    <td class="p-4 font-mono font-bold text-emerald-600">${evt.attended} checked-in</td>
-                    <td class="p-4">
-                      <div class="flex items-center space-x-2">
-                        <div class="w-16 bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                          <div class="bg-emerald-500 h-1.5 rounded-full" style="width: ${ratio}%"></div>
-                        </div>
-                        <span class="font-mono text-[11px] font-bold text-slate-700">${ratio}%</span>
-                      </div>
-                    </td>
-                    <td class="p-4 text-right pr-6">
-                      <a href="#/attendance" class="px-2.5 py-1 text-xs font-bold text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors">
-                        Launch Scanner →
-                      </a>
-                    </td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>
       </div>
 
       <!-- Quick Broadcast Announcement Modal -->
@@ -337,7 +417,7 @@ export function renderClubAdminDashboardView(params = {}) {
           <div class="flex items-center justify-between pb-2 border-b border-slate-100">
             <div>
               <h3 class="text-base font-bold text-slate-900">Broadcast Notice to Club Delegates</h3>
-              <p class="text-xs text-slate-500">Sends notification to all ${club.memberCount} registered ${club.shortName} members</p>
+              <p class="text-xs text-slate-500">Sends notification to all registered ${club.name} members</p>
             </div>
             <button id="close-club-broadcast-modal" class="text-slate-400 hover:text-slate-600">✕</button>
           </div>
@@ -351,7 +431,7 @@ export function renderClubAdminDashboardView(params = {}) {
             <div>
               <label class="block font-semibold text-slate-700 mb-1">Target Cohort</label>
               <select id="club-notice-cohort" class="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500">
-                <option value="all">All Enrolled Members (${club.memberCount})</option>
+                <option value="all">All Enrolled Members (${totalMemberCount})</option>
                 <option value="registered">Registered Attendees for Upcoming Event</option>
                 <option value="core">Core Executive Team Only</option>
               </select>
@@ -362,7 +442,7 @@ export function renderClubAdminDashboardView(params = {}) {
               <textarea id="club-notice-body" rows="3" required placeholder="Please arrive 15 minutes early with your student ID cards..." class="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500"></textarea>
             </div>
 
-            <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-md transition-colors">
+            <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-md transition-colors cursor-pointer">
               Dispatch Notice Broadcast
             </button>
           </form>
@@ -376,6 +456,41 @@ export function renderClubAdminDashboardView(params = {}) {
 export function attachClubAdminDashboardEvents(params = {}) {
   // If access denied was rendered
   attachAccessDeniedEvents();
+
+  // Approve pending student membership
+  document.querySelectorAll(".approve-mem-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const memId = btn.dataset.memid;
+      const db = getDB();
+      const mem = (db.club_memberships || []).find(m => m.id === memId);
+      if (mem) {
+        mem.status = "Approved";
+        mem.approved_at = new Date().toISOString();
+        mem.remarks = "Approved by Club Admin";
+        saveDB(db);
+        logAudit("Club Admin", "Approved Student Membership", mem.studentName || mem.student_id, `Club: ${mem.club_id}`);
+        showToast("Membership Approved", `Student ${mem.studentName || 'applicant'} approved for club access!`, "success");
+        setTimeout(() => window.location.reload(), 300);
+      }
+    });
+  });
+
+  // Reject pending student membership
+  document.querySelectorAll(".reject-mem-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const memId = btn.dataset.memid;
+      const db = getDB();
+      const mem = (db.club_memberships || []).find(m => m.id === memId);
+      if (mem) {
+        mem.status = "Rejected";
+        mem.remarks = "Declined by Club Admin";
+        saveDB(db);
+        logAudit("Club Admin", "Declined Student Membership", mem.studentName || mem.student_id, `Club: ${mem.club_id}`);
+        showToast("Application Status Updated", "Student application was declined.", "info");
+        setTimeout(() => window.location.reload(), 300);
+      }
+    });
+  });
 
   // 1. Club Switcher Select
   const switcher = document.getElementById("club-switcher-select");

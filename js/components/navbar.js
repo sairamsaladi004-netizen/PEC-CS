@@ -45,16 +45,16 @@ export function renderNavbar() {
           </div>
 
           <!-- Right Controls: Role Pill, Switcher, Notifs, Auth -->
-          <div class="flex items-center space-x-2.5">
+          <div class="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
             
             <!-- Active Role Indicator Pill -->
-            <div class="hidden md:flex items-center space-x-1.5 px-2.5 py-1 rounded-xl border text-[11px] font-bold font-mono ${roleBadgeStyles[currentRole] || 'bg-slate-800 text-slate-300'}">
+            <div class="hidden lg:flex items-center space-x-1.5 px-2 py-1 rounded-xl border text-[11px] font-bold font-mono ${roleBadgeStyles[currentRole] || 'bg-slate-800 text-slate-300'}">
               <span class="w-1.5 h-1.5 rounded-full ${currentRole === ROLES.SUPER_ADMIN ? 'bg-rose-400' : currentRole === ROLES.FACULTY_COORDINATOR ? 'bg-purple-400' : currentRole === ROLES.CLUB_ADMIN ? 'bg-blue-400' : currentRole === ROLES.STUDENT ? 'bg-emerald-400' : 'bg-slate-400'}"></span>
               <span>${currentRole}</span>
             </div>
 
             <!-- Global Search Trigger -->
-            <button id="nav-search-trigger" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center space-x-1.5 border border-slate-700/60 transition-colors">
+            <button id="nav-search-trigger" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center space-x-1.5 border border-slate-700/60 transition-colors">
               <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
               <span class="hidden xl:inline">Search</span>
               <kbd class="hidden xl:inline-block px-1.5 py-0.5 text-[10px] bg-slate-900 text-slate-400 rounded font-mono">⌘K</kbd>
@@ -62,7 +62,7 @@ export function renderNavbar() {
 
             <!-- Notifications Bell -->
             <div class="relative">
-              <button id="nav-notif-btn" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 relative border border-slate-700/60 transition-colors">
+              <button id="nav-notif-btn" class="p-1.5 sm:p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 relative border border-slate-700/60 transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                 ${unreadCount > 0 ? `
                   <span class="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-bold flex items-center justify-center animate-pulse">
@@ -83,15 +83,14 @@ export function renderNavbar() {
               </div>
             </div>
 
-            <!-- Role Persona Switcher (Super Admin, Faculty Coord, Club Admin, Student, Guest) -->
-            <div class="hidden sm:flex items-center space-x-1 bg-slate-800 p-1 rounded-xl border border-slate-700/60">
-              <span class="text-[10px] uppercase font-bold text-slate-400 px-1.5">Role</span>
-              <select id="persona-switcher-select" class="bg-slate-900 text-white text-xs font-semibold rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer">
+            <!-- Role Persona Switcher (Compact Dropdown) -->
+            <div class="hidden md:flex items-center space-x-1 bg-slate-800 p-1 rounded-xl border border-slate-700/60 max-w-[150px] lg:max-w-xs">
+              <select id="persona-switcher-select" class="bg-slate-900 text-white text-xs font-semibold rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer w-full truncate">
                 ${accounts.map(acc => {
                   const accRole = normalizeRole(acc.role);
                   return `
                     <option value="${acc.id}" ${acc.id === user.id ? 'selected' : ''}>
-                      ${acc.name} — ${accRole}
+                      ${acc.name} (${accRole})
                     </option>
                   `;
                 }).join('')}
@@ -100,17 +99,17 @@ export function renderNavbar() {
 
             <!-- Sign In / Switch Account / Profile Link -->
             ${currentRole === ROLES.GUEST ? `
-              <a href="#/login" class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md transition-colors flex items-center space-x-1.5">
+              <a href="#/login" class="px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md transition-colors flex items-center space-x-1 shrink-0">
                 <span>🔐</span>
-                <span>Sign In</span>
+                <span class="inline">Sign In</span>
               </a>
             ` : `
-              <div class="flex items-center space-x-2">
-                <a href="#/login" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold border border-slate-700 transition-colors flex items-center space-x-1" title="Sign In or Switch Account">
+              <div class="flex items-center space-x-1.5 shrink-0">
+                <a href="#/login" class="px-2 sm:px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold border border-slate-700 transition-colors flex items-center space-x-1" title="Sign In or Switch Account">
                   <span>🔐</span>
-                  <span>Sign In</span>
+                  <span class="hidden sm:inline">Sign In</span>
                 </a>
-                <a href="#/student-profile" class="flex items-center space-x-2 pl-0.5 group" title="Open Profile (${user.name})">
+                <a href="#/student-profile" class="flex items-center pl-0.5 group shrink-0" title="Open Profile (${user.name})">
                   <img src="${user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}" class="w-8 h-8 rounded-xl object-cover border border-blue-500/50 group-hover:ring-2 group-hover:ring-blue-400 transition-all" alt="${user.name}" />
                 </a>
               </div>
@@ -183,11 +182,11 @@ function renderDesktopNavForRole(role, currentHash) {
     return `
       <a href="#/club-dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/club-dashboard') ? 'bg-blue-600 text-white' : 'text-blue-300 hover:text-white hover:bg-blue-900/40'}">⚡ Club Dashboard</a>
       <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">My Club</a>
-      <a href="#/club-dashboard" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Roster</a>
-      <a href="#/coordinator/events" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Club Events</a>
-      <a href="#/attendance" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">QR Attendance</a>
+      <a href="#/attendance" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">QR Kiosk</a>
       <a href="#/projects" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Projects</a>
-      <a href="#/lms" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Resources</a>
+      <a href="#/quizzes" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Quizzes</a>
+      <a href="#/practice" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Practice</a>
+      <a href="#/study-circles" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Study Circles</a>
       <a href="#/announcements" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Notices</a>
     `;
   }
@@ -197,12 +196,11 @@ function renderDesktopNavForRole(role, currentHash) {
       <a href="#/student/dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/student') ? 'bg-emerald-600 text-white' : 'text-emerald-300 hover:text-white hover:bg-emerald-900/40'}">🎒 Student Portal</a>
       <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">35 Clubs</a>
       <a href="#/events" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Events & Passes</a>
-      <a href="#/student/attendance" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">My Attendance</a>
+      <a href="#/quizzes" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Timed Quizzes</a>
+      <a href="#/practice" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Problem Sets</a>
+      <a href="#/study-circles" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Peer Circles</a>
       <a href="#/student/certificates" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Certificates</a>
       <a href="#/membership-card" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Digital ID</a>
-      <a href="#/projects" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Projects</a>
-      <a href="#/lms" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Resources</a>
-      <a href="#/announcements" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Notices</a>
     `;
   }
 

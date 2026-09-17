@@ -368,9 +368,23 @@ export function renderClubsView(params = {}) {
   // =========================================================================
   // MAIN CLUBS DIRECTORY VIEW (35 Pragati Engineering College Clubs)
   // =========================================================================
-  const industry4Clubs = db.clubs.filter(c => c.category === "Industry 4.0");
-  const coCurricularClubs = db.clubs.filter(c => c.category === "Co-Curricular");
-  const extraCurricularClubs = db.clubs.filter(c => c.category === "Extra-Curricular");
+  // Handle Club Admin scoping
+  let allClubs = db.clubs || [];
+  if (user.role === "Club Admin") {
+    const assignedIds = new Set([
+      user.clubId,
+      ...(user.clubs || []),
+      ...(user.assignedClubs || []),
+      user.adminForClub
+    ].filter(Boolean));
+    if (assignedIds.size > 0) {
+      allClubs = (db.clubs || []).filter(c => assignedIds.has(c.id));
+    }
+  }
+
+  const industry4Clubs = allClubs.filter(c => c.category === "Industry 4.0");
+  const coCurricularClubs = allClubs.filter(c => c.category === "Co-Curricular");
+  const extraCurricularClubs = allClubs.filter(c => c.category === "Extra-Curricular");
 
   return `
     <div class="space-y-6 pb-16">
@@ -427,7 +441,7 @@ export function renderClubsView(params = {}) {
         <!-- Category Filter Tabs -->
         <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 text-xs">
           <button data-category="all" class="club-category-btn px-3.5 py-1.5 rounded-xl font-bold bg-blue-600 text-white shadow-sm transition-all">
-            All Clubs (${db.clubs.length})
+            All Clubs (${allClubs.length})
           </button>
           <button data-category="Industry 4.0" class="club-category-btn px-3.5 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all">
             Industry 4.0 (${industry4Clubs.length})
@@ -443,13 +457,13 @@ export function renderClubsView(params = {}) {
 
       <!-- Clubs Count Indicator -->
       <div class="flex items-center justify-between text-xs text-slate-500 px-1">
-        <span id="clubs-count-display">Showing all ${db.clubs.length} official college clubs</span>
+        <span id="clubs-count-display">Showing ${user.role === 'Club Admin' ? 'assigned' : 'all'} ${allClubs.length} official college clubs</span>
         <span class="text-slate-400 font-mono">Pragati Engineering College (Autonomous)</span>
       </div>
 
       <!-- Clubs Grid -->
       <div id="clubs-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        ${db.clubs.map(club => {
+        ${allClubs.map(club => {
           const userMemberships = user.id ? (db.club_memberships || []).filter(m => m.student_id === user.id || m.studentId === user.id) : [];
           const isMember = (user.clubs && user.clubs.includes(club.id)) || userMemberships.some(m => (m.club_id === club.id || m.clubId === club.id) && m.status === "Approved");
           const isPending = userMemberships.some(m => (m.club_id === club.id || m.clubId === club.id) && m.status === "Pending");

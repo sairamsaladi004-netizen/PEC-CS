@@ -60,6 +60,7 @@
   #app,
   main,
   #main-content,
+  #view-container,
   .certificate-printable-wrapper,
   .printable-area,
   .printable-area * {
@@ -68,7 +69,8 @@
 
   #app,
   main,
-  #main-content {
+  #main-content,
+  #view-container {
     display: block !important;
     margin: 0 !important;
     padding: 0 !important;
