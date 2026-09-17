@@ -1,0 +1,121 @@
+/**
+ * CampusTech - Dedicated Print Media Stylesheet
+ * Optimized for High-Resolution Landscape Digital Certificates & Accredited Credentials
+ * Triggered via window.print()
+ */
+
+@media print {
+  /* 1. Page Configuration: Set landscape orientation and eliminate browser margins/headers/footers */
+  @page {
+    size: landscape;
+    margin: 0; /* Suppresses browser auto-generated header (URL/Title) and footer (date/page numbers) */
+  }
+
+  /* 2. Global Document Reset for Crisp Vector Printing */
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
+    overflow: hidden !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    font-smooth: always !important;
+    -webkit-font-smoothing: antialiased !important;
+  }
+
+  /* 3. Suppress all extraneous non-printable DOM elements */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* 4. Target and isolate the printable certificate area */
+  .printable-area,
+  .printable-area * {
+    visibility: visible !important;
+  }
+
+  .certificate-printable-wrapper {
+    position: fixed !important;
+    inset: 0 !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #ffffff !important;
+    z-index: 999999 !important;
+  }
+
+  .printable-area,
+  .certificate-sheet {
+    position: relative !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    margin: 0 !important;
+    padding: 10mm 14mm !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    page-break-inside: avoid !important;
+    page-break-before: avoid !important;
+    page-break-after: avoid !important;
+    break-inside: avoid !important;
+    overflow: hidden !important;
+  }
+
+  /* High fidelity print borders and gradients preservation */
+  .certificate-sheet * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 5. Comprehensive suppression list for web chrome & interactive UI elements */
+  .no-print,
+  #app-header,
+  header,
+  nav,
+  aside,
+  footer,
+  #sidebar,
+  .sidebar,
+  button,
+  .controls-bar,
+  #dynamic-customizer-drawer,
+  #toast-container,
+  #search-modal-container,
+  #auth-modal-container,
+  .modal,
+  .tooltip,
+  .badge-notification {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    width: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* 6. Typography & QR Element optimizations for laser printing */
+  .cert-qr-element {
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+
+  svg {
+    shape-rendering: geometricPrecision !important;
+  }
+}
