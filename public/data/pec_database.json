@@ -1,0 +1,1405 @@
+{
+  "departments": [
+    {
+      "code": "CE",
+      "name": "Civil Engineering"
+    },
+    {
+      "code": "IT",
+      "name": "Information Technology"
+    },
+    {
+      "code": "ME",
+      "name": "Mechanical Engineering"
+    },
+    {
+      "code": "CSE",
+      "name": "Computer Science & Engineering"
+    },
+    {
+      "code": "CSE(CS)",
+      "name": "CSE - Cyber Security"
+    },
+    {
+      "code": "CSE(AIML)",
+      "name": "CSE - Artificial Intelligence & Machine Learning"
+    },
+    {
+      "code": "ECE",
+      "name": "Electronics & Communication Engineering"
+    },
+    {
+      "code": "EEE",
+      "name": "Electrical & Electronics Engineering"
+    },
+    {
+      "code": "CSE(DS)",
+      "name": "CSE - Data Science"
+    },
+    {
+      "code": "BSH",
+      "name": "Basic Sciences & Humanities"
+    },
+    {
+      "code": "CSE(AI)",
+      "name": "CSE - Artificial Intelligence"
+    }
+  ],
+  "users": [
+    {
+      "id": "std-101",
+      "name": "Aarav Sharma",
+      "rollNo": "22CS101",
+      "email": "aarav.sharma@pragati.ac.in",
+      "demoAlias": "student.demo@pragati.ac.in",
+      "role": "Student",
+      "department": "CSE",
+      "year": "3rd Year",
+      "section": "B",
+      "phone": "+91 98765 43210",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
+      "skills": [
+        "Python",
+        "PyTorch",
+        "FastAPI",
+        "Docker",
+        "ROS"
+      ],
+      "interests": [
+        "Artificial Intelligence",
+        "Edge Computing",
+        "Competitive Programming"
+      ],
+      "bio": "Undergraduate CSE student enthusiastic about practical deep learning and edge autonomy.",
+      "salt": "pec_secure_salt_2026",
+      "passwordHash": "8df6e901d9ba1d299baecfaf12772e80bc423abeb0009be38bfe831426605436",
+      "emailVerified": true,
+      "membershipId": "PEC-MEM-2026-CSE-8492",
+      "validUntil": "30 June 2027",
+      "isDemo": true
+    },
+    {
+      "id": "coord-201",
+      "name": "Mrs. L. Yamuna",
+      "facultyId": "FAC-CSE-AIML-01",
+      "email": "yamuna.l@pragati.ac.in",
+      "demoAlias": "coordinator.demo@pragati.ac.in",
+      "role": "Club Coordinator",
+      "department": "CSE(AIML)",
+      "designation": "Assistant Professor & Faculty Coordinator",
+      "phone": "+91 884 2383305",
+      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80",
+      "assignedClubs": [
+        "I4-08"
+      ],
+      "skills": [
+        "Artificial Intelligence",
+        "Machine Learning",
+        "Research Mentorship"
+      ],
+      "interests": [
+        "Deep Learning Models",
+        "Curricular Innovations"
+      ],
+      "bio": "Faculty Coordinator for AI&ML Turing Club at Pragati Engineering College.",
+      "salt": "pec_secure_salt_2026",
+      "passwordHash": "8df6e901d9ba1d299baecfaf12772e80bc423abeb0009be38bfe831426605436",
+      "emailVerified": true,
+      "membershipId": "PEC-FAC-2026-AIML-01",
+      "validUntil": "Permanent",
+      "isDemo": true
+    },
+    {
+      "id": "std-102",
+      "name": "Priya Patel",
+      "rollNo": "22CS142",
+      "email": "priya.patel@pragati.ac.in",
+      "demoAlias": "leader.demo@pragati.ac.in",
+      "role": "Club Student Leader",
+      "studentLeaderRole": "President",
+      "clubId": "I4-08",
+      "department": "CSE(AIML)",
+      "year": "3rd Year",
+      "section": "A",
+      "phone": "+91 98480 12345",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80",
+      "skills": [
+        "Machine Learning",
+        "Event Management",
+        "Python",
+        "Leadership"
+      ],
+      "interests": [
+        "Tech Hackathons",
+        "Community Building"
+      ],
+      "bio": "Student President of AI&ML Turing Club organizing tech symposiums and workshops.",
+      "salt": "pec_secure_salt_2026",
+      "passwordHash": "8df6e901d9ba1d299baecfaf12772e80bc423abeb0009be38bfe831426605436",
+      "emailVerified": true,
+      "membershipId": "PEC-MEM-2026-AIML-5120",
+      "validUntil": "30 June 2027",
+      "isDemo": true
+    },
+    {
+      "id": "admin-001",
+      "name": "Dr. K. Satyanarayana",
+      "facultyId": "FAC-PEC-001",
+      "email": "principal@pragati.ac.in",
+      "demoAlias": "admin.demo@pragati.ac.in",
+      "role": "Super Admin",
+      "department": "CSE",
+      "designation": "Principal & Head of Academic Council",
+      "phone": "+91 884 2383305",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&auto=format&fit=crop&q=80",
+      "skills": [
+        "Academic Administration",
+        "NBA / NAAC Accreditation",
+        "Institutional Leadership"
+      ],
+      "interests": [
+        "Higher Technical Education",
+        "Outcome-Based Education"
+      ],
+      "bio": "Principal, Pragati Engineering College (Autonomous), Surampalem.",
+      "salt": "pec_secure_salt_2026",
+      "passwordHash": "8df6e901d9ba1d299baecfaf12772e80bc423abeb0009be38bfe831426605436",
+      "emailVerified": true,
+      "membershipId": "PEC-ADMIN-2026-HQ-001",
+      "validUntil": "Lifetime",
+      "isDemo": true
+    }
+  ],
+  "clubs": [
+    {
+      "id": "I4-01",
+      "name": "Green Building Club",
+      "category": "Industry 4.0",
+      "department": "CE",
+      "facultyCoordinator": "Mr L Praveen Kumar",
+      "description": "Fosters sustainable engineering practices, net-zero architectural design, energy-efficient building rating systems, and green materials in modern civil infrastructure.",
+      "focusAreas": [
+        "Sustainable Construction",
+        "Green Architecture",
+        "Energy Efficient Materials",
+        "LEED & GRIHA Standards",
+        "Carbon Neutral Design"
+      ],
+      "logo": "https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "I4-02",
+      "name": "Gaming Club",
+      "category": "Industry 4.0",
+      "department": "IT",
+      "facultyCoordinator": "Mr. D. Konda Babu",
+      "description": "Explores next-generation game design, interactive 3D simulations, real-time shader pipelines, physics engine dynamics, and immersive multimedia computing.",
+      "focusAreas": [
+        "Game Engine Architecture",
+        "Unity 3D / Unreal Engine",
+        "Real-Time Rendering",
+        "Physics Simulation",
+        "Interactive Game Asset Development"
+      ],
+      "logo": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "I4-03",
+      "name": "Robotics Club",
+      "category": "Industry 4.0",
+      "department": "ME",
+      "facultyCoordinator": "Mr. V.V.N. Sarath",
+      "description": "Hands-on robotics engineering, mechanical linkage design, embedded micro-controller interfaces, ROS simulation, and autonomous mobile robot prototyping.",
+      "focusAreas": [
+        "Kinematics & Dynamics",
+        "Autonomous Systems",
+        "Microcontrollers & Actuators",
+        "ROS & Gazebo Simulation",
+        "Industrial Manipulators"
+      ],
+      "logo": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1561557944-6e7860d1a7eb?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "I4-04",
+      "name": "AR/VR Club",
+      "category": "Industry 4.0",
+      "department": "CSE",
+      "facultyCoordinator": "Mr. A. Avinash",
+      "description": "Pioneering spatial computing applications, virtual simulation environments, augmented industrial training tools, and WebXR immersive experiences.",
+      "focusAreas": [
+        "Spatial Computing",
+        "Augmented Reality SDKs",
+        "Virtual Reality Environments",
+        "WebXR & 3D Web",
+        "Immersive Interaction"
+      ],
+      "logo": "https://images.unsplash.com/photo-1593508512255-86ab42a8e620?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "I4-05",
+      "name": "Additive Manufacturing Club",
+      "category": "Industry 4.0",
+      "department": "ME",
+      "facultyCoordinator": "Mr. P. Ram Prasad",
+      "description": "Specializing in industrial 3D printing, advanced geometric slicing, topology optimization, filament composites, and rapid functional prototyping for manufacturing.",
+      "focusAreas": [
+        "3D Printing Technologies",
+        "CAD Modelling for Additive",
+        "Slicing Algorithms",
+        "Rapid Prototyping",
+        "Composite Materials"
+      ],
+      "logo": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "I4-06",
+      "name": "Cyber Security Club",
+      "category": "Industry 4.0",
+      "department": "CSE(CS)",
+      "facultyCoordinator": "Mrs. K Sireesha",
+      "description": "Equipping engineering students with cybersecurity defenses, ethical hacking methodologies, vulnerability analysis, incident response, and cryptographic security.",
+      "focusAreas": [
+        "Network Security",
+        "Ethical Hacking & Penetration Testing",
+        "Cryptography",
+        "Threat Intelligence",
+        "Secure Software Design"
+      ],
+      "logo": "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "I4-07",
+      "name": "Cloud Computing Club",
+      "category": "Industry 4.0",
+      "department": "IT",
+      "facultyCoordinator": "Mr. K Siva Shankar",
+      "description": "Bridging campus curriculum with enterprise cloud infrastructure, containerized deployments, Kubernetes orchestration, and multi-cloud distributed systems.",
+      "focusAreas": [
+        "Cloud Native Architecture",
+        "Virtualization & Containers",
+        "DevOps & CI/CD",
+        "Serverless Computing",
+        "Microservices & Distributed Systems"
+      ],
+      "logo": "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "I4-08",
+      "name": "AI&ML Turing Club",
+      "category": "Industry 4.0",
+      "department": "CSE(AIML)",
+      "facultyCoordinator": "Mrs. L. Yamuna",
+      "description": "Advancing algorithmic intelligence, predictive models, deep neural networks, computer vision, and domain-specific generative AI problem solving.",
+      "focusAreas": [
+        "Deep Learning & Neural Networks",
+        "Natural Language Processing",
+        "Computer Vision",
+        "Machine Learning Pipelines",
+        "Generative AI"
+      ],
+      "logo": "https://images.unsplash.com/photo-1677442136019-21780efad99a?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "I4-09",
+      "name": "IoT Club",
+      "category": "Industry 4.0",
+      "department": "ECE",
+      "facultyCoordinator": "Dr. Subodh Kumar Panda",
+      "description": "Interconnecting physical sensors, smart actuators, edge microcontrollers, and wireless telemetry for smart campus and industrial automation.",
+      "focusAreas": [
+        "Sensor Networks",
+        "Edge Computing",
+        "Embedded Systems (ESP32/ARM)",
+        "Wireless Telemetry (MQTT/LoRa)",
+        "Smart Hardware Interfacing"
+      ],
+      "logo": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "I4-10",
+      "name": "Electric Vehicle Club",
+      "category": "Industry 4.0",
+      "department": "EEE",
+      "facultyCoordinator": "Mr. P.V.V. Ramana",
+      "description": "Designing clean electric mobility solutions, regenerative braking circuits, lithium-ion battery management systems, and smart charging controllers.",
+      "focusAreas": [
+        "EV Powertrain & Motors",
+        "Battery Management Systems (BMS)",
+        "Charging Infrastructure",
+        "Power Electronics Converters",
+        "Energy Efficiency Simulation"
+      ],
+      "logo": "https://images.unsplash.com/photo-1593941707882-a5bba14938c7?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1558441719-8b83594b2a37?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "I4-11",
+      "name": "Data Analytics Club",
+      "category": "Industry 4.0",
+      "department": "CSE(DS)",
+      "facultyCoordinator": "Mr B Janu Naik",
+      "description": "Unlocking quantitative insights from big data through statistical inference, Python data stacks, ETL pipelines, and visual analytical dashboards.",
+      "focusAreas": [
+        "Big Data Processing",
+        "Exploratory Data Analysis",
+        "Statistical Modeling",
+        "Business Intelligence & Visualization",
+        "Data Engineering"
+      ],
+      "logo": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "CC-01",
+      "name": "Energy Management Club",
+      "category": "Co-Curricular",
+      "department": "EEE",
+      "facultyCoordinator": "Mrs. P. Pushpalatha",
+      "description": "Promoting institutional energy audits, clean solar adoption, peak-load optimization, and energy conservation awareness across engineering labs.",
+      "focusAreas": [
+        "Energy Auditing",
+        "Renewable Energy Systems",
+        "Grid Integration",
+        "Power Quality Optimization",
+        "Energy Conservation Awareness"
+      ],
+      "logo": "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "CC-02",
+      "name": "Water Management Club",
+      "category": "Co-Curricular",
+      "department": "CE",
+      "facultyCoordinator": "Mr L Praveen Kumar",
+      "description": "Spearheading campus rainwater conservation, sustainable wastewater reclamation, ground water recharge monitoring, and hydraulic assessment.",
+      "focusAreas": [
+        "Rainwater Harvesting",
+        "Hydrological Modeling",
+        "Water Recycling & Treatment",
+        "Urban Drainage Design",
+        "Conservation Technologies"
+      ],
+      "logo": "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "CC-03",
+      "name": "Waste Management Club",
+      "category": "Co-Curricular",
+      "department": "BSH",
+      "facultyCoordinator": "Mrs S Bhargavi",
+      "description": "Implementing institutional solid waste segregation, safe e-waste disposal, organic composting methods, and zero-landfill eco-campaigns.",
+      "focusAreas": [
+        "Solid Waste Segregation",
+        "E-Waste Recycling",
+        "Composting Systems",
+        "Circular Economy Principles",
+        "Environmental Remediation"
+      ],
+      "logo": "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1528323273322-d81458248d40?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "CC-04",
+      "name": "Sanitation and Hygiene Club",
+      "category": "Co-Curricular",
+      "department": "CE",
+      "facultyCoordinator": "Mr D V D Prasad",
+      "description": "Championing campus environmental health, clean water hygiene monitoring, hygienic facility standards, and Swachh Bharat community initiatives.",
+      "focusAreas": [
+        "Public Health Engineering",
+        "Sanitation Infrastructure",
+        "Water Testing & Purity",
+        "Community Health Outreach",
+        "Clean Campus Protocols"
+      ],
+      "logo": "https://images.unsplash.com/photo-1584634731339-252c581abfc5?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1584744982491-665216d95f8b?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "CC-05",
+      "name": "Rotaract Club",
+      "category": "Co-Curricular",
+      "department": "CSE",
+      "facultyCoordinator": "Mr. Manas Kumar Yogi",
+      "description": "Affiliated student chapter driving community development, blood donation drives, educational mentoring for schools, and leadership training.",
+      "focusAreas": [
+        "Community Service",
+        "Youth Leadership Development",
+        "Social Impact Initiatives",
+        "Professional Networking",
+        "Humanitarian Outreach"
+      ],
+      "logo": "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "CC-06",
+      "name": "NCC",
+      "category": "Co-Curricular",
+      "department": "BSH",
+      "facultyCoordinator": "Dr. B. Adinarayana",
+      "description": "National Cadet Corps unit cultivating patriotic spirit, physical resilience, ceremonial parade discipline, and civil emergency assistance skills.",
+      "focusAreas": [
+        "Military Discipline & Drill",
+        "National Defense Awareness",
+        "Physical Fitness & Endurance",
+        "Leadership & Comradeship",
+        "Disaster Response Training"
+      ],
+      "logo": "https://images.unsplash.com/photo-1579758629938-03607ccdbaba?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "CC-07",
+      "name": "Hope for a Change Club",
+      "category": "Co-Curricular",
+      "department": "ECE",
+      "facultyCoordinator": "Mr. M. Bramharaju",
+      "description": "Student-driven social reform collective providing academic tutoring, clothing drives, and welfare assistance to underprivileged local communities.",
+      "focusAreas": [
+        "Social Welfare",
+        "Empowerment Programs",
+        "Underprivileged Student Tutoring",
+        "Relief Drives",
+        "Empathy & Civic Responsibility"
+      ],
+      "logo": "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "CC-08",
+      "name": "Sports and Game Club",
+      "category": "Co-Curricular",
+      "department": "BSH",
+      "facultyCoordinator": "Dr. B. Adinarayana",
+      "description": "Coordinating inter-departmental athletic leagues, sports tournaments, physical wellness routines, and representation at university championships.",
+      "focusAreas": [
+        "Athletics & Track Events",
+        "Team Sports (Cricket, Volleyball, Basketball)",
+        "Indoor Games (Chess, Badminton)",
+        "Sportsmanship & Fitness",
+        "Inter-Collegiate Tournaments"
+      ],
+      "logo": "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "CC-09",
+      "name": "NSS",
+      "category": "Co-Curricular",
+      "department": "BSH",
+      "facultyCoordinator": "Mr P. Raja Sekhar Phaneendra",
+      "description": "Dedicated National Service Scheme unit organizing annual village enrichment camps, medical check-ups, environmental greening, and literacy camps.",
+      "focusAreas": [
+        "National Service Scheme Camps",
+        "Rural Village Adoption",
+        "Health & Eye Camps",
+        "Tree Plantation",
+        "Civic Literacy Drives"
+      ],
+      "logo": "https://images.unsplash.com/photo-1526976668912-1a811878dd37?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "CC-10",
+      "name": "Cultural Club",
+      "category": "Co-Curricular",
+      "department": "CSE(AI)",
+      "facultyCoordinator": "Mrs K.L. Viveka",
+      "description": "Nurturing creative self-expression, performing arts, musical orchestration, classical dance forms, drama, and staging the annual college cultural festival.",
+      "focusAreas": [
+        "Music & Classical Arts",
+        "Choreography & Dance",
+        "Theatrics & Drama",
+        "Literary & Fine Arts",
+        "College Fest Stage Management"
+      ],
+      "logo": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1460723237483-7a6dc9d0b212?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "CC-11",
+      "name": "Greenary Club",
+      "category": "Co-Curricular",
+      "department": "BSH",
+      "facultyCoordinator": "Dr. N. Prasanthi",
+      "description": "Fostering campus biodiversity, tree plantation drives, botanical garden preservation, and building an environmentally conscious student body.",
+      "focusAreas": [
+        "Campus Afforestation",
+        "Botanical Diversity",
+        "Organic Horticulture",
+        "Biodiversity Auditing",
+        "Eco-Awareness Seminars"
+      ],
+      "logo": "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "EC-01",
+      "name": "Press Club",
+      "category": "Extra-Curricular",
+      "department": "BSH",
+      "facultyCoordinator": "Mrs. M. Madhavi",
+      "description": "Chronicling college events, publishing the semester gazette, managing campus media, and mentoring student reporters in investigative journalism.",
+      "focusAreas": [
+        "Campus Journalism",
+        "Editorial Writing & Reporting",
+        "Photojournalism",
+        "Newsletter Publishing",
+        "Event Media Coverage"
+      ],
+      "logo": "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "EC-02",
+      "name": "Toast Masters Club",
+      "category": "Extra-Curricular",
+      "department": "BSH",
+      "facultyCoordinator": "Mrs. M Madhavi",
+      "description": "Affiliated public speaking forum cultivating structured speeches, active listening, constructive speech evaluation, and professional eloquence.",
+      "focusAreas": [
+        "Public Speaking",
+        "Extempore & Impromptu Eloquence",
+        "Parliamentary Debating",
+        "Confidence Building",
+        "Leadership Communication"
+      ],
+      "logo": "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "EC-03",
+      "name": "Metaverse Club",
+      "category": "Extra-Curricular",
+      "department": "CSE(AI)",
+      "facultyCoordinator": "Mr. M. Veera Babu",
+      "description": "Exploring virtual 3D collaborative realms, spatial avatars, immersive metaverse architecture, and decentralized shared-world platforms.",
+      "focusAreas": [
+        "Virtual Worlds Design",
+        "Avatars & Spatial Identity",
+        "Digital Twin Prototyping",
+        "Interactive Metaverse Platforms",
+        "Collaborative Virtual Spaces"
+      ],
+      "logo": "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "EC-04",
+      "name": "Pragsoft Club",
+      "category": "Extra-Curricular",
+      "department": "CSE",
+      "facultyCoordinator": "Mr. S.K. Shankar",
+      "description": "The official software engineering guild building internal campus automation portals, student management micro-tools, and collaborative utilities.",
+      "focusAreas": [
+        "Software Development Life Cycle",
+        "Enterprise App Architecture",
+        "Full-Stack Web Systems",
+        "Campus Automation Utilities",
+        "Code Peer Reviews"
+      ],
+      "logo": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "EC-05",
+      "name": "IEI(I) - Mechanical",
+      "category": "Extra-Curricular",
+      "department": "ME",
+      "facultyCoordinator": "Mr A Yeswanth",
+      "description": "Student chapter of The Institution of Engineers (India) for Mechanical Engineering, offering professional certifications, guest talks, and industrial plant visits.",
+      "focusAreas": [
+        "Institution of Engineers Chapter",
+        "Thermal & Fluids Engineering",
+        "Manufacturing Standards",
+        "Industrial Plant Visits",
+        "Technical Paper Presentation"
+      ],
+      "logo": "https://images.unsplash.com/photo-1537462715879-360eeb61a0ad?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "EC-06",
+      "name": "GO-KART Club",
+      "category": "Extra-Curricular",
+      "department": "ME",
+      "facultyCoordinator": "Mr. M. Sunil Raj",
+      "description": "Designing, manufacturing, and racing custom student-built Go-Karts for national collegiate motorsport challenges and automotive engineering expos.",
+      "focusAreas": [
+        "Chassis & Roll Cage Fabrication",
+        "Steering & Braking Dynamics",
+        "Automotive Engine Tuning",
+        "Vehicle Telemetry",
+        "Motorsport Competitions"
+      ],
+      "logo": "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "EC-07",
+      "name": "Spark WIT Club",
+      "category": "Extra-Curricular",
+      "department": "IT",
+      "facultyCoordinator": "Mrs A. Manga Devi",
+      "description": "Inspiring and empowering female engineers in technology, organizing coding mentorship circles, tech talks, and championing diversity in STEM careers.",
+      "focusAreas": [
+        "Women in Technology (WIT)",
+        "Mentorship & Diversity",
+        "Hackathons & Coding Camps",
+        "Industry Tech Talks",
+        "Career Acceleration"
+      ],
+      "logo": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "EC-08",
+      "name": "IETE",
+      "category": "Extra-Curricular",
+      "department": "ECE",
+      "facultyCoordinator": "Dr. V. Radhika",
+      "description": "Student forum of the Institution of Electronics and Telecommunication Engineers, organizing hardware project expos, wireless comms workshops, and symposia.",
+      "focusAreas": [
+        "Institution of Electronics & Telecommunication Engineers",
+        "RF & Wireless Comms",
+        "PCB Design & Soldering",
+        "Signal Processing",
+        "Professional Symposia"
+      ],
+      "logo": "https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "EC-09",
+      "name": "Maths Club",
+      "category": "Extra-Curricular",
+      "department": "BSH",
+      "facultyCoordinator": "Mr. P. Madhubabu",
+      "description": "Cultivating mathematical intuition, algorithmic problem solving, statistical mechanics, cryptographic number theory, and collegiate olympiads.",
+      "focusAreas": [
+        "Applied Engineering Mathematics",
+        "Discrete Structures",
+        "Mathematical Olympiad & Puzzles",
+        "Numerical Analysis",
+        "Cryptographic Number Theory"
+      ],
+      "logo": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "EC-10",
+      "name": "IEI(I) - Civil",
+      "category": "Extra-Curricular",
+      "department": "CE",
+      "facultyCoordinator": "Dr. B. Satyanarayana",
+      "description": "Student chapter of The Institution of Engineers (India) for Civil Engineering, hosting technical symposiums, structural case reviews, and field visits.",
+      "focusAreas": [
+        "Institution of Engineers Civil Chapter",
+        "Structural Engineering Standards",
+        "Surveying & Geoinformatics",
+        "Concrete Technology",
+        "Infrastructure Case Studies"
+      ],
+      "logo": "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1541888946425-d0fbb186c5f7?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "EC-11",
+      "name": "English Club",
+      "category": "Extra-Curricular",
+      "department": "BSH",
+      "facultyCoordinator": "Dr. S. Prasad",
+      "description": "Enhancing verbal communication, business English proficiency, creative writing portfolios, accent neutralization, and competitive verbal aptitude.",
+      "focusAreas": [
+        "Creative Writing",
+        "Phonetics & Accent Neutralization",
+        "Literature Circles & Book Reviews",
+        "Verbal Aptitude Preparation",
+        "Corporate Presentation Skills"
+      ],
+      "logo": "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "EC-12",
+      "name": "ACCE(I)",
+      "category": "Extra-Curricular",
+      "department": "CE",
+      "facultyCoordinator": "Dr. B. Satyanarayana",
+      "description": "Student forum of the Association of Consulting Civil Engineers (India), connecting students with practicing consulting engineers and mega-project audits.",
+      "focusAreas": [
+        "Association of Consulting Civil Engineers",
+        "Construction Project Management",
+        "Site Safety Protocols",
+        "BIM (Building Information Modeling)",
+        "Consulting Practices"
+      ],
+      "logo": "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    },
+    {
+      "id": "EC-13",
+      "name": "IEI(I) - EEE",
+      "category": "Extra-Curricular",
+      "department": "EEE",
+      "facultyCoordinator": "Mr. S. Nanibabu",
+      "description": "Student chapter of The Institution of Engineers (India) for Electrical and Electronics Engineering, conducting power grid workshops and equipment safety seminars.",
+      "focusAreas": [
+        "Institution of Engineers EEE Chapter",
+        "Power Systems & Substation Design",
+        "High Voltage Engineering",
+        "Smart Grid Innovations",
+        "Electrical Safety Standards"
+      ],
+      "logo": "https://images.unsplash.com/photo-1498084393753-b411b2d26b34?w=120&auto=format&fit=crop&q=80",
+      "banner": "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=900&auto=format&fit=crop&q=80",
+      "status": "Active",
+      "officialReportUrl": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2026-09-17T00:00:00.000Z"
+    }
+  ],
+  "club_memberships": [
+    {
+      "id": "mem-001",
+      "membership_id": "PEC-MEM-2026-AIML-101",
+      "student_id": "std-101",
+      "club_id": "I4-08",
+      "role": "Member",
+      "status": "Approved",
+      "requested_at": "2026-08-15T10:00:00.000Z",
+      "approved_at": "2026-08-16T14:30:00.000Z",
+      "approved_by": "Mrs. L. Yamuna",
+      "remarks": "Approved. Welcome to the AI&ML Turing Club!"
+    },
+    {
+      "id": "mem-002",
+      "membership_id": "PEC-MEM-2026-AIML-102",
+      "student_id": "std-102",
+      "club_id": "I4-08",
+      "role": "President",
+      "status": "Approved",
+      "requested_at": "2026-08-10T09:00:00.000Z",
+      "approved_at": "2026-08-11T11:00:00.000Z",
+      "approved_by": "Mrs. L. Yamuna",
+      "remarks": "Designated as Student President for AY 2025-2026."
+    },
+    {
+      "id": "mem-003",
+      "membership_id": "PEC-MEM-2026-ROB-103",
+      "student_id": "std-101",
+      "club_id": "I4-03",
+      "role": "Member",
+      "status": "Approved",
+      "requested_at": "2026-08-20T11:15:00.000Z",
+      "approved_at": "2026-08-21T09:45:00.000Z",
+      "approved_by": "Mr. V.V.N. Sarath",
+      "remarks": "Approved for robotics hardware workgroup."
+    }
+  ],
+  "club_roles": [
+    {
+      "id": "crole-001",
+      "club_id": "I4-08",
+      "student_id": "std-102",
+      "role_title": "President",
+      "assigned_by": "Mrs. L. Yamuna",
+      "assigned_at": "2026-08-11T11:00:00.000Z"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt-101",
+      "title": "Turing AI & Deep Learning National Symposium 2026",
+      "category": "Hackathon",
+      "event_type": "Hackathon",
+      "club_id": "I4-08",
+      "date": "2026-10-18",
+      "start_time": "09:00",
+      "end_time": "21:00",
+      "venue": "Central Auditorium & Computer Center, PEC Campus",
+      "max_participants": 250,
+      "registration_deadline": "2026-10-16 23:59",
+      "status": "Upcoming",
+      "banner": "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&auto=format&fit=crop&q=80",
+      "description": "Flagship annual innovation symposium on deep learning architectures, multimodal LLMs, and edge vision models. Features mentor sessions and prize grants.",
+      "rules": [
+        "Teams of 2 to 4 members from authorized engineering colleges.",
+        "Original problem statements mapped to Industry 4.0 pillars.",
+        "Working prototype and live repository demonstration required."
+      ],
+      "created_by": "Mrs. L. Yamuna",
+      "created_at": "2026-09-01T10:00:00.000Z",
+      "active_qr_token": null,
+      "qr_token_expiry": null
+    },
+    {
+      "id": "evt-102",
+      "title": "Autonomous Robotics & Embedded ROS Workshop",
+      "category": "Workshop",
+      "event_type": "Workshop",
+      "club_id": "I4-03",
+      "date": "2026-10-02",
+      "start_time": "10:00",
+      "end_time": "16:30",
+      "venue": "Mechanical Engineering CAD/CAM Lab",
+      "max_participants": 80,
+      "registration_deadline": "2026-09-30 23:59",
+      "status": "Upcoming",
+      "banner": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&auto=format&fit=crop&q=80",
+      "description": "Hands-on session on kinematics, robotic manipulators, ROS Gazebo simulations, and Arduino/ESP32 motor interface calibration.",
+      "rules": [
+        "Individual registration or pairs.",
+        "Bring laptop with Ubuntu 22.04 or virtualized ROS container."
+      ],
+      "created_by": "Mr. V.V.N. Sarath",
+      "created_at": "2026-09-02T10:00:00.000Z",
+      "active_qr_token": null,
+      "qr_token_expiry": null
+    },
+    {
+      "id": "evt-103",
+      "title": "Cloud Native Kubernetes & Microservices Masterclass",
+      "category": "Workshop",
+      "event_type": "Workshop",
+      "club_id": "I4-07",
+      "date": "2026-10-08",
+      "start_time": "14:00",
+      "end_time": "18:00",
+      "venue": "IT Department Server Lab",
+      "max_participants": 100,
+      "registration_deadline": "2026-10-06 23:59",
+      "status": "Upcoming",
+      "banner": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80",
+      "description": "Containerized services, Docker multi-stage builds, Kubernetes pod lifecycle, and CI/CD pipelines.",
+      "rules": [
+        "Basic Linux familiarity expected.",
+        "Docker Hub account required for lab pushes."
+      ],
+      "created_by": "Mr. K Siva Shankar",
+      "created_at": "2026-09-03T10:00:00.000Z",
+      "active_qr_token": "PEC-ATT-5D147A2E-MU578RZY",
+      "qr_token_expiry": "2026-09-17T07:49:37.918Z"
+    },
+    {
+      "id": "evt-104",
+      "title": "Cyber Defense CTF: Penetration Testing League",
+      "category": "Competition",
+      "event_type": "Competition",
+      "club_id": "I4-06",
+      "date": "2026-10-14",
+      "start_time": "10:00",
+      "end_time": "17:00",
+      "venue": "Cyber Security Specialized Lab",
+      "max_participants": 120,
+      "registration_deadline": "2026-10-12 23:59",
+      "status": "Upcoming",
+      "banner": "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&auto=format&fit=crop&q=80",
+      "description": "College-wide ethical hacking capture the flag challenge covering web security, network packet analysis, reverse engineering, and cryptography.",
+      "rules": [
+        "Zero malicious activity outside the designated sandbox network.",
+        "Points awarded for valid cryptographically signed flags."
+      ],
+      "created_by": "Mrs. K Sireesha",
+      "created_at": "2026-09-04T10:00:00.000Z",
+      "active_qr_token": null,
+      "qr_token_expiry": null
+    },
+    {
+      "id": "evt-105",
+      "title": "Green Building & Sustainable Civil Infrastructure Conclave",
+      "category": "Technical Session",
+      "event_type": "Technical Session",
+      "club_id": "I4-01",
+      "date": "2026-09-02",
+      "start_time": "09:30",
+      "end_time": "13:00",
+      "venue": "Civil Seminar Hall",
+      "max_participants": 150,
+      "registration_deadline": "2026-09-01 23:59",
+      "status": "Completed",
+      "banner": "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=900&auto=format&fit=crop&q=80",
+      "description": "Expert keynote presentations on net-zero energy design, IGBC/LEED green building metrics, and low-carbon cement composites.",
+      "rules": [
+        "Open to all PEC students."
+      ],
+      "created_by": "Mr L Praveen Kumar",
+      "created_at": "2026-08-20T10:00:00.000Z",
+      "active_qr_token": null,
+      "qr_token_expiry": null
+    }
+  ],
+  "event_registrations": [
+    {
+      "id": "reg-001",
+      "event_id": "evt-101",
+      "student_id": "std-101",
+      "ticket_id": "TCK-TUR-042",
+      "registered_at": "2026-09-10T11:00:00.000Z",
+      "status": "Confirmed"
+    },
+    {
+      "id": "reg-002",
+      "event_id": "evt-102",
+      "student_id": "std-101",
+      "ticket_id": "TCK-ROB-018",
+      "registered_at": "2026-09-08T14:20:00.000Z",
+      "status": "Confirmed"
+    },
+    {
+      "id": "reg-003",
+      "event_id": "evt-105",
+      "student_id": "std-101",
+      "ticket_id": "TCK-GB-005",
+      "registered_at": "2026-08-28T09:30:00.000Z",
+      "status": "Confirmed"
+    },
+    {
+      "id": "reg-1789629566058",
+      "event_id": "evt-103",
+      "student_id": "std-101",
+      "ticket_id": "TCK-I4-07-609",
+      "registered_at": "2026-09-17T07:19:26.058Z",
+      "status": "Confirmed"
+    }
+  ],
+  "attendance": [
+    {
+      "id": "att-001",
+      "attendance_id": "ATT-2026-GB-005",
+      "event_id": "evt-105",
+      "student_id": "std-101",
+      "timestamp": "2026-09-02T09:35:12.000Z",
+      "status": "Present",
+      "verification_method": "QR Scan"
+    },
+    {
+      "id": "att-1789629577937",
+      "attendance_id": "ATT-2026-I4-07-942",
+      "event_id": "evt-103",
+      "student_id": "std-101",
+      "timestamp": "2026-09-17T07:19:37.937Z",
+      "status": "Present",
+      "verification_method": "QR Scan"
+    }
+  ],
+  "certificates": [
+    {
+      "id": "PEC-AIML-2026-000124",
+      "certificateId": "PEC-AIML-2026-000124",
+      "student_id": "std-101",
+      "student_name": "Aarav Sharma",
+      "roll_no": "22CS101",
+      "event_id": "evt-105",
+      "event_name": "Green Building & Sustainable Civil Infrastructure Conclave",
+      "club_id": "I4-01",
+      "club_name": "Green Building Club",
+      "date": "2026-09-02",
+      "certificate_type": "Certificate of Participation",
+      "issued_date": "2026-09-02",
+      "authorized_signature": "Mr L Praveen Kumar & Dr. K. Satyanarayana",
+      "qr_hash": "8f4a3c19e872d9b62a15c304f5b89a27d14e5903bcaef421975e810a43bc92fe"
+    },
+    {
+      "id": "PEC-IT-2026-174635",
+      "certificateId": "PEC-IT-2026-174635",
+      "student_id": "std-101",
+      "student_name": "Aarav Sharma",
+      "roll_no": "22CS101",
+      "event_id": "evt-103",
+      "event_name": "Cloud Native Kubernetes & Microservices Masterclass",
+      "club_id": "I4-07",
+      "club_name": "Cloud Computing Club",
+      "date": "2026-10-08",
+      "certificate_type": "Certificate of Participation",
+      "issued_date": "2026-09-17",
+      "authorized_signature": "Mr. K Siva Shankar & Dr. K. Satyanarayana (Principal)",
+      "qr_hash": "71a3eeb06775e33fbb412cc5c65921d8e2b215a27cb753d6e963b5a71ccc5534"
+    }
+  ],
+  "announcements": [
+    {
+      "id": "ann-001",
+      "title": "Official Pragati Engineering College Club Directory 2025-2026",
+      "message": "All 35 official college clubs across Industry 4.0, Co-Curricular, and Extra-Curricular categories are chartered under the Career Guidance Cell and Academic Council.",
+      "target_audience": "All Students",
+      "target_id": "all",
+      "attachment_url": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "created_date": "2026-09-15T09:00:00.000Z",
+      "created_by": "Central Council of Technical Societies (CCTSC)",
+      "expiry_date": "2026-12-31",
+      "pinned": true
+    },
+    {
+      "id": "ann-002",
+      "title": "Turing AI & Deep Learning Symposium Registrations Open",
+      "message": "AI&ML Turing Club invites students across all departments for hands-on deep learning challenges and prototype exhibits.",
+      "target_audience": "Club",
+      "target_id": "I4-08",
+      "attachment_url": "",
+      "created_date": "2026-09-12T10:00:00.000Z",
+      "created_by": "Mrs. L. Yamuna (Faculty Coordinator)",
+      "expiry_date": "2026-10-18",
+      "pinned": false
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif-1789629580885",
+      "user_id": "std-101",
+      "title": "New Certificate Issued!",
+      "message": "Your accredited Certificate of Participation for 'Cloud Native Kubernetes & Microservices Masterclass' is ready. (ID: PEC-IT-2026-174635)",
+      "category": "Certificates",
+      "link": "#/verify-certificate?id=PEC-IT-2026-174635",
+      "created_at": "2026-09-17T07:19:40.885Z",
+      "read": false
+    },
+    {
+      "id": "notif-1789629577937",
+      "user_id": "std-101",
+      "title": "Attendance Verified!",
+      "message": "Your presence for 'Cloud Native Kubernetes & Microservices Masterclass' was verified via secure QR token. (ID: ATT-2026-I4-07-942)",
+      "category": "Attendance",
+      "link": "#/student/attendance",
+      "created_at": "2026-09-17T07:19:37.937Z",
+      "read": false
+    },
+    {
+      "id": "notif-1789629566058",
+      "user_id": "std-101",
+      "title": "Registration Confirmed!",
+      "message": "You are confirmed for 'Cloud Native Kubernetes & Microservices Masterclass'. Pass Code / Ticket: TCK-I4-07-609.",
+      "category": "Events",
+      "link": "#/student/events",
+      "created_at": "2026-09-17T07:19:26.058Z",
+      "read": false
+    },
+    {
+      "id": "notif-001",
+      "user_id": "std-101",
+      "title": "Club Membership Approved",
+      "message": "Your application to join AI&ML Turing Club (I4-08) has been approved by Mrs. L. Yamuna.",
+      "category": "Membership",
+      "link": "#/student/clubs",
+      "created_at": "2026-08-16T14:30:00.000Z",
+      "read": false
+    },
+    {
+      "id": "notif-002",
+      "user_id": "std-101",
+      "title": "Event Registration Confirmed",
+      "message": "You are registered for 'Turing AI & Deep Learning National Symposium 2026'. Ticket: TCK-TUR-042.",
+      "category": "Events",
+      "link": "#/student/events",
+      "created_at": "2026-09-10T11:00:00.000Z",
+      "read": false
+    },
+    {
+      "id": "notif-003",
+      "user_id": "all",
+      "title": "Official Club Directory Published",
+      "message": "Browse all 35 verified college societies under Career Guidance Cell.",
+      "category": "Announcements",
+      "link": "#/clubs",
+      "created_at": "2026-09-15T09:00:00.000Z",
+      "read": true
+    }
+  ],
+  "resources": [
+    {
+      "id": "res-001",
+      "title": "Modern Docker & Kubernetes Lab Guide for Cloud Native Microservices",
+      "description": "Comprehensive tutorial on multi-stage Docker builds, Kubernetes manifests, and Helm charts.",
+      "club_id": "I4-07",
+      "category": "Tutorial",
+      "uploaded_by": "Mr. K Siva Shankar",
+      "upload_date": "2026-09-01",
+      "file_url": "https://kubernetes.io/docs/home/",
+      "target_semester": "5th Semester"
+    },
+    {
+      "id": "res-002",
+      "title": "PyTorch Vision Transformers (ViT) & Transfer Learning Notebook",
+      "description": "Hands-on Jupyter notebook covering attention heads, fine-tuning, and ONNX deployment.",
+      "club_id": "I4-08",
+      "category": "Workshop Material",
+      "uploaded_by": "Mrs. L. Yamuna",
+      "upload_date": "2026-08-20",
+      "file_url": "https://pytorch.org/tutorials/",
+      "target_semester": "6th Semester"
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj-001",
+      "title": "AeroShield: Edge-AI Wildfire & Thermal Hazard Detection Drone",
+      "description": "Autonomous payload integrating thermal sensor arrays with Jetson edge computer for instantaneous aerial hot spot alerts.",
+      "problem_statement": "Early detection of agricultural crop fires and thermal hazards before uncontrolled spreading.",
+      "solution": "Lightweight computer vision model running at 30 FPS on onboard edge compute with LoRa telemetry downlink.",
+      "technologies": [
+        "PyTorch",
+        "TensorRT",
+        "Python",
+        "ROS2",
+        "LoRaWAN"
+      ],
+      "team_members": [
+        "Aarav Sharma",
+        "Priya Patel"
+      ],
+      "mentor": "Mrs. L. Yamuna",
+      "github_link": "https://github.com/pragati-eng/aeroshield",
+      "demo_link": "https://aeroshield.pragati.ac.in",
+      "images": [
+        "https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=800&auto=format&fit=crop&q=80"
+      ],
+      "status": "Completed",
+      "club_id": "I4-08",
+      "year": "2025-2026"
+    }
+  ],
+  "activity_reports": [
+    {
+      "id": "rep-001",
+      "activity_title": "Green Building & Sustainable Civil Infrastructure Conclave",
+      "date": "2026-09-02",
+      "club_id": "I4-01",
+      "description": "Institutional keynote conference on low-carbon construction methods and GRIHA certification metrics.",
+      "participants_count": 142,
+      "report_file_url": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
+      "photos": [
+        "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=900&auto=format&fit=crop&q=80"
+      ],
+      "created_by": "Mr L Praveen Kumar",
+      "official_url": "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/"
+    }
+  ],
+  "feedback": [
+    {
+      "id": "fb-001",
+      "event_id": "evt-105",
+      "student_id": "std-101",
+      "content_rating": 5,
+      "organization_rating": 5,
+      "speaker_rating": 5,
+      "venue_rating": 4,
+      "overall_rating": 5,
+      "written_feedback": "Extremely insightful presentations on GRIHA compliance. Great hands-on case studies.",
+      "submitted_at": "2026-09-02T14:15:00.000Z"
+    }
+  ],
+  "audit_logs": [
+    {
+      "id": "log-1789629709728",
+      "timestamp": "2026-09-17 07:21:49",
+      "user": "Aarav Sharma",
+      "action": "User Login",
+      "affected_record": "Student",
+      "details": "Logged in via 22cs101"
+    },
+    {
+      "id": "log-1789629580885",
+      "timestamp": "2026-09-17 07:19:40",
+      "user": "Coordinator",
+      "action": "Issued Certificate",
+      "affected_record": "PEC-IT-2026-174635",
+      "details": "Awarded to Aarav Sharma for Cloud Native Kubernetes & Microservices Masterclass"
+    },
+    {
+      "id": "log-1789629577937",
+      "timestamp": "2026-09-17 07:19:37",
+      "user": "Aarav Sharma",
+      "action": "Recorded Attendance",
+      "affected_record": "Cloud Native Kubernetes & Microservices Masterclass",
+      "details": "Verified via QR scan (ID: ATT-2026-I4-07-942)"
+    },
+    {
+      "id": "log-1789629577918",
+      "timestamp": "2026-09-17 07:19:37",
+      "user": "Coordinator",
+      "action": "Generated Attendance QR",
+      "affected_record": "Cloud Native Kubernetes & Microservices Masterclass",
+      "details": "Token valid for 30 mins until 2026-09-17T07:49:37.918Z"
+    },
+    {
+      "id": "log-1789629566058",
+      "timestamp": "2026-09-17 07:19:26",
+      "user": "Aarav Sharma",
+      "action": "Registered for Event",
+      "affected_record": "Cloud Native Kubernetes & Microservices Masterclass",
+      "details": "Ticket: TCK-I4-07-609"
+    },
+    {
+      "id": "log-1789629548308",
+      "timestamp": "2026-09-17 07:19:08",
+      "user": "Aarav Sharma",
+      "action": "User Login",
+      "affected_record": "Student",
+      "details": "Logged in via aarav.sharma@pragati.ac.in"
+    },
+    {
+      "id": "log-001",
+      "timestamp": "2026-09-16 10:14:02",
+      "user": "Dr. K. Satyanarayana (Super Admin)",
+      "action": "Verified Club Registry",
+      "affected_record": "All 35 Official PEC Clubs",
+      "details": "Confirmed official status under Career Guidance Cell."
+    },
+    {
+      "id": "log-002",
+      "timestamp": "2026-09-15 14:20:45",
+      "user": "Mrs. L. Yamuna (Faculty Coordinator)",
+      "action": "Approved Symposium",
+      "affected_record": "Turing AI Symposium 2026",
+      "details": "Authorized convention hall and laboratory sessions."
+    }
+  ]
+}

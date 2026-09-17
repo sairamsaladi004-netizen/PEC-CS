@@ -672,7 +672,9 @@ apiRouter.post('/certificates/issue', (req, res) => {
     date: event.date,
     certificate_type: certificateType || "Certificate of Participation",
     issued_date: new Date().toISOString().split('T')[0],
-    authorized_signature: authorizedSignature || `${club?.facultyCoordinator || 'Faculty Coordinator'} & Dr. K. Satyanarayana (Principal)`,
+    institution: "Pragati University / Pragati Engineering College (Autonomous)",
+    issued_by: "Pragati University Central Council of Technical Societies (CCTSC)",
+    authorized_signature: authorizedSignature || `${club?.facultyCoordinator || 'Mr. K. Siva Shankar (Coordinator)'} & Dr. K. Satyanarayana (Principal, Pragati University / PEC)`,
     qr_hash: qrHash
   };
 
@@ -715,7 +717,9 @@ apiRouter.get('/certificates/verify/:certId', (req, res) => {
 
   res.json({
     valid: true,
-    institution: "Pragati Engineering College (Autonomous), Andhra Pradesh",
+    institution: "Pragati University / Pragati Engineering College (Autonomous), Surampalem, Near Kakinada, Andhra Pradesh",
+    accreditation: "NAAC 'A' Grade & NBA Accredited Autonomous Institution",
+    registry: "Pragati University Central Council of Technical Societies (CCTSC) Digital Registry",
     certificate: {
       certificateId: cert.certificateId || cert.id,
       studentName: cert.student_name,

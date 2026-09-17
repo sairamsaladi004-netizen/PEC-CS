@@ -21,7 +21,7 @@ app.use('/api', apiRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', app: 'PEC CampusTech - Club Management System' });
+  res.json({ status: 'ok', app: 'PEC CampusTech - Pragati University Club Management System' });
 });
 
 // SPA fallback for Express 5
@@ -29,7 +29,12 @@ app.get('*all', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(PORT, HOST, () => {
-  console.log(`PEC CampusTech server listening on http://${HOST}:${PORT}`);
-});
+// Start listener when not running inside a serverless function environment
+if (!process.env.VERCEL) {
+  app.listen(PORT, HOST, () => {
+    console.log(`Pragati University PEC CampusTech server listening on http://${HOST}:${PORT}`);
+  });
+}
+
+export default app;
 

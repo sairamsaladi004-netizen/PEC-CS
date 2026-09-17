@@ -359,7 +359,10 @@ const INITIAL_BACKEND_SEED = {
       date: "2026-09-02",
       certificate_type: "Certificate of Participation",
       issued_date: "2026-09-02",
-      authorized_signature: "Mr L Praveen Kumar & Dr. K. Satyanarayana",
+      institution: "Pragati University / Pragati Engineering College (Autonomous)",
+      issued_by: "Pragati University Central Council of Technical Societies (CCTSC)",
+      recipientEmail: "aarav.sharma@pragati.ac.in",
+      authorized_signature: "Mr L Praveen Kumar & Dr. K. Satyanarayana (Principal, Pragati University / PEC)",
       qr_hash: "8f4a3c19e872d9b62a15c304f5b89a27d14e5903bcaef421975e810a43bc92fe"
     }
   ],
