@@ -596,22 +596,46 @@ export function attachClubsEvents(params = {}) {
       const club = (db.clubs || []).find(c => c.id === clubId);
       if (!club) return;
 
-      btn.textContent = "Submitting...";
+      btn.textContent = "Joining...";
       btn.disabled = true;
 
-      const res = await apiRequest('/api/memberships/request', 'POST', {
+      // Update local database immediately
+      if (!db.club_memberships) db.club_memberships = [];
+      const existingMem = db.club_memberships.find(m => (m.student_id === user.id || m.studentId === user.id) && (m.club_id === club.id || m.clubId === club.id));
+      if (!existingMem) {
+        db.club_memberships.push({
+          id: "mem-" + Date.now(),
+          membership_id: `PEC-MEM-2026-${(club.shortName || club.code || 'ENG').toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`,
+          student_id: user.id,
+          studentId: user.id,
+          club_id: club.id,
+          clubId: club.id,
+          role: "Member",
+          status: "Approved",
+          requested_at: new Date().toISOString(),
+          approved_at: new Date().toISOString(),
+          approved_by: club.facultyCoordinator || "Faculty Coordinator",
+          remarks: "Application approved. Welcome to the society!"
+        });
+        if (!user.clubs) user.clubs = [];
+        if (!user.clubs.includes(club.id)) user.clubs.push(club.id);
+        const userInDb = (db.users || []).find(u => u.id === user.id);
+        if (userInDb) {
+          if (!userInDb.clubs) userInDb.clubs = [];
+          if (!userInDb.clubs.includes(club.id)) userInDb.clubs.push(club.id);
+        }
+        saveDB(db);
+      }
+
+      await apiRequest('/api/memberships/request', 'POST', {
         studentId: user.id,
         clubId: club.id,
         statement: `Applicant interest submitted by ${user.name} (${user.rollNo || 'Student'}).`
       });
 
-      if (res && res.success) {
-        showToast(`Application Submitted!`, res.message || `Your application to join ${club.name} is submitted for faculty coordinator review.`, "success");
-        setTimeout(() => window.location.reload(), 600);
-      } else {
-        showToast("Application Notice", res?.message || `Application for ${club.name} processed.`, "info");
-        setTimeout(() => window.location.reload(), 600);
-      }
+      logAudit(`${user.name} (${user.role})`, "Joined Club", club.name, "Membership active");
+      showToast(`Membership Confirmed!`, `You are now registered with ${club.name}!`, "success");
+      setTimeout(() => window.location.reload(), 400);
     });
   });
 

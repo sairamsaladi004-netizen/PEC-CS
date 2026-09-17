@@ -427,6 +427,21 @@ export function attachEventsEvents() {
 
         evt.registrations.push(regRecord);
         evt.registeredCount = (evt.registeredCount || 0) + 1;
+
+        if (!currentDb.event_registrations) currentDb.event_registrations = [];
+        currentDb.event_registrations.push({
+          id: "reg-" + Date.now(),
+          event_id: evt.id,
+          eventId: evt.id,
+          student_id: user.id,
+          studentId: user.id,
+          studentName: user.name,
+          ticket_id: ticketId,
+          ticketId: ticketId,
+          registered_at: new Date().toISOString(),
+          status: "Confirmed"
+        });
+
         saveDB(currentDb);
 
         // Also notify backend API
@@ -655,17 +670,35 @@ export function attachEventsEvents() {
 
         // Automated Certificate Minting
         const certId = `CERT-PEC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+        const hash = `sha256:0x${Math.random().toString(16).slice(2, 10)}${Math.random().toString(16).slice(2, 10)}`;
         const newCert = {
           id: certId,
-          title: `Certificate of Participation - ${evt.title}`,
+          certificateId: certId,
+          studentId: user.id,
+          student_id: user.id,
           recipientName: user.name,
+          student_name: user.name,
+          studentName: user.name,
           recipientRoll: user.rollNo || "22CS101",
+          roll_no: user.rollNo || "22CS101",
+          rollNo: user.rollNo || "22CS101",
           recipientEmail: user.email,
+          department: user.department || "CSE",
           clubId: evt.clubId,
+          club_id: evt.clubId,
           eventName: evt.title,
+          event_name: evt.title,
+          title: `Certificate of Participation - ${evt.title}`,
+          awardType: "Certificate of Participation & Technical Completion",
+          certificate_type: "Certificate of Participation & Technical Completion",
           category: evt.category === 'hackathon' ? 'Winner / Finalist' : 'Course Completion',
           issueDate: new Date().toISOString().split("T")[0],
-          verificationHash: `sha256:0x${Math.random().toString(16).slice(2, 10)}${Math.random().toString(16).slice(2, 10)}`,
+          issued_date: new Date().toISOString().split("T")[0],
+          qrHash: hash,
+          qr_hash: hash,
+          verificationHash: hash,
+          institution: "Pragati University / Pragati Engineering College (Autonomous)",
+          issued_by: "Pragati University Central Council of Technical Societies (CCTSC)",
           status: "Verified & Active"
         };
         if (!currentDb.certificates) currentDb.certificates = [];

@@ -34,6 +34,15 @@ export function renderCertificatesView(params = {}) {
       ? "text-blue-800"
       : "text-amber-800";
 
+    const recipientName = cert.recipientName || cert.student_name || cert.studentName || cert.recipient || (user && user.name) || "Aarav Sharma";
+    const recipientRoll = cert.recipientRoll || cert.roll_no || cert.rollNo || (user && user.rollNo) || "22CS101";
+    const eventName = cert.eventName || cert.event_name || cert.title || "Turing AI & Deep Learning National Symposium 2026";
+    const awardType = cert.awardType || cert.certificate_type || cert.title || "Certificate of Participation & Technical Completion";
+    const issueDate = cert.issueDate || cert.issued_date || cert.date || "2026-09-02";
+    const department = cert.department || (user && user.department) || "Computer Science & Engineering";
+    const certQrHash = cert.qrHash || cert.qr_hash || cert.verificationHash || `sha256:0x${cert.id}`;
+    const certEmail = cert.recipientEmail || cert.email || (user && user.email) || "student@pragati.ac.in";
+
     return `
       <div class="space-y-6 pb-16">
         <!-- Controls Bar -->
@@ -52,22 +61,22 @@ export function renderCertificatesView(params = {}) {
               <a href="#/certificates?id=${cert.id}&template=winner" class="px-2 py-1 rounded-lg ${templateType === 'winner' ? 'bg-rose-600 text-white font-bold' : 'text-slate-600'}">Winner</a>
             </div>
 
-            <button id="email-cert-btn" data-certid="${cert.id}" data-email="${cert.recipientEmail || 'student@pragati.ac.in'}" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition-colors flex items-center space-x-1.5">
+            <button id="email-cert-btn" data-certid="${cert.id}" data-email="${certEmail}" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition-colors flex items-center space-x-1.5">
               <span>📧 Email to Student</span>
             </button>
 
-            <a href="#/verify?hash=${cert.qrHash || cert.verificationHash || cert.id}" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-colors">
+            <a href="#/verify?hash=${certQrHash}" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-colors">
               Verify Digital Ledger ↗
             </a>
 
-            <button id="print-cert-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center space-x-1.5">
-              <span>🖨️ Save High-Res PDF</span>
+            <button id="print-cert-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center space-x-1.5 cursor-pointer">
+              <span>🖨️ Print / Save PDF</span>
             </button>
           </div>
         </div>
 
         <!-- Official Accredited Certificate Frame -->
-        <div id="printable-certificate" class="printable-area max-w-4xl mx-auto rounded-3xl p-8 sm:p-14 text-slate-900 text-center relative overflow-hidden shadow-2xl ${frameBorder}">
+        <div id="printable-certificate" class="printable-area max-w-4xl mx-auto rounded-3xl p-8 sm:p-14 text-slate-900 text-center relative overflow-hidden shadow-2xl bg-white ${frameBorder}">
           
           <!-- Subtle Corner Accents -->
           <div class="absolute top-4 left-4 ${accentColor} text-xs font-serif select-none">✦ PRAGATI UNIVERSITY ✦</div>
@@ -80,13 +89,13 @@ export function renderCertificatesView(params = {}) {
             <div class="text-xs font-extrabold uppercase tracking-widest ${accentColor} font-mono">
               PRAGATI UNIVERSITY
             </div>
-            <div class="text-sm font-black text-slate-900 uppercase tracking-tight">
+            <div class="text-sm sm:text-base font-black text-slate-900 uppercase tracking-tight">
               PRAGATI ENGINEERING COLLEGE (AUTONOMOUS)
             </div>
-            <div class="text-[10px] text-slate-600 font-semibold tracking-wider uppercase">
+            <div class="text-[10px] sm:text-xs text-slate-600 font-semibold tracking-wider uppercase">
               Central Council of Technical Societies & Student Chapters (CCTSC)
             </div>
-            <div class="text-[9px] text-slate-500 font-mono">
+            <div class="text-[9px] sm:text-[10px] text-slate-500 font-mono">
               Accredited by NBA & NAAC 'A' Grade • Approved by AICTE • Surampalem, Near Kakinada, AP - 533437
             </div>
           </div>
@@ -101,25 +110,25 @@ export function renderCertificatesView(params = {}) {
           <!-- Certificate Title -->
           <div class="space-y-2">
             <h1 class="text-2xl sm:text-4xl font-serif font-black tracking-wide text-slate-900 uppercase">
-              ${cert.awardType || cert.title || "Certificate of Excellence"}
+              ${awardType}
             </h1>
-            <p class="text-xs italic text-slate-600 font-serif">This credential is formally conferred upon</p>
+            <p class="text-xs sm:text-sm italic text-slate-600 font-serif">This credential is formally conferred upon</p>
           </div>
 
-          <!-- Student Name Recipient -->
-          <div class="my-5">
-            <div class="text-2xl sm:text-3xl font-black text-slate-900 border-b-2 border-slate-700/60 inline-block px-8 pb-1 tracking-tight font-serif">
-              ${cert.recipientName || cert.studentName}
+          <!-- Student Name Recipient - Prominently Printed -->
+          <div class="my-6">
+            <div class="text-2xl sm:text-4xl font-black text-slate-950 border-b-2 border-slate-900 inline-block px-10 pb-2 tracking-wide font-serif print:text-black">
+              ${recipientName}
             </div>
-            <div class="text-xs text-slate-600 font-mono mt-1 font-bold">
-              Roll No: ${cert.recipientRoll || cert.rollNo || '22CS101'} • Dept. of ${cert.department || 'Computer Science & Engineering'}
+            <div class="text-xs sm:text-sm text-slate-700 font-mono mt-2 font-bold">
+              Roll No: <span class="text-blue-900 font-extrabold font-mono">${recipientRoll}</span> • Dept. of ${department}
             </div>
           </div>
 
           <!-- Citation Text -->
           <p class="text-xs sm:text-sm text-slate-700 max-w-2xl mx-auto leading-relaxed font-serif">
             in recognition of distinguished technical competence and verified active participation in
-            <span class="font-bold text-slate-900 not-italic">"${cert.eventName || cert.title}"</span>,
+            <span class="font-bold text-slate-900 not-italic">"${eventName}"</span>,
             conferred under institutional academic quality protocols of Pragati University and accredited curricular standards.
           </p>
 
@@ -166,7 +175,7 @@ export function renderCertificatesView(params = {}) {
 
           <!-- Bottom Cryptographic Hash Ledger ID -->
           <div class="mt-4 pt-3 border-t border-dashed border-slate-300 text-[8px] font-mono text-slate-400 text-center truncate">
-            SHA-256 IMMUTABLE PROOF: ${cert.qrHash || cert.verificationHash || 'sha256:0x89ab4c12f45de'} • ISSUED BY PRAGATI UNIVERSITY (AUTONOMOUS) • ${cert.issueDate || '2026-10-25'}
+            SHA-256 IMMUTABLE PROOF: ${certQrHash} • ISSUED BY PRAGATI UNIVERSITY (AUTONOMOUS) • ${issueDate}
           </div>
 
         </div>
@@ -205,20 +214,20 @@ export function renderCertificatesView(params = {}) {
 
       <div id="certs-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
         ${db.certificates.map(c => `
-          <div class="cert-card bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between" data-type="${(c.awardType || c.category || '').toLowerCase()}">
+          <div class="cert-card bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between" data-type="${(c.awardType || c.certificate_type || c.category || '').toLowerCase()}">
             <div class="space-y-2">
               <div class="flex items-center justify-between">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">${c.awardType || c.category || 'Accredited Certificate'}</span>
-                <span class="text-xs font-mono text-slate-400">${c.issueDate}</span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">${c.awardType || c.certificate_type || c.category || 'Accredited Certificate'}</span>
+                <span class="text-xs font-mono text-slate-400">${c.issueDate || c.issued_date || '2026-09-02'}</span>
               </div>
-              <h3 class="text-base font-bold text-slate-900">${c.eventName || c.title}</h3>
-              <div class="text-xs text-slate-600 font-mono">Recipient: <span class="font-bold text-slate-900">${c.recipientName || c.studentName}</span> (${c.recipientRoll || c.rollNo})</div>
-              <div class="text-[10px] text-slate-400 font-mono truncate">HASH: ${c.qrHash || c.verificationHash}</div>
+              <h3 class="text-base font-bold text-slate-900">${c.eventName || c.event_name || c.title || 'Technical Symposium'}</h3>
+              <div class="text-xs text-slate-600 font-mono">Recipient: <span class="font-bold text-slate-900">${c.recipientName || c.student_name || c.studentName || 'Aarav Sharma'}</span> (${c.recipientRoll || c.roll_no || c.rollNo || '22CS101'})</div>
+              <div class="text-[10px] text-slate-400 font-mono truncate">HASH: ${c.qrHash || c.qr_hash || c.verificationHash || c.id}</div>
             </div>
             <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
               <span class="text-xs font-bold text-blue-600 font-mono">#${c.id}</span>
               <div class="flex items-center space-x-2">
-                <a href="#/verify?hash=${c.qrHash || c.verificationHash || c.id}" class="text-xs text-slate-500 hover:text-blue-600 font-semibold">Verify ↗</a>
+                <a href="#/verify?hash=${c.qrHash || c.qr_hash || c.verificationHash || c.id}" class="text-xs text-slate-500 hover:text-blue-600 font-semibold">Verify ↗</a>
                 <a href="#/certificates?id=${c.id}" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors">
                   Open Credential
                 </a>
@@ -350,17 +359,29 @@ export function attachCertificatesEvents(params = {}) {
           
           db.certificates.unshift({
             id: certId,
+            certificateId: certId,
             studentId: att.studentId,
+            student_id: att.studentId,
             recipientName: att.studentName,
+            student_name: att.studentName,
+            studentName: att.studentName,
             recipientRoll: att.rollNo,
+            roll_no: att.rollNo,
+            rollNo: att.rollNo,
             recipientEmail: att.email,
             department: att.department || "CSE",
             eventName: evt?.title || "Technical Hackathon",
+            event_name: evt?.title || "Technical Hackathon",
             awardType,
+            certificate_type: awardType,
             template,
             issueDate: new Date().toISOString().split("T")[0],
+            issued_date: new Date().toISOString().split("T")[0],
             qrHash: hash,
+            qr_hash: hash,
             verificationHash: hash,
+            institution: "Pragati University / Pragati Engineering College (Autonomous)",
+            issued_by: "Pragati University Central Council of Technical Societies (CCTSC)",
             status: "Verified & Active"
           });
 

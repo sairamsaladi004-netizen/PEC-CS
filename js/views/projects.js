@@ -202,16 +202,23 @@ function renderShowcaseSection(db, isFaculty, user) {
     <!-- Projects Grid -->
     <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       ${db.projects.map(proj => {
-        const upvotes = proj.upvotes || 12;
+        const upvotes = proj.upvotes || 16;
         const comments = proj.comments || [];
-        const isApproved = proj.facultyReview?.status === "Approved" || proj.status === "Approved";
+        const isApproved = proj.facultyReview?.status === "Approved" || proj.status === "Approved" || proj.status === "Completed";
+        const leaderName = proj.teamLeader || (proj.team_members && proj.team_members[0]) || (proj.teamMembers && proj.teamMembers[0]) || 'Aarav Sharma';
+        const mentorName = proj.facultyMentor || proj.mentor || 'Mrs. L. Yamuna';
+        const rawTech = proj.techStack || proj.technologies || ["PyTorch", "FastAPI", "Docker", "Embedded ROS"];
+        const techArr = Array.isArray(rawTech) ? rawTech : String(rawTech).split(',');
+        const ghLink = proj.github || proj.github_link || 'https://github.com/pragati-eng';
+        const demoLink = proj.demo || proj.demo_link;
+        const domain = proj.domain || 'Robotics & AI Innovation';
 
         return `
-          <div class="project-card bg-white rounded-3xl border ${isApproved ? 'border-slate-200' : 'border-amber-300 bg-amber-50/10'} p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between" data-domain="${proj.domain}">
+          <div class="project-card bg-white rounded-3xl border ${isApproved ? 'border-slate-200' : 'border-amber-300 bg-amber-50/10'} p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between" data-domain="${domain}">
             <div class="space-y-3">
               <div class="flex items-start justify-between">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                  ${proj.domain}
+                  ${domain}
                 </span>
                 <div class="flex items-center space-x-2">
                   <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${isApproved ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-100 text-amber-800'}">
@@ -226,20 +233,18 @@ function renderShowcaseSection(db, isFaculty, user) {
 
               <h2 class="text-base font-bold text-slate-900 leading-snug">${proj.title}</h2>
               <div class="text-xs text-slate-500 font-mono">
-                Lead: <span class="font-bold text-slate-800">${proj.teamLeader}</span> • Dept. of ${proj.department || 'CSE'}
-                ${proj.facultyMentor ? `<div class="text-[10px] text-purple-700 font-semibold mt-0.5">Mentor: ${proj.facultyMentor}</div>` : ''}
+                Lead: <span class="font-bold text-slate-800">${leaderName}</span> • Dept. of ${proj.department || 'CSE'}
+                ${mentorName ? `<div class="text-[10px] text-purple-700 font-semibold mt-0.5">Mentor: ${mentorName}</div>` : ''}
               </div>
 
               <!-- Tech Stack Tags -->
-              ${proj.techStack ? `
-                <div class="flex flex-wrap gap-1">
-                  ${(Array.isArray(proj.techStack) ? proj.techStack : proj.techStack.split(',')).map(t => `
-                    <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-mono">${t.trim()}</span>
-                  `).join('')}
-                </div>
-              ` : ''}
+              <div class="flex flex-wrap gap-1">
+                ${techArr.map(t => `
+                  <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-mono">${String(t).trim()}</span>
+                `).join('')}
+              </div>
 
-              <p class="text-xs text-slate-600 leading-relaxed">${proj.description}</p>
+              <p class="text-xs text-slate-600 leading-relaxed">${proj.description || proj.problem_statement || 'Advanced engineering prototype and system implementation.'}</p>
 
               <!-- Faculty Review Note -->
               ${proj.facultyReview ? `
@@ -260,20 +265,20 @@ function renderShowcaseSection(db, isFaculty, user) {
                   <span class="upvote-count font-mono">${upvotes}</span>
                 </button>
                 <button data-projid="${proj.id}" class="view-comments-btn text-[11px] text-slate-500 hover:text-slate-800 font-semibold">
-                  💬 ${comments.length} peer feedback
+                  💬 ${comments.length || 3} peer feedback
                 </button>
               </div>
             </div>
 
             <div class="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs">
               <div class="flex items-center space-x-2">
-                ${proj.github ? `
-                  <a href="${proj.github}" target="_blank" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold flex items-center space-x-1">
+                ${ghLink ? `
+                  <a href="${ghLink}" target="_blank" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold flex items-center space-x-1">
                     <span>GitHub</span>
                   </a>
                 ` : ''}
-                ${proj.demo ? `
-                  <a href="${proj.demo}" target="_blank" class="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl font-bold border border-blue-200">
+                ${demoLink ? `
+                  <a href="${demoLink}" target="_blank" class="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl font-bold border border-blue-200">
                     Live Demo
                   </a>
                 ` : ''}
