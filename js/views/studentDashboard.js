@@ -1,6 +1,7 @@
 import { getCurrentUser } from '../auth.js';
 import { getDB, apiRequest } from '../db.js';
 import { showToast } from '../components/toast.js';
+import { renderPeerCircleChat, attachPeerCircleChatEvents } from '../components/peerCircleChat.js';
 import {
   getStudentClubRecommendations,
   getEventParticipationPrediction,
@@ -235,6 +236,11 @@ export function renderStudentDashboardView(subSection = "dashboard") {
         <a href="#/student/projects" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap ${activeTab === 'projects' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}">
           💡 Projects
         </a>
+        <a href="#/student/peer-circle" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap flex items-center space-x-1.5 ${activeTab === 'peer-circle' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}">
+          <span>💬</span>
+          <span>Peer Circle Chat</span>
+          <span class="px-1.5 py-0.2 text-[9px] font-mono font-bold rounded-full ${activeTab === 'peer-circle' ? 'bg-white text-indigo-700' : 'bg-emerald-100 text-emerald-800'}">Live</span>
+        </a>
       </div>
 
       <!-- MAIN TAB CONTENT SWITCHER -->
@@ -279,6 +285,21 @@ function renderSubSectionContent(tab, ctx) {
   const { user, db, myMemberships, myApprovedClubs, myPendingClubs, myRegistrations, myAttendance, myCertificates, myAnnouncements, attendanceRate } = ctx;
 
   switch (tab) {
+    case "peer-circle":
+    case "peer-circles": {
+      return `
+        <div class="space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 class="text-xl font-black text-slate-900 tracking-tight">Peer Circle Realtime Workspace</h2>
+              <p class="text-xs text-slate-500">Collaborate on technical builds, problem sets, and hackathons in real time with fellow students and faculty mentors.</p>
+            </div>
+          </div>
+          ${renderPeerCircleChat({ room: "general-lounge" })}
+        </div>
+      `;
+    }
+
     case "recommendations": {
       const recommendations = getStudentClubRecommendations(user, db, { limit: 12 });
       const enrolledClubIds = new Set(myApprovedClubs.map(m => m.club_id));
@@ -1096,6 +1117,8 @@ function renderSubSectionContent(tab, ctx) {
 }
 
 export function attachStudentDashboardEvents() {
+  attachPeerCircleChatEvents();
+
   const modal = document.getElementById("scan-qr-modal");
   const openBtn = document.getElementById("open-scan-qr-btn");
   const closeBtn = document.getElementById("close-scan-modal-btn");

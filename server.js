@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { apiRouter } from './backend/api.js';
 import { fetchFullDatabaseFromSupabase, isSupabaseConfigured } from './backend/db.js';
+import { initializeDatabase } from './scripts/init_database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,6 +21,11 @@ app.use((req, res, next) => {
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   next();
+});
+
+// Initialize database schema and seed mock data if missing or empty
+initializeDatabase().catch(err => {
+  console.warn("[Server Startup] Database initialization notice:", err.message);
 });
 
 // Trigger initial Supabase synchronization if credentials present

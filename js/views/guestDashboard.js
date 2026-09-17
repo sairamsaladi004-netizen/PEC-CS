@@ -178,10 +178,10 @@ export function renderGuestDashboardView(params = {}) {
 export function attachGuestDashboardEvents() {
   // Persona switch buttons
   document.querySelectorAll(".quick-persona-switch-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const userId = btn.getAttribute("data-user-id");
       if (userId) {
-        switchUser(userId);
+        await switchUser(userId);
         showToast("Persona Switched", "Navigating to your role portal...", "success");
         setTimeout(() => window.location.reload(), 400);
       }

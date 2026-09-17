@@ -3055,5 +3055,48 @@ apiRouter.get('/intelligence/classify-student/:studentId', async (req, res) => {
   }
 });
 
+// GET /api/peer-circles/messages - Retrieve room messages
+apiRouter.get('/peer-circles/messages', (req, res) => {
+  const room = req.query.room || 'general-lounge';
+  const db = getDB();
+  if (!Array.isArray(db.peer_circle_messages)) {
+    db.peer_circle_messages = [];
+  }
+  const messages = db.peer_circle_messages.filter(m => m.room === room);
+  res.json({ success: true, room, count: messages.length, messages });
+});
+
+// POST /api/peer-circles/messages - Save new message
+apiRouter.post('/peer-circles/messages', (req, res) => {
+  const msg = req.body || {};
+  if (!msg.content && !msg.codeSnippet) {
+    return res.status(400).json({ success: false, message: "Message content or code snippet required." });
+  }
+
+  const db = getDB();
+  if (!Array.isArray(db.peer_circle_messages)) {
+    db.peer_circle_messages = [];
+  }
+
+  const newMsg = {
+    id: msg.id || ("msg-" + Date.now() + "-" + Math.floor(Math.random() * 1000)),
+    room: msg.room || "general-lounge",
+    senderId: req.user?.id || msg.senderId || "guest",
+    senderName: req.user?.name || msg.senderName || "Student Scholar",
+    senderRole: req.user?.role || msg.senderRole || "Student",
+    senderAvatar: req.user?.avatar || msg.senderAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
+    content: msg.content || "",
+    codeSnippet: msg.codeSnippet || null,
+    codeLanguage: msg.codeLanguage || "python",
+    timestamp: new Date().toISOString(),
+    reactions: msg.reactions || {}
+  };
+
+  db.peer_circle_messages.push(newMsg);
+  saveDB(db);
+
+  res.json({ success: true, message: newMsg });
+});
+
 
 

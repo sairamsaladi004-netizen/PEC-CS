@@ -7,6 +7,7 @@
     "start": "node server.js",
     "build": "node build.js",
     "lint": "echo 'No lint errors'",
+    "init:db": "node scripts/init_database.js",
     "db:migrate": "node scripts/migrate-json-to-supabase.js"
   },
   "dependencies": {

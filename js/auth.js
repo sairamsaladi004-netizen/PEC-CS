@@ -50,12 +50,23 @@ export async function switchUser(userId) {
   const user = (db.users || []).find(u => u.id === userId);
   if (user) {
     const identifier = user.email || user.rollNo || user.facultyId || user.demoAlias || user.id;
-    const res = await loginUser(identifier, "Password@123");
-    if (res && res.success) {
-      return res.user;
+    try {
+      const res = await loginUser(identifier, "Password@123");
+      if (res && res.success) {
+        return res.user;
+      }
+    } catch (e) {
+      console.warn("loginUser notice in switchUser:", e?.message || e);
     }
+    // Direct persona session switch
+    setCurrentUser(user.id);
+    return user;
   }
   return null;
+}
+
+if (typeof window !== 'undefined') {
+  window.switchUser = switchUser;
 }
 
 export function hasPermission(permission) {

@@ -77,10 +77,10 @@ export function renderAccessDenied({
 export function attachAccessDeniedEvents() {
   const btn = document.getElementById("quick-switch-authorized-role-btn");
   if (btn) {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const userId = btn.getAttribute("data-user-id");
       if (userId) {
-        switchUser(userId);
+        await switchUser(userId);
         window.location.reload();
       }
     });
