@@ -42,7 +42,7 @@ export function renderLoginView() {
             <div class="text-xs font-bold text-white">Aarav Sharma</div>
             <div class="text-[10px] font-mono text-slate-300 mt-0.5">aarav.sharma@pragati.ac.in</div>
             <div class="text-[10px] text-slate-400 font-mono">Roll: <strong class="text-emerald-300">22CS101</strong></div>
-            <div class="text-[9px] text-slate-400 mt-1">Pass: <code class="bg-slate-900 px-1 rounded text-emerald-400 font-mono">Password@123</code></div>
+            <div class="text-[9px] text-slate-400 mt-1">Reg Code: <code class="bg-slate-900 px-1 rounded text-amber-400 font-mono">PECSTUDENT2026</code></div>
           </div>
 
           <!-- Club Admin Credential -->
@@ -54,7 +54,7 @@ export function renderLoginView() {
             <div class="text-xs font-bold text-white">Priya Patel</div>
             <div class="text-[10px] font-mono text-slate-300 mt-0.5">priya.patel@pragati.ac.in</div>
             <div class="text-[10px] text-slate-400 font-mono">Roll: <strong class="text-blue-300">22CS142</strong></div>
-            <div class="text-[9px] text-slate-400 mt-1">Pass: <code class="bg-slate-900 px-1 rounded text-blue-400 font-mono">Password@123</code></div>
+            <div class="text-[9px] text-slate-400 mt-1">Reg Key: <code class="bg-slate-900 px-1 rounded text-blue-400 font-mono">CLUBADMIN2026</code></div>
           </div>
 
           <!-- Faculty Coordinator Credential -->
@@ -66,7 +66,7 @@ export function renderLoginView() {
             <div class="text-xs font-bold text-white">Dr. Ramesh Kumar</div>
             <div class="text-[10px] font-mono text-slate-300 mt-0.5">dr.ramesh.k@pragati.ac.in</div>
             <div class="text-[10px] text-slate-400 font-mono">ID: <strong class="text-purple-300">FAC-CSE-001</strong></div>
-            <div class="text-[9px] text-slate-400 mt-1">Pass: <code class="bg-slate-900 px-1 rounded text-purple-400 font-mono">Password@123</code></div>
+            <div class="text-[9px] text-slate-400 mt-1">Reg Key: <code class="bg-slate-900 px-1 rounded text-purple-400 font-mono">PECFAC2026</code></div>
           </div>
 
           <!-- Super Admin Credential -->
@@ -78,7 +78,7 @@ export function renderLoginView() {
             <div class="text-xs font-bold text-white">Pragati Council HQ</div>
             <div class="text-[10px] font-mono text-slate-300 mt-0.5">admin@pragati.ac.in</div>
             <div class="text-[10px] text-slate-400 font-mono">ID: <strong class="text-rose-300">SUPERADMIN-01</strong></div>
-            <div class="text-[9px] text-slate-400 mt-1">Pass: <code class="bg-slate-900 px-1 rounded text-rose-400 font-mono">Password@123</code></div>
+            <div class="text-[9px] text-slate-400 mt-1">Reg Key: <code class="bg-slate-900 px-1 rounded text-rose-400 font-mono">PEC2026ADMIN</code></div>
           </div>
 
         </div>
@@ -165,11 +165,11 @@ export function renderLoginView() {
                 </select>
               </div>
 
-              <!-- Conditional Admin Key for Super Admin -->
-              <div id="reg-admin-key-container" class="hidden">
-                <label class="block text-xs font-bold text-rose-700 mb-1">Super Admin Access Pass Key</label>
-                <input type="password" id="reg-admin-key" placeholder="Enter Admin Security Pass Key (Default: PEC2026ADMIN)" class="w-full px-3 py-2 rounded-xl border border-rose-300 text-xs focus:ring-2 focus:ring-rose-500 bg-rose-50/50" value="PEC2026ADMIN" />
-                <p class="text-[10px] text-rose-500 mt-1">Authorized security key required for Super Admin classification.</p>
+              <!-- Registration Pass Key / Security Code Field (Adaptive per Role) -->
+              <div id="reg-passkey-container" class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200/80 space-y-1">
+                <label id="reg-passkey-label" class="block text-xs font-bold text-emerald-900">Student Member Access Code</label>
+                <input type="password" id="reg-passkey" required placeholder="Enter Student Member Access Code" class="w-full px-3 py-2 rounded-xl border border-emerald-300 text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500 bg-white" value="PECSTUDENT2026" />
+                <p id="reg-passkey-desc" class="text-[10px] text-emerald-700">Access code required to register as a verified Student Member. Default: <code class="font-bold font-mono">PECSTUDENT2026</code></p>
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -360,7 +360,10 @@ export function attachLoginEvents() {
   // Role selector toggle logic
   const regRoleSelect = document.getElementById("reg-role");
   const regClubContainer = document.getElementById("reg-club-container");
-  const regAdminKeyContainer = document.getElementById("reg-admin-key-container");
+  const regPasskeyLabel = document.getElementById("reg-passkey-label");
+  const regPasskeyInput = document.getElementById("reg-passkey");
+  const regPasskeyDesc = document.getElementById("reg-passkey-desc");
+  const regPasskeyBox = document.getElementById("reg-passkey-container");
   const regRollLabel = document.getElementById("reg-roll-label");
   const regRollInput = document.getElementById("reg-roll");
 
@@ -368,24 +371,48 @@ export function attachLoginEvents() {
     const roleVal = regRoleSelect.value;
     if (roleVal === "Club Admin") {
       regClubContainer?.classList.remove("hidden");
-      regAdminKeyContainer?.classList.add("hidden");
       if (regRollLabel) regRollLabel.textContent = "Roll Number / Student Leader ID";
       if (regRollInput) regRollInput.placeholder = "e.g. 22CS142";
+      if (regPasskeyLabel) regPasskeyLabel.textContent = "Club Admin Pass Key / Code";
+      if (regPasskeyInput) {
+        regPasskeyInput.value = "CLUBADMIN2026";
+        regPasskeyInput.placeholder = "Enter Club Admin Pass Key";
+      }
+      if (regPasskeyDesc) regPasskeyDesc.innerHTML = 'Security code required to register as Club Admin. Default: <code class="font-bold font-mono">CLUBADMIN2026</code>';
+      if (regPasskeyBox) regPasskeyBox.className = "p-3.5 rounded-2xl bg-blue-50 border border-blue-200/80 space-y-1";
     } else if (roleVal === "Faculty Coordinator") {
       regClubContainer?.classList.add("hidden");
-      regAdminKeyContainer?.classList.add("hidden");
       if (regRollLabel) regRollLabel.textContent = "Faculty Employee ID";
       if (regRollInput) regRollInput.placeholder = "e.g. FAC-CSE-009";
+      if (regPasskeyLabel) regPasskeyLabel.textContent = "Faculty Coordinator Pass Key";
+      if (regPasskeyInput) {
+        regPasskeyInput.value = "PECFAC2026";
+        regPasskeyInput.placeholder = "Enter Faculty Security Pass Key";
+      }
+      if (regPasskeyDesc) regPasskeyDesc.innerHTML = 'Security key required to register as Faculty Coordinator. Default: <code class="font-bold font-mono">PECFAC2026</code>';
+      if (regPasskeyBox) regPasskeyBox.className = "p-3.5 rounded-2xl bg-purple-50 border border-purple-200/80 space-y-1";
     } else if (roleVal === "Super Admin") {
       regClubContainer?.classList.add("hidden");
-      regAdminKeyContainer?.classList.remove("hidden");
       if (regRollLabel) regRollLabel.textContent = "Admin Identification Code";
       if (regRollInput) regRollInput.placeholder = "e.g. ADM-HQ-2026";
+      if (regPasskeyLabel) regPasskeyLabel.textContent = "Super Admin Pass Key";
+      if (regPasskeyInput) {
+        regPasskeyInput.value = "PEC2026ADMIN";
+        regPasskeyInput.placeholder = "Enter Super Admin Pass Key";
+      }
+      if (regPasskeyDesc) regPasskeyDesc.innerHTML = 'Security key required for Super Admin classification. Default: <code class="font-bold font-mono">PEC2026ADMIN</code>';
+      if (regPasskeyBox) regPasskeyBox.className = "p-3.5 rounded-2xl bg-rose-50 border border-rose-200/80 space-y-1";
     } else {
       regClubContainer?.classList.add("hidden");
-      regAdminKeyContainer?.classList.add("hidden");
       if (regRollLabel) regRollLabel.textContent = "Roll Number / Registration ID";
       if (regRollInput) regRollInput.placeholder = "e.g. 23CS204";
+      if (regPasskeyLabel) regPasskeyLabel.textContent = "Student Member Access Code";
+      if (regPasskeyInput) {
+        regPasskeyInput.value = "PECSTUDENT2026";
+        regPasskeyInput.placeholder = "Enter Student Member Access Code";
+      }
+      if (regPasskeyDesc) regPasskeyDesc.innerHTML = 'Access code required to register as a verified Student Member. Default: <code class="font-bold font-mono">PECSTUDENT2026</code>';
+      if (regPasskeyBox) regPasskeyBox.className = "p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200/80 space-y-1";
     }
   });
 
@@ -408,7 +435,7 @@ export function attachLoginEvents() {
     const skills = document.getElementById("reg-skills").value;
     const role = regRoleSelect ? regRoleSelect.value : "Student";
     const assignedClub = document.getElementById("reg-assigned-club")?.value || "I4-08";
-    const adminKey = document.getElementById("reg-admin-key")?.value || "";
+    const passKey = document.getElementById("reg-passkey")?.value || "";
 
     alertBox.className = "p-3 rounded-xl text-xs font-medium bg-blue-50 text-blue-700 block";
     alertBox.textContent = `Registering and classifying ${role} account in Supabase database...`;
@@ -426,7 +453,8 @@ export function attachLoginEvents() {
       role,
       assignedClub,
       facultyId: role === "Faculty Coordinator" ? rollNo : null,
-      adminKey
+      adminKey: passKey,
+      passKey
     });
 
     if (res.success) {
@@ -498,10 +526,13 @@ export function attachLoginEvents() {
 }
 
 function redirectAfterLogin(role) {
-  if (role === "Super Admin") {
+  const normRole = (role || "").toLowerCase();
+  if (normRole.includes("super admin")) {
     window.location.hash = "#/admin/dashboard";
-  } else if (role === "Club Coordinator" || role === "Club Student Leader") {
+  } else if (normRole.includes("faculty") || normRole.includes("coordinator")) {
     window.location.hash = "#/coordinator/dashboard";
+  } else if (normRole.includes("club admin") || normRole.includes("leader")) {
+    window.location.hash = "#/club-dashboard";
   } else {
     window.location.hash = "#/student/dashboard";
   }

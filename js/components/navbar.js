@@ -169,27 +169,27 @@ function renderDesktopNavForRole(role, currentHash) {
 
   if (norm === ROLES.FACULTY_COORDINATOR) {
     return `
-      <a href="#/coordinator/dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/coordinator') ? 'bg-purple-600 text-white' : 'text-purple-300 hover:text-white hover:bg-purple-900/40'}">🎓 Faculty Portal</a>
-      <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">My Clubs</a>
-      <a href="#/coordinator/dashboard?tab=members" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Members</a>
-      <a href="#/coordinator/events" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Events & Approvals</a>
-      <a href="#/attendance" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Attendance</a>
-      <a href="#/coordinator/dashboard?tab=certificates" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Certificates</a>
-      <a href="#/reports" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Reports</a>
-      <a href="#/announcements" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Notices</a>
+      <a href="#/coordinator/dashboard" class="px-2 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/coordinator') ? 'bg-purple-600 text-white' : 'text-purple-300 hover:text-white hover:bg-purple-900/40'}">🎓 Faculty Portal</a>
+      <a href="#/clubs" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">My Clubs</a>
+      <a href="#/calendar" class="px-2 py-1.5 rounded-lg text-indigo-300 hover:text-white hover:bg-indigo-900/30 font-bold">📅 Calendar</a>
+      <a href="#/quizzes" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">⏱️ Quizzes</a>
+      <a href="#/practice" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">💡 Problem Sets</a>
+      <a href="#/study-circles" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">👥 Peer Circles</a>
+      <a href="#/attendance" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Attendance</a>
+      <a href="#/reports" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Reports</a>
     `;
   }
 
   if (norm === ROLES.CLUB_ADMIN) {
     return `
-      <a href="#/club-dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/club-dashboard') ? 'bg-blue-600 text-white' : 'text-blue-300 hover:text-white hover:bg-blue-900/40'}">⚡ Club Dashboard</a>
-      <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">My Club</a>
-      <a href="#/attendance" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">QR Kiosk</a>
-      <a href="#/projects" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Projects</a>
-      <a href="#/quizzes" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Quizzes</a>
-      <a href="#/practice" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Practice</a>
-      <a href="#/study-circles" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Study Circles</a>
-      <a href="#/announcements" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Notices</a>
+      <a href="#/club-dashboard" class="px-2 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/club-dashboard') ? 'bg-blue-600 text-white' : 'text-blue-300 hover:text-white hover:bg-blue-900/40'}">⚡ Club Dashboard</a>
+      <a href="#/clubs" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">My Club</a>
+      <a href="#/calendar" class="px-2 py-1.5 rounded-lg text-indigo-300 hover:text-white hover:bg-indigo-900/30 font-bold">📅 Calendar</a>
+      <a href="#/quizzes" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">⏱️ Quizzes</a>
+      <a href="#/practice" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">💡 Problem Sets</a>
+      <a href="#/study-circles" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">👥 Peer Circles</a>
+      <a href="#/attendance" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">QR Kiosk</a>
+      <a href="#/projects" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Projects</a>
     `;
   }
 

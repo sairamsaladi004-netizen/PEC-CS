@@ -1,3 +1,4 @@
+import { getCurrentUser } from './auth.js';
 import { renderNavbar, attachNavbarEvents } from './components/navbar.js';
 import { renderSearchModal, attachSearchModalEvents } from './components/searchModal.js';
 import { renderAuthModal, attachAuthModalEvents } from './components/authModal.js';
@@ -25,6 +26,9 @@ import { renderClubAdminDashboardView, attachClubAdminDashboardEvents } from './
 import { renderAboutView, attachAboutEvents } from './views/about.js';
 import { renderLeaderboardView, attachLeaderboardEvents } from './views/leaderboard.js';
 import { renderCalendarView, attachCalendarViewEvents } from './views/calendar.js';
+import { renderQuizzesView, attachQuizzesEvents } from './views/quizzes.js';
+import { renderPracticeView, attachPracticeEvents } from './views/practice.js';
+import { renderStudyCirclesView, attachStudyCirclesEvents } from './views/studyCircles.js';
 
 // New Role-Specific Comprehensive Portals
 import { renderLoginView, attachLoginEvents } from './views/login.js';
@@ -109,6 +113,32 @@ export function handleRoute() {
   switch (route) {
     case "#/":
     case "":
+      {
+        const user = getCurrentUser();
+        const isLoggedIn = user && !user.isGuest && user.id !== "guest-001";
+        if (!isLoggedIn) {
+          mountPoint.innerHTML = renderLoginView();
+          attachLoginEvents();
+        } else {
+          const role = (user.role || "").toLowerCase();
+          if (role.includes("super admin")) {
+            mountPoint.innerHTML = renderAdminPortalView("dashboard");
+            attachAdminPortalEvents();
+          } else if (role.includes("faculty") || role.includes("coordinator")) {
+            mountPoint.innerHTML = renderCoordinatorPortalView("dashboard");
+            attachCoordinatorPortalEvents();
+          } else if (role.includes("club admin") || role.includes("leader")) {
+            mountPoint.innerHTML = renderClubAdminDashboardView(params);
+            attachClubAdminDashboardEvents(params);
+          } else {
+            mountPoint.innerHTML = renderStudentDashboardView("dashboard");
+            attachStudentDashboardEvents();
+          }
+        }
+      }
+      break;
+
+    case "#/home":
       mountPoint.innerHTML = renderHomeView();
       attachHomeEvents();
       break;
@@ -236,6 +266,25 @@ export function handleRoute() {
     case "#/about":
       mountPoint.innerHTML = renderAboutView();
       attachAboutEvents();
+      break;
+
+    case "#/quizzes":
+    case "#/timed-quizzes":
+      mountPoint.innerHTML = renderQuizzesView();
+      attachQuizzesEvents();
+      break;
+
+    case "#/practice":
+    case "#/problem-sets":
+    case "#/compiler":
+      mountPoint.innerHTML = renderPracticeView();
+      attachPracticeEvents();
+      break;
+
+    case "#/study-circles":
+    case "#/peer-circles":
+      mountPoint.innerHTML = renderStudyCirclesView();
+      attachStudyCirclesEvents();
       break;
 
     default:

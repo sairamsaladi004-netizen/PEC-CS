@@ -429,18 +429,32 @@ apiRouter.post('/auth/register', registerLimiter, async (req, res) => {
   const cleanRoll = (rollNo || facultyId || `REC-${Date.now().toString().slice(-4)}`).trim().toUpperCase();
   const supabase = getSupabase();
 
-  // Determine classified role
+  // Determine classified role & validate pass keys / access codes
   let targetRole = ROLES.STUDENT;
   const rawRole = (role || "").trim().toLowerCase();
-  if (rawRole.includes("club admin") || rawRole.includes("student leader") || rawRole === "club admin") {
-    targetRole = ROLES.CLUB_ADMIN;
-  } else if (rawRole.includes("faculty") || rawRole.includes("coordinator") || rawRole === "faculty coordinator") {
-    targetRole = ROLES.FACULTY_COORDINATOR;
-  } else if (rawRole.includes("super admin") || rawRole === "super admin") {
-    if (adminKey && adminKey.trim() !== "" && adminKey.trim() !== "PEC2026ADMIN") {
-      return res.status(403).json({ success: false, message: "Invalid Super Admin Access Pass Key." });
+  const providedPassKey = (passKey || adminKey || req.body.passKey || req.body.adminKey || "").trim();
+
+  if (rawRole.includes("super admin") || rawRole === "super admin") {
+    if (providedPassKey !== "PEC2026ADMIN") {
+      return res.status(403).json({ success: false, message: "Invalid Super Admin Pass Key. Super Admin security key required (e.g. PEC2026ADMIN)." });
     }
     targetRole = ROLES.SUPER_ADMIN;
+  } else if (rawRole.includes("faculty") || rawRole.includes("coordinator") || rawRole === "faculty coordinator") {
+    if (providedPassKey !== "PECFAC2026" && providedPassKey !== "PEC2026ADMIN") {
+      return res.status(403).json({ success: false, message: "Invalid Faculty Coordinator Pass Key. Faculty key required (e.g. PECFAC2026)." });
+    }
+    targetRole = ROLES.FACULTY_COORDINATOR;
+  } else if (rawRole.includes("club admin") || rawRole.includes("student leader") || rawRole === "club admin") {
+    if (providedPassKey !== "CLUBADMIN2026" && providedPassKey !== "PEC2026ADMIN") {
+      return res.status(403).json({ success: false, message: "Invalid Club Admin Pass Code. Club Admin security code required (e.g. CLUBADMIN2026)." });
+    }
+    targetRole = ROLES.CLUB_ADMIN;
+  } else {
+    // Student / Club Member
+    if (providedPassKey !== "PECSTUDENT2026" && providedPassKey !== "PEC2026ADMIN") {
+      return res.status(403).json({ success: false, message: "Invalid Member Access Code. Student member code required (e.g. PECSTUDENT2026)." });
+    }
+    targetRole = ROLES.STUDENT;
   }
 
   const existing = (db.users || []).find(u =>
