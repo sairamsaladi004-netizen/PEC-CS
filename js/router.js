@@ -24,6 +24,7 @@ import { renderAdminView, attachAdminEvents } from './views/admin.js';
 import { renderClubAdminDashboardView, attachClubAdminDashboardEvents } from './views/clubAdminDashboard.js';
 import { renderAboutView, attachAboutEvents } from './views/about.js';
 import { renderLeaderboardView, attachLeaderboardEvents } from './views/leaderboard.js';
+import { renderCalendarView, attachCalendarViewEvents } from './views/calendar.js';
 
 // New Role-Specific Comprehensive Portals
 import { renderLoginView, attachLoginEvents } from './views/login.js';
@@ -121,6 +122,12 @@ export function handleRoute() {
     case "#/event-dashboard":
       mountPoint.innerHTML = renderEventsView(params);
       attachEventsEvents(params);
+      break;
+
+    case "#/calendar":
+    case "#/event-calendar":
+      mountPoint.innerHTML = renderCalendarView();
+      attachCalendarViewEvents();
       break;
 
     case "#/attendance":

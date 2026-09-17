@@ -255,6 +255,10 @@ export function renderEventDashboard(options = {}) {
           </div>
 
           <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+            <a href="#/calendar" class="px-3.5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition-all flex items-center space-x-2 shadow-md shadow-indigo-600/30">
+              <span>📅</span>
+              <span>Interactive Calendar Grid</span>
+            </a>
             <a href="#/attendance" class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all flex items-center space-x-2 border border-slate-700 shadow-sm">
               <span>📷</span>
               <span>QR Attendance Kiosk</span>

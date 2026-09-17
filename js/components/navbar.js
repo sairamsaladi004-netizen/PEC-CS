@@ -198,6 +198,7 @@ function renderDesktopNavForRole(role, currentHash) {
       <a href="#/student/dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/student') ? 'bg-emerald-600 text-white' : 'text-emerald-300 hover:text-white hover:bg-emerald-900/40'}">🎒 Student Portal</a>
       <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">35 Clubs</a>
       <a href="#/events" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Events & Passes</a>
+      <a href="#/calendar" class="px-2.5 py-1.5 rounded-lg text-indigo-300 hover:text-white hover:bg-indigo-900/30 font-bold">📅 Calendar</a>
       <a href="#/quizzes" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Timed Quizzes</a>
       <a href="#/practice" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Problem Sets</a>
       <a href="#/study-circles" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Peer Circles</a>
@@ -212,6 +213,7 @@ function renderDesktopNavForRole(role, currentHash) {
     <a href="#/" class="px-2.5 py-1.5 rounded-lg text-white hover:bg-slate-800">Home</a>
     <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">35 Official Clubs</a>
     <a href="#/events" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Public Events</a>
+    <a href="#/calendar" class="px-2.5 py-1.5 rounded-lg text-indigo-300 hover:text-white hover:bg-indigo-900/30 font-bold">📅 Event Calendar</a>
     <a href="#/leaderboard" class="px-2.5 py-1.5 rounded-lg text-amber-300 hover:text-white hover:bg-amber-900/30 font-bold">🏆 Leaderboard</a>
     <a href="#/announcements" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Public Notices</a>
     <a href="#/verify" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Verify Credential</a>
