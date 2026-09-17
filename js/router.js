@@ -22,6 +22,9 @@ import { renderVerificationView, attachVerificationEvents } from './views/verifi
 import { renderAdminView, attachAdminEvents } from './views/admin.js';
 import { renderClubAdminDashboardView, attachClubAdminDashboardEvents } from './views/clubAdminDashboard.js';
 import { renderAboutView, attachAboutEvents } from './views/about.js';
+import { renderQuizzesView, attachQuizzesEvents } from './views/quizzes.js';
+import { renderPracticeView, attachPracticeEvents } from './views/practice.js';
+import { renderStudyCirclesView, attachStudyCirclesEvents } from './views/studyCircles.js';
 
 // New Role-Specific Comprehensive Portals
 import { renderLoginView, attachLoginEvents } from './views/login.js';
@@ -208,6 +211,21 @@ export function handleRoute() {
     case "#/about":
       mountPoint.innerHTML = renderAboutView();
       attachAboutEvents();
+      break;
+
+    case "#/quizzes":
+      mountPoint.innerHTML = renderQuizzesView(params);
+      attachQuizzesEvents();
+      break;
+
+    case "#/practice":
+      mountPoint.innerHTML = renderPracticeView(params);
+      attachPracticeEvents();
+      break;
+
+    case "#/study-circles":
+      mountPoint.innerHTML = renderStudyCirclesView(params);
+      attachStudyCirclesEvents();
       break;
 
     default:

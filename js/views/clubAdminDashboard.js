@@ -50,9 +50,6 @@ export function renderClubAdminDashboardView(params = {}) {
   };
   const budgetPct = Math.round((budgetInfo.utilized / budgetInfo.allocated) * 100);
 
-  // Events related to this club
-  const clubEvents = (db.events || []).filter(e => e.club_id === club.id || e.clubId === club.id);
-
   // Compute dynamic members and events for selected club
   const clubMemberships = (db.club_memberships || []).filter(m => (m.club_id === club.id || m.clubId === club.id));
   const approvedMembers = clubMemberships.filter(m => m.status === "Approved");

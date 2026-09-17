@@ -42,10 +42,14 @@ export function renderStudentProfileView() {
             </div>
           </div>
 
-          <div class="flex items-center space-x-3">
-            <button id="open-ai-classification-modal-btn" class="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-500/20 transition-all flex items-center space-x-2 cursor-pointer">
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="open-edit-profile-modal-btn" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center space-x-1.5 cursor-pointer">
+              <span>✏️</span>
+              <span>Edit Profile</span>
+            </button>
+            <button id="open-ai-classification-modal-btn" class="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-500/20 transition-all flex items-center space-x-1.5 cursor-pointer">
               <span>⚡</span>
-              <span>Run Real AI Profiler</span>
+              <span>Run AI Profiler</span>
             </button>
             <a href="#/membership-card" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all">
               Digital ID Card
@@ -355,11 +359,145 @@ export function renderStudentProfileView() {
         </div>
       </div>
 
+      <!-- EDIT STUDENT PROFILE MODAL -->
+      <div id="edit-profile-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl space-y-5 my-8 max-h-[90vh] overflow-y-auto">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+              <h3 class="text-base font-black text-slate-900">Edit Student Profile & Information</h3>
+              <p class="text-xs text-slate-500">Update your academic credentials, avatar, and technical skill set</p>
+            </div>
+            <button id="close-edit-profile-modal-btn" class="text-slate-400 hover:text-slate-600 text-lg cursor-pointer">✕</button>
+          </div>
+
+          <form id="edit-profile-form" class="space-y-4 text-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Full Name</label>
+                <input type="text" id="edit-name" value="${user.name}" required class="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Roll No / Student ID</label>
+                <input type="text" id="edit-roll" value="${user.rollNo || user.facultyId || ''}" required class="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-mono" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Email Address</label>
+                <input type="email" id="edit-email" value="${user.email || ''}" required class="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Phone Number</label>
+                <input type="text" id="edit-phone" value="${user.phone || ''}" placeholder="+91 98765 43210" class="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-mono" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Department</label>
+                <select id="edit-dept" class="w-full p-2.5 rounded-xl border border-slate-200 font-bold focus:ring-2 focus:ring-blue-500">
+                  <option value="CSE" ${user.department === 'CSE' ? 'selected' : ''}>CSE</option>
+                  <option value="CSE(AIML)" ${user.department === 'CSE(AIML)' ? 'selected' : ''}>CSE (AI & ML)</option>
+                  <option value="CSE(DS)" ${user.department === 'CSE(DS)' ? 'selected' : ''}>CSE (Data Science)</option>
+                  <option value="AIDS" ${user.department === 'AIDS' ? 'selected' : ''}>AI & Data Science</option>
+                  <option value="ECE" ${user.department === 'ECE' ? 'selected' : ''}>ECE</option>
+                  <option value="EEE" ${user.department === 'EEE' ? 'selected' : ''}>EEE</option>
+                  <option value="MECH" ${user.department === 'MECH' ? 'selected' : ''}>Mechanical</option>
+                  <option value="CIVIL" ${user.department === 'CIVIL' ? 'selected' : ''}>Civil</option>
+                  <option value="IT" ${user.department === 'IT' ? 'selected' : ''}>Information Tech</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Academic Year</label>
+                <select id="edit-year" class="w-full p-2.5 rounded-xl border border-slate-200 font-bold focus:ring-2 focus:ring-blue-500">
+                  <option value="1st Year" ${user.year === '1st Year' ? 'selected' : ''}>1st Year</option>
+                  <option value="2nd Year" ${user.year === '2nd Year' ? 'selected' : ''}>2nd Year</option>
+                  <option value="3rd Year" ${user.year === '3rd Year' || !user.year ? 'selected' : ''}>3rd Year</option>
+                  <option value="4th Year" ${user.year === '4th Year' ? 'selected' : ''}>4th Year</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">CGPA</label>
+                <input type="number" step="0.01" id="edit-cgpa" value="${user.cgpa || '8.85'}" class="w-full p-2.5 rounded-xl border border-slate-200 font-mono font-bold" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Profile Avatar Image URL</label>
+              <input type="text" id="edit-avatar" value="${user.avatar || ''}" placeholder="https://..." class="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-mono" />
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Technical Skills (Comma separated)</label>
+              <input type="text" id="edit-skills" value="${skillsList.join(', ')}" class="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500" />
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Interests (Comma separated)</label>
+              <input type="text" id="edit-interests" value="${interestsList.join(', ')}" class="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500" />
+            </div>
+
+            <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl shadow-md transition-all cursor-pointer">
+              Save Profile Changes ✓
+            </button>
+          </form>
+        </div>
+      </div>
+
     </div>
   `;
 }
 
 export function attachStudentProfileEvents() {
+  // Edit Profile Modal Handlers
+  const openEditModalBtn = document.getElementById("open-edit-profile-modal-btn");
+  const editModal = document.getElementById("edit-profile-modal");
+  const closeEditModalBtn = document.getElementById("close-edit-profile-modal-btn");
+  const editForm = document.getElementById("edit-profile-form");
+
+  if (openEditModalBtn && editModal) {
+    openEditModalBtn.addEventListener("click", () => editModal.classList.remove("hidden"));
+    if (closeEditModalBtn) closeEditModalBtn.addEventListener("click", () => editModal.classList.add("hidden"));
+    editModal.addEventListener("click", (e) => {
+      if (e.target === editModal) editModal.classList.add("hidden");
+    });
+
+    if (editForm) {
+      editForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const user = getCurrentUser() || {};
+        const updatedFields = {
+          name: document.getElementById("edit-name").value.trim(),
+          rollNo: document.getElementById("edit-roll").value.trim(),
+          email: document.getElementById("edit-email").value.trim(),
+          phone: document.getElementById("edit-phone").value.trim(),
+          department: document.getElementById("edit-dept").value,
+          year: document.getElementById("edit-year").value,
+          cgpa: document.getElementById("edit-cgpa").value.trim(),
+          avatar: document.getElementById("edit-avatar").value.trim() || user.avatar,
+          skills: document.getElementById("edit-skills").value.split(",").map(s => s.trim()).filter(Boolean),
+          interests: document.getElementById("edit-interests").value.split(",").map(s => s.trim()).filter(Boolean)
+        };
+
+        const updatedProfile = { ...user, ...updatedFields };
+        updateProfile(updatedProfile);
+
+        const db = getDB();
+        const userInDb = (db.users || []).find(u => u.id === user.id || u.email === user.email);
+        if (userInDb) {
+          Object.assign(userInDb, updatedFields);
+          saveDB(db);
+        }
+
+        showToast("Profile Updated!", "Your profile information has been saved.", "success");
+        editModal.classList.add("hidden");
+        setTimeout(() => window.location.reload(), 250);
+      });
+    }
+  }
+
+  // AI Classification Modal Handlers
   const openModalBtn = document.getElementById("open-ai-classification-modal-btn");
   const modal = document.getElementById("ai-classification-modal");
   const closeModalBtn = document.getElementById("close-ai-classification-modal-btn");
