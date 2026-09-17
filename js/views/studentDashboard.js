@@ -157,7 +157,7 @@ export function renderStudentDashboardView(subSection = "dashboard") {
     ];
     if (!db.certificates) db.certificates = [];
     db.certificates.push(...rawCertificates);
-    saveDB();
+    saveDB(db);
   }
 
   const myCertificates = rawCertificates;

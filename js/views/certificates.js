@@ -647,8 +647,11 @@ export function attachCertificatesEvents(params = {}) {
 
         db.certificates = db.certificates || [];
         db.certificates.unshift(newCert);
+        
+        apiRequest('/api/certificates/create', 'POST', newCert).catch(console.error);
         saveDB(db);
-        logAudit(`${user.name} (${user.role})`, "Minted Digital Certificate", newId, `${name} - ${eventName}`);
+        logAudit(`${user.name} (${user.role})`, "Minted Digital Certificate"
+, newId, `${name} - ${eventName}`);
 
         showToast("Credential Saved", `Certificate #${newId} recorded to verified digital ledger!`, "success");
         setTimeout(() => {
@@ -757,8 +760,14 @@ export function attachCertificatesEvents(params = {}) {
           count++;
         });
 
+        
+        apiRequest('/api/certificates/bulk-mint', 'POST', { 
+            eventId, awardType, template 
+        }).catch(console.error);
+
         saveDB(db);
-        logAudit(`${user.name} (${user.role})`, "Bulk Minted Certificates", evt?.title, `Minted ${count} credentials`);
+        logAudit(`${user.name} (${user.role})`, "Bulk Minted Certificates"
+, evt?.title, `Minted ${count} credentials`);
         showToast("Batch Mint Complete", `Successfully generated and dispatched ${count} digital certificates!`, "success");
         bulkModal.classList.add("hidden");
         setTimeout(() => window.location.reload(), 300);

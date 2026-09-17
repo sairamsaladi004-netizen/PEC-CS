@@ -95,11 +95,12 @@
   }
 
   .printable-area,
-  .certificate-sheet {
+  .certificate-sheet,
+  .badge-printable-sheet {
     position: relative !important;
     width: 100% !important;
     max-width: 1000px !important;
-    min-height: 600px !important;
+    min-height: 500px !important;
     margin: 0 auto !important;
     padding: 24px 32px !important;
     box-sizing: border-box !important;
@@ -113,6 +114,19 @@
     page-break-after: avoid !important;
     break-inside: avoid !important;
     overflow: hidden !important;
+  }
+
+  /* Badge specific print sizing */
+  .badge-card-printable {
+    max-width: 540px !important;
+    min-height: 340px !important;
+    margin: 20px auto !important;
+    border: 2px solid #0f172a !important;
+    background: #0f172a !important;
+    color: #ffffff !important;
+    border-radius: 20px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   /* High fidelity print borders and gradients preservation */

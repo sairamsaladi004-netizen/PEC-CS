@@ -1,4 +1,4 @@
-import { getDB, saveDB, logAudit } from '../db.js';
+import { getDB, apiRequest, saveDB, logAudit } from '../db.js';
 import { getCurrentUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 import { getStudentEventPrediction, getEventParticipationPrediction } from '../intelligenceEngine.js';
@@ -1588,10 +1588,10 @@ function attachCardAndRowActionListeners() {
 
       // Sync event_registrations relational table
       if (!currentDb.event_registrations) currentDb.event_registrations = [];
+      
       currentDb.event_registrations.push(newReg);
+      apiRequest('/api/events/register', 'POST', { eventId: evt.id }).catch(console.error);
 
-      saveDB(currentDb);
-      logAudit(`${user.name} (${user.role})`, "Registered for Technical Event", evt.title, `Ticket ID: ${ticketId}`);
       showToast(`Pass confirmed for "${evt.title}"! Gate Pass: ${ticketId}`, "success");
 
       // Auto-Pop QR Gate Pass Modal
@@ -1656,9 +1656,10 @@ function attachCardAndRowActionListeners() {
         rollNo: user.rollNo || "22CS101",
         queuedAt: new Date().toISOString()
       };
+      
       evt.waitlist.push(waitEntry);
-      saveDB(currentDb);
-      logAudit(`${user.name}`, "Joined Event Waitlist", evt.title, `Queue Pos: #${evt.waitlist.length}`);
+      apiRequest(`/api/events/${evt.id}/waitlist`, 'POST').catch(console.error);
+
       showToast(`Added to waitlist for "${evt.title}". Queue Position: #${evt.waitlist.length}`, "warning");
 
       setTimeout(() => {
@@ -1894,9 +1895,10 @@ function attachModalListeners() {
           waitlist: []
         };
 
+        
         currentDb.events.unshift(newEvt);
-        saveDB(currentDb);
-        logAudit(`${user.name} (${user.role})`, "Created Society Event", newEvt.title, `Capacity: ${newEvt.capacity}`);
+        apiRequest('/api/events/create', 'POST', newEvt).catch(console.error);
+
         showToast(`Event "${newEvt.title}" published! Official circular generated.`, "success");
         createModal.classList.add("hidden");
         createForm.reset();

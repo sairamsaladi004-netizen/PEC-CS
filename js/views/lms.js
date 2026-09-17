@@ -1,4 +1,4 @@
-import { getDB, saveDB, logAudit } from '../db.js';
+import { getDB, apiRequest, saveDB, logAudit } from '../db.js';
 import { getCurrentUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 import { addNotification } from '../notifications.js';
@@ -432,8 +432,10 @@ export function attachLMSEvents(params = {}) {
       const db = getDB();
       const res = db.lmsResources.find(r => r.id === lmsId);
       if (res) {
+        
         res.bookmarks = (res.bookmarks || 0) + 1;
-        saveDB(db);
+        apiRequest(`/api/lms/resources/${lmsId}/bookmark`, 'POST').catch(console.error);
+
         const countSpan = btn.querySelector(".bookmark-count");
         if (countSpan) countSpan.innerText = res.bookmarks;
         showToast("Bookmarked", `Saved "${res.title}" to your library.`, "success");
@@ -477,22 +479,13 @@ export function attachLMSEvents(params = {}) {
       const certId = `CERT-QUIZ-${Date.now().toString().slice(-4)}`;
       const certHash = `sha256:0x${Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
 
-      db.certificates.unshift({
-        id: certId,
-        studentId: user.id,
-        recipientName: user.name,
-        recipientRoll: user.rollNo || "22CS101",
-        recipientEmail: user.email,
-        department: user.department || "CSE",
-        eventName: "Cloud Architecture & DevOps Readiness Assessment",
-        awardType: "Certificate of Technical Competence",
-        template: "cyber",
-        issueDate: new Date().toISOString().split("T")[0],
-        qrHash: certHash,
+      
+      apiRequest('/api/lms/quiz/complete', 'POST', {
+        certId,
         verificationHash: certHash,
-        status: "Verified & Active"
-      });
-      saveDB(db);
+        eventName: quizEl.dataset.quiz || "Cloud DevOps CI/CD Technical Assessment"
+      }).catch(console.error);
+
 
       const resultBox = document.getElementById("quiz-result-box");
       if (resultBox) resultBox.classList.remove("hidden");
@@ -532,9 +525,10 @@ export function attachLMSEvents(params = {}) {
           bookmarks: 0
         };
 
+        
         db.lmsResources.unshift(newRes);
-        saveDB(db);
-        logAudit(`${user.name} (${user.role})`, "Published LMS Resource", newRes.title, `Domain: ${newRes.domain}`);
+        apiRequest('/api/lms/resources/create', 'POST', newRes).catch(console.error);
+
         showToast("Resource Published", "Material added to peer LMS repository!", "success");
         modal.classList.add("hidden");
         setTimeout(() => window.location.reload(), 300);

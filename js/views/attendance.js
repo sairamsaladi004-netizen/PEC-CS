@@ -1,4 +1,4 @@
-import { getDB, saveDB, logAudit } from '../db.js';
+import { getDB, apiRequest, saveDB, logAudit } from '../db.js';
 import { getCurrentUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 import { addNotification } from '../notifications.js';
@@ -505,8 +505,7 @@ export function attachAttendanceEvents() {
       } else {
         reg.checkedIn = true;
         reg.checkinTime = backendResult?.record?.checkin_time || new Date().toLocaleTimeString();
-        saveDB(db);
-        logAudit("Gate Kiosk", "Attendee Checked-in", `${event.title} - ${reg.studentName}`, `Pass: ${reg.ticketId}`);
+        /* Backend handles persistence */
         playSound("success");
         showToast("Gate Verified ✓", `${reg.studentName} (${reg.rollNo}) checked in successfully!`, "success");
       }
@@ -533,9 +532,7 @@ export function attachAttendanceEvents() {
         };
         event.registrations.push(newReg);
         event.registeredCount = (event.registeredCount || 0) + 1;
-        saveDB(db);
-        playSound("success");
-        showToast("Student Verified & Checked In ✓", `${userInDb.name} (${userInDb.rollNo}) auto-admitted to event!`, "success");
+        /* Backend handles persistence */ playSound("success"); showToast("Student Verified & Checked In ✓", `${userInDb.name} (${userInDb.rollNo}) auto-admitted to event!`, "success");
         const tbody = document.getElementById("attendance-table-body");
         if (tbody) tbody.innerHTML = renderAttendanceRows(event.registrations, event);
         updateStats(event.registrations);
@@ -693,8 +690,17 @@ export function attachAttendanceEvents() {
           reg.checkinTime = item.timestamp;
         }
       });
-      saveDB(db);
-      localStorage.removeItem(OFFLINE_QUEUE_KEY);
+      
+      // Sync to backend
+      Promise.all(queue.map(item => {
+        return apiRequest('/api/attendance/organizer-checkin', 'POST', {
+          eventId: item.eventId,
+          ticketId: item.ticketId
+        });
+      })).then(() => {
+        localStorage.removeItem(OFFLINE_QUEUE_KEY);
+      }).catch(console.error);
+
       updateQueueDisplay();
       showToast("Sync Successful", `Synchronized ${queue.length} offline scans to central database!`, "success");
     });
@@ -796,6 +802,16 @@ export function attachAttendanceEvents() {
           const ticketId = `TCK-WALK-${Math.floor(100 + Math.random() * 900)}`;
 
           if (!event.registrations) event.registrations = [];
+          
+          apiRequest('/api/events/walkin', 'POST', {
+            eventId,
+            studentName: name,
+            rollNo,
+            department,
+            email
+          }).catch(console.error);
+          
+          if (!event.registrations) event.registrations = [];
           event.registrations.push({
             studentId: "walkin-" + Date.now(),
             studentName: name,
@@ -808,8 +824,7 @@ export function attachAttendanceEvents() {
             checkinTime: new Date().toLocaleTimeString()
           });
           event.registeredCount += 1;
-          saveDB(db);
-          logAudit("Gate Coordinator", "Added Walk-in Delegate", `${event.title} - ${name}`, `Roll No: ${rollNo}`);
+
           showToast("Walk-in Checked In", `${name} added to roster and verified!`, "success");
           walkinModal.classList.add("hidden");
           const tbody = document.getElementById("attendance-table-body");
@@ -892,10 +907,15 @@ export function attachAttendanceEvents() {
         const event = db.events.find(e => e.id === eventId);
         const reg = event?.registrations?.find(r => r.ticketId === ticketId);
         if (reg) {
+          
           reg.checkedIn = false;
           reg.checkinTime = null;
-          saveDB(db);
-          logAudit("Gate Coordinator", "Corrected Attendance (Undo)", `${event.title} - ${reg.studentName}`, "Marked back to absent");
+          apiRequest('/api/attendance/manual-checkin', 'POST', {
+            eventId,
+            studentId: reg.studentId || reg.student_id,
+            status: 'Absent'
+          }).catch(console.error);
+
           showToast("Correction Applied", `Attendance undone for ${reg.studentName}.`, "info");
           const tbody = document.getElementById("attendance-table-body");
           if (tbody) tbody.innerHTML = renderAttendanceRows(event.registrations, event);
@@ -934,9 +954,14 @@ export function attachAttendanceEvents() {
         };
 
         if (!db.certificates) db.certificates = [];
+        
         db.certificates.unshift(newCert);
-        saveDB(db);
-        logAudit("Faculty Reviewer", "Issued Certificate", `${studentName} - ${certId}`, `Event: ${eventName}`);
+        apiRequest('/api/certificates/issue', 'POST', {
+          eventId: eventId,
+          studentId: studentId,
+          certificateType: "Participation"
+        }).catch(console.error);
+
         addNotification({
           userId: studentId,
           title: "Accredited Certificate Issued",

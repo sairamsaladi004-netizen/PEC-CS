@@ -1,4 +1,4 @@
-import { getCurrentUser, loginUser, registerStudent, resetPassword, verifyEmailWithOTP, getAllDemoAccounts } from '../auth.js';
+import { getCurrentUser, loginUser, registerStudent, resetPassword, verifyEmailWithOTP, getAllDemoAccounts, switchUser } from '../auth.js';
 
 export function renderLoginView() {
   const user = getCurrentUser();
@@ -19,43 +19,80 @@ export function renderLoginView() {
         </p>
       </div>
 
-      <!-- Demo Accounts Quick Access Banner -->
-      <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-200/80 mb-8 shadow-sm">
-        <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+      <!-- Direct Demo Login Banner for 4 Roles -->
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 border border-slate-700/80 mb-8 shadow-xl text-white space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-2">
           <div class="flex items-center space-x-2">
-            <span class="px-2 py-0.5 rounded-md bg-amber-600 text-white text-[10px] font-black uppercase tracking-wider">Demo Evaluation Mode</span>
-            <span class="text-xs font-bold text-amber-900">One-Click Demo Personas</span>
+            <span class="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider font-mono">
+              DIRECT 1-CLICK DEMO LOGIN
+            </span>
+            <span class="text-xs font-bold text-slate-200">Select Any Institutional Persona</span>
           </div>
-          <span class="text-[11px] text-amber-700 font-medium">Safe evaluation accounts • Pre-loaded data</span>
+          <span class="text-[11px] text-emerald-400 font-mono font-bold">● Click card for instant portal access</span>
         </div>
         
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          ${demoAccounts.map(acc => {
-            let roleBadge = "bg-blue-100 text-blue-800";
-            let roleTitle = "Student";
-            if (acc.role === "Club Coordinator") {
-              roleBadge = "bg-purple-100 text-purple-800";
-              roleTitle = "Coordinator";
-            } else if (acc.role === "Club Student Leader") {
-              roleBadge = "bg-emerald-100 text-emerald-800";
-              roleTitle = "Student Leader";
-            } else if (acc.role === "Super Admin") {
-              roleBadge = "bg-rose-100 text-rose-800";
-              roleTitle = "Super Admin";
-            }
+          
+          <!-- Student Role Direct Login -->
+          <button type="button" class="demo-login-btn text-left p-4 rounded-2xl bg-slate-800/90 hover:bg-slate-800 border border-emerald-500/40 hover:border-emerald-400 transition-all hover:scale-[1.02] cursor-pointer group shadow-md" data-user-id="std-101" data-demo-email="aarav.sharma@pragati.ac.in" data-role="Student">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">🎓 Student Member</span>
+              <span class="text-[10px] font-mono text-emerald-400 group-hover:underline">1-Click Login 🚀</span>
+            </div>
+            <div class="text-sm font-bold text-white">Aarav Sharma</div>
+            <div class="text-[10px] font-mono text-slate-300 mt-0.5">aarav.sharma@pragati.ac.in</div>
+            <div class="text-[10px] text-slate-400 font-mono mt-1">Roll No: <strong class="text-emerald-300">22CS101</strong></div>
+            <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px]">
+              <span class="text-slate-400">Target Portal:</span>
+              <span class="font-bold text-emerald-400">Student Dashboard</span>
+            </div>
+          </button>
 
-            return `
-              <button data-demo-id="${acc.id}" class="demo-login-btn text-left p-3 rounded-xl bg-white hover:bg-amber-100/50 border border-amber-200 transition-all hover:scale-[1.02] shadow-xs group">
-                <div class="flex items-center justify-between mb-1.5">
-                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${roleBadge}">${roleTitle}</span>
-                  <span class="text-[10px] font-mono text-slate-400 group-hover:text-amber-700">Login →</span>
-                </div>
-                <div class="text-xs font-bold text-slate-900 truncate">${acc.name}</div>
-                <div class="text-[10px] text-slate-500 truncate">${acc.email}</div>
-                <div class="text-[9px] text-slate-400 mt-1 font-mono">${acc.rollNo || acc.facultyId || 'PEC HQ'}</div>
-              </button>
-            `;
-          }).join('')}
+          <!-- Club Admin Role Direct Login -->
+          <button type="button" class="demo-login-btn text-left p-4 rounded-2xl bg-slate-800/90 hover:bg-slate-800 border border-blue-500/40 hover:border-blue-400 transition-all hover:scale-[1.02] cursor-pointer group shadow-md" data-user-id="std-102" data-demo-email="priya.patel@pragati.ac.in" data-role="Club Admin">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40">⚡ Club Admin</span>
+              <span class="text-[10px] font-mono text-blue-400 group-hover:underline">1-Click Login 🚀</span>
+            </div>
+            <div class="text-sm font-bold text-white">Priya Patel</div>
+            <div class="text-[10px] font-mono text-slate-300 mt-0.5">priya.patel@pragati.ac.in</div>
+            <div class="text-[10px] text-slate-400 font-mono mt-1">Roll No: <strong class="text-blue-300">22CS142</strong></div>
+            <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px]">
+              <span class="text-slate-400">Target Portal:</span>
+              <span class="font-bold text-blue-400">Club Admin Panel</span>
+            </div>
+          </button>
+
+          <!-- Faculty Coordinator Role Direct Login -->
+          <button type="button" class="demo-login-btn text-left p-4 rounded-2xl bg-slate-800/90 hover:bg-slate-800 border border-purple-500/40 hover:border-purple-400 transition-all hover:scale-[1.02] cursor-pointer group shadow-md" data-user-id="coord-201" data-demo-email="yamuna.l@pragati.ac.in" data-role="Faculty Coordinator">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40">🏫 Faculty Coord</span>
+              <span class="text-[10px] font-mono text-purple-400 group-hover:underline">1-Click Login 🚀</span>
+            </div>
+            <div class="text-sm font-bold text-white">Mrs. L. Yamuna</div>
+            <div class="text-[10px] font-mono text-slate-300 mt-0.5">yamuna.l@pragati.ac.in</div>
+            <div class="text-[10px] text-slate-400 font-mono mt-1">Faculty ID: <strong class="text-purple-300">FAC-CSE-AIML-01</strong></div>
+            <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px]">
+              <span class="text-slate-400">Target Portal:</span>
+              <span class="font-bold text-purple-400">Faculty Coordinator</span>
+            </div>
+          </button>
+
+          <!-- Director (Academics) Role Direct Login -->
+          <button type="button" class="demo-login-btn text-left p-4 rounded-2xl bg-slate-800/90 hover:bg-slate-800 border border-rose-500/40 hover:border-rose-400 transition-all hover:scale-[1.02] cursor-pointer group shadow-md" data-user-id="admin-001" data-demo-email="director.academics@pragati.ac.in" data-role="Director (Academics)">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">🏛️ Director (Academics)</span>
+              <span class="text-[10px] font-mono text-rose-400 group-hover:underline">1-Click Login 🚀</span>
+            </div>
+            <div class="text-sm font-bold text-white">Dr. K. Satyanarayana</div>
+            <div class="text-[10px] font-mono text-slate-300 mt-0.5">director.academics@pragati.ac.in</div>
+            <div class="text-[10px] text-slate-400 font-mono mt-1">Faculty ID: <strong class="text-rose-300">FAC-PEC-001</strong></div>
+            <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px]">
+              <span class="text-slate-400">Target Portal:</span>
+              <span class="font-bold text-rose-400">Directorate & Academic Council</span>
+            </div>
+          </button>
+
         </div>
       </div>
 
@@ -100,10 +137,22 @@ export function renderLoginView() {
             </form>
           </div>
 
-          <!-- REGISTRATION FORM -->
+          <!-- REGISTRATION FORM WITH ROLE CLASSIFICATION -->
           <div id="register-form-section" class="hidden">
             <form id="register-form" class="space-y-4 max-w-lg mx-auto">
               <div id="register-alert" class="hidden p-3 rounded-xl text-xs font-medium"></div>
+
+              <!-- Role Classification Dropdown -->
+              <div class="p-3.5 rounded-2xl bg-slate-900 text-white space-y-1.5 border border-slate-700">
+                <label class="block text-xs font-black uppercase tracking-wider text-amber-400">Select Account Role Classification</label>
+                <select id="reg-role" class="w-full px-3 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold border border-slate-700 focus:ring-2 focus:ring-amber-500 focus:outline-none cursor-pointer">
+                  <option value="Student">🎓 Student Member (Standard Portal Access)</option>
+                  <option value="Club Admin">⚡ Club Admin / Student Leader (Club Management & Attendance)</option>
+                  <option value="Faculty Coordinator">🏫 Faculty Coordinator (Council Approvals & Governance)</option>
+                  <option value="Super Admin">🏛️ Director (Academics) / Super Admin (Full Institutional Control)</option>
+                </select>
+                <p id="reg-role-desc" class="text-[10px] text-slate-300">Classifies your account in Supabase database and grants role-appropriate permissions.</p>
+              </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -111,9 +160,28 @@ export function renderLoginView() {
                   <input type="text" id="reg-name" required placeholder="Full Name" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
-                  <label class="block text-xs font-bold text-slate-700 mb-1">Roll Number</label>
+                  <label id="reg-roll-label" class="block text-xs font-bold text-slate-700 mb-1">Roll Number / Registration ID</label>
                   <input type="text" id="reg-roll" required placeholder="e.g. 23CS204" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500 uppercase" />
                 </div>
+              </div>
+
+              <!-- Conditional Assigned Club for Club Admin -->
+              <div id="reg-club-container" class="hidden">
+                <label class="block text-xs font-bold text-slate-700 mb-1">Assigned Technical Society / Club</label>
+                <select id="reg-assigned-club" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500">
+                  <option value="I4-08">Turing AI & Data Science Society (I4-08)</option>
+                  <option value="I4-07">Cyber Security & Forensics Guild (I4-07)</option>
+                  <option value="I4-06">Robotics & Embedded Systems Lab (I4-06)</option>
+                  <option value="I4-01">Aerospace & Drone Engineering Club (I4-01)</option>
+                  <option value="I4-02">IoT & Smart Systems Society (I4-02)</option>
+                </select>
+              </div>
+
+              <!-- Registration Pass Key / Security Code Field (Adaptive per Role) -->
+              <div id="reg-passkey-container" class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200/80 space-y-1">
+                <label id="reg-passkey-label" class="block text-xs font-bold text-emerald-900">Student Member Access Code</label>
+                <input type="password" id="reg-passkey" required placeholder="Enter Student Member Access Code" class="w-full px-3 py-2 rounded-xl border border-emerald-300 text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500 bg-white" value="PECSTUDENT2026" />
+                <p id="reg-passkey-desc" class="text-[10px] text-emerald-700">Access code required to register as a verified Student Member. Default: <code class="font-bold font-mono">PECSTUDENT2026</code></p>
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -132,14 +200,12 @@ export function renderLoginView() {
                   <label class="block text-xs font-bold text-slate-700 mb-1">Department</label>
                   <select id="reg-dept" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500">
                     <option value="CSE">CSE</option>
-                    <option value="CSE(AIML)">CSE (AIML)</option>
-                    <option value="CSE(DS)">CSE (Data Science)</option>
-                    <option value="CSE(CS)">CSE (Cyber Security)</option>
-                    <option value="IT">IT</option>
+                    <option value="AIDS">AIDS</option>
+                    <option value="AIML">AIML</option>
                     <option value="ECE">ECE</option>
                     <option value="EEE">EEE</option>
-                    <option value="ME">Mechanical</option>
-                    <option value="CE">Civil</option>
+                    <option value="MECH">Mechanical</option>
+                    <option value="CIVIL">Civil</option>
                   </select>
                 </div>
                 <div>
@@ -165,7 +231,7 @@ export function renderLoginView() {
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-xs font-bold text-slate-700 mb-1">Create Password</label>
-                  <input type="password" id="reg-password" required minlength="6" placeholder="Min. 6 characters" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500" />
+                  <input type="password" id="reg-password" required minlength="6" placeholder="Min. 6 characters" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500" value="Password@123" />
                 </div>
                 <div>
                   <label class="block text-xs font-bold text-slate-700 mb-1">Technical Skills</label>
@@ -174,7 +240,7 @@ export function renderLoginView() {
               </div>
 
               <button type="submit" id="reg-submit-btn" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 transition-all">
-                Create Verified Student Account
+                Register & Classify Account in Supabase
               </button>
             </form>
           </div>
@@ -186,22 +252,29 @@ export function renderLoginView() {
       <div id="otp-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl space-y-4">
           <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl mx-auto">
-            ✉️
+            🎫
           </div>
           <div class="text-center">
-            <h3 class="text-lg font-bold text-slate-900">Institutional Email Verification</h3>
+            <h3 class="text-lg font-bold text-slate-900">Student Gate Pass & Verification</h3>
             <p class="text-xs text-slate-500 mt-1">
-              A 6-digit verification code has been dispatched to your Pragati institutional email address.
+              Your official Digital Pass has been generated. Enter the 6-digit verification code sent to your Pragati email to activate your account.
             </p>
           </div>
+
+          <div id="generated-pass-banner" class="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 text-center space-y-1">
+            <div class="text-[10px] font-bold text-blue-600 uppercase tracking-wider font-mono">Assigned Digital Pass ID</div>
+            <div id="assigned-pass-id-display" class="text-sm font-black text-slate-900 font-mono">PEC-PASS-2026-ACTIVE</div>
+            <div class="text-[10px] text-slate-500">QR Gate Pass is ready and synced to your student profile.</div>
+          </div>
+
           <div id="otp-alert" class="hidden p-2.5 rounded-xl text-xs font-medium"></div>
           <div>
-            <input type="text" id="otp-input" maxlength="6" placeholder="Enter 6-digit OTP (e.g. 742918)" class="w-full text-center tracking-widest text-lg font-mono font-bold py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500" />
-            <p class="text-[11px] text-center text-slate-400 mt-1.5 font-mono">Demo evaluation OTP: <strong class="text-emerald-700">742918</strong></p>
+            <input type="text" id="otp-input" maxlength="6" value="742918" placeholder="Enter 6-digit OTP (e.g. 742918)" class="w-full text-center tracking-widest text-lg font-mono font-bold py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500" />
+            <p class="text-[11px] text-center text-slate-400 mt-1.5 font-mono">Demo evaluation OTP: <strong class="text-emerald-700 font-bold">742918</strong></p>
           </div>
           <div class="flex space-x-2">
-            <button id="verify-otp-btn" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all">
-              Verify & Enter Portal
+            <button id="verify-otp-btn" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-md">
+              Verify & Open Pass Profile
             </button>
             <button id="cancel-otp-btn" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold">
               Cancel
@@ -261,15 +334,32 @@ export function attachLoginEvents() {
     loginSec.classList.add("hidden");
   });
 
-  // Demo Login Buttons
+  // Demo Login Buttons (1-Click Direct Role Access)
   document.querySelectorAll(".demo-login-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
-      const demoId = btn.getAttribute("data-demo-id");
-      const accounts = getAllDemoAccounts();
-      const target = accounts.find(a => a.id === demoId);
-      if (target) {
-        await loginUser(target.email, "Password@123");
-        redirectAfterLogin(target.role);
+      const userId = btn.getAttribute("data-user-id") || btn.getAttribute("data-demo-id");
+      const demoEmail = btn.getAttribute("data-demo-email");
+      const role = btn.getAttribute("data-role");
+      const alertBox = document.getElementById("login-alert");
+
+      if (alertBox) {
+        alertBox.className = "p-3 rounded-xl text-xs font-medium bg-emerald-50 text-emerald-700 block animate-pulse";
+        alertBox.textContent = `Authenticating Direct Demo Access as ${role || 'User'}...`;
+      }
+
+      // 1. Try switchUser directly
+      let user = await switchUser(userId);
+      if (!user && demoEmail) {
+        // 2. Try loginUser with email
+        const res = await loginUser(demoEmail, "Password@123");
+        if (res && res.success) user = res.user;
+      }
+
+      if (user) {
+        redirectAfterLogin(user.role || role);
+      } else {
+        // Direct redirect fallback
+        redirectAfterLogin(role);
       }
     });
   });
@@ -296,9 +386,69 @@ export function attachLoginEvents() {
     }
   });
 
-  // Student Registration
+  // Role selector toggle logic
+  const regRoleSelect = document.getElementById("reg-role");
+  const regClubContainer = document.getElementById("reg-club-container");
+  const regPasskeyLabel = document.getElementById("reg-passkey-label");
+  const regPasskeyInput = document.getElementById("reg-passkey");
+  const regPasskeyDesc = document.getElementById("reg-passkey-desc");
+  const regPasskeyBox = document.getElementById("reg-passkey-container");
+  const regRollLabel = document.getElementById("reg-roll-label");
+  const regRollInput = document.getElementById("reg-roll");
+
+  regRoleSelect?.addEventListener("change", () => {
+    const roleVal = regRoleSelect.value;
+    if (roleVal === "Club Admin") {
+      regClubContainer?.classList.remove("hidden");
+      if (regRollLabel) regRollLabel.textContent = "Roll Number / Student Leader ID";
+      if (regRollInput) regRollInput.placeholder = "e.g. 22CS142";
+      if (regPasskeyLabel) regPasskeyLabel.textContent = "Club Admin Pass Key / Code";
+      if (regPasskeyInput) {
+        regPasskeyInput.value = "CLUBADMIN2026";
+        regPasskeyInput.placeholder = "Enter Club Admin Pass Key";
+      }
+      if (regPasskeyDesc) regPasskeyDesc.innerHTML = 'Security code required to register as Club Admin. Default: <code class="font-bold font-mono">CLUBADMIN2026</code>';
+      if (regPasskeyBox) regPasskeyBox.className = "p-3.5 rounded-2xl bg-blue-50 border border-blue-200/80 space-y-1";
+    } else if (roleVal === "Faculty Coordinator") {
+      regClubContainer?.classList.add("hidden");
+      if (regRollLabel) regRollLabel.textContent = "Faculty Employee ID";
+      if (regRollInput) regRollInput.placeholder = "e.g. FAC-CSE-009";
+      if (regPasskeyLabel) regPasskeyLabel.textContent = "Faculty Coordinator Pass Key";
+      if (regPasskeyInput) {
+        regPasskeyInput.value = "PECFAC2026";
+        regPasskeyInput.placeholder = "Enter Faculty Security Pass Key";
+      }
+      if (regPasskeyDesc) regPasskeyDesc.innerHTML = 'Security key required to register as Faculty Coordinator. Default: <code class="font-bold font-mono">PECFAC2026</code>';
+      if (regPasskeyBox) regPasskeyBox.className = "p-3.5 rounded-2xl bg-purple-50 border border-purple-200/80 space-y-1";
+    } else if (roleVal === "Super Admin") {
+      regClubContainer?.classList.add("hidden");
+      if (regRollLabel) regRollLabel.textContent = "Admin Identification Code";
+      if (regRollInput) regRollInput.placeholder = "e.g. ADM-HQ-2026";
+      if (regPasskeyLabel) regPasskeyLabel.textContent = "Super Admin Pass Key";
+      if (regPasskeyInput) {
+        regPasskeyInput.value = "PEC2026ADMIN";
+        regPasskeyInput.placeholder = "Enter Super Admin Pass Key";
+      }
+      if (regPasskeyDesc) regPasskeyDesc.innerHTML = 'Security key required for Super Admin classification. Default: <code class="font-bold font-mono">PEC2026ADMIN</code>';
+      if (regPasskeyBox) regPasskeyBox.className = "p-3.5 rounded-2xl bg-rose-50 border border-rose-200/80 space-y-1";
+    } else {
+      regClubContainer?.classList.add("hidden");
+      if (regRollLabel) regRollLabel.textContent = "Roll Number / Registration ID";
+      if (regRollInput) regRollInput.placeholder = "e.g. 23CS204";
+      if (regPasskeyLabel) regPasskeyLabel.textContent = "Student Member Access Code";
+      if (regPasskeyInput) {
+        regPasskeyInput.value = "PECSTUDENT2026";
+        regPasskeyInput.placeholder = "Enter Student Member Access Code";
+      }
+      if (regPasskeyDesc) regPasskeyDesc.innerHTML = 'Access code required to register as a verified Student Member. Default: <code class="font-bold font-mono">PECSTUDENT2026</code>';
+      if (regPasskeyBox) regPasskeyBox.className = "p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200/80 space-y-1";
+    }
+  });
+
+  // Student / User Registration with Role Classification
   const regForm = document.getElementById("register-form");
   let pendingUserId = null;
+  let pendingUserRole = "Student";
 
   regForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -312,13 +462,37 @@ export function attachLoginEvents() {
     const section = document.getElementById("reg-section").value;
     const password = document.getElementById("reg-password").value;
     const skills = document.getElementById("reg-skills").value;
+    const role = regRoleSelect ? regRoleSelect.value : "Student";
+    const assignedClub = document.getElementById("reg-assigned-club")?.value || "I4-08";
+    const passKey = document.getElementById("reg-passkey")?.value || "";
 
     alertBox.className = "p-3 rounded-xl text-xs font-medium bg-blue-50 text-blue-700 block";
-    alertBox.textContent = "Submitting registration to council database...";
+    alertBox.textContent = `Registering and classifying ${role} account in Supabase database...`;
 
-    const res = await registerStudent({ name, rollNo, email, phone, department, year, section, password, skills });
+    const res = await registerStudent({
+      name,
+      rollNo,
+      email,
+      phone,
+      department,
+      year,
+      section,
+      password,
+      skills,
+      role,
+      assignedClub,
+      facultyId: role === "Faculty Coordinator" ? rollNo : null,
+      adminKey: passKey,
+      passKey
+    });
+
     if (res.success) {
       pendingUserId = res.user.id;
+      pendingUserRole = res.user.role || role;
+      const passDisplay = document.getElementById("assigned-pass-id-display");
+      if (passDisplay) {
+        passDisplay.textContent = res.passId || res.user.passId || `PEC-PASS-2026-${res.user.rollNo || 'VERIFIED'}`;
+      }
       document.getElementById("otp-modal").classList.remove("hidden");
     } else {
       alertBox.className = "p-3 rounded-xl text-xs font-medium bg-rose-50 text-rose-700 block";
@@ -335,9 +509,9 @@ export function attachLoginEvents() {
     const res = await verifyEmailWithOTP(pendingUserId, otp);
     if (res.success) {
       alertBox.className = "p-2.5 rounded-xl text-xs font-medium bg-emerald-50 text-emerald-700 block";
-      alertBox.textContent = "Email verified! Launching student dashboard...";
+      alertBox.textContent = `Account verified and classified as ${pendingUserRole}! Redirecting...`;
       setTimeout(() => {
-        window.location.hash = "#/student/dashboard";
+        redirectAfterLogin(pendingUserRole);
       }, 500);
     } else {
       alertBox.className = "p-2.5 rounded-xl text-xs font-medium bg-rose-50 text-rose-700 block";
@@ -381,10 +555,13 @@ export function attachLoginEvents() {
 }
 
 function redirectAfterLogin(role) {
-  if (role === "Super Admin") {
+  const normRole = (role || "").toLowerCase();
+  if (normRole.includes("super") || normRole.includes("director") || normRole.includes("academic")) {
     window.location.hash = "#/admin/dashboard";
-  } else if (role === "Club Coordinator" || role === "Club Student Leader") {
+  } else if (normRole.includes("faculty") || normRole.includes("coordinator")) {
     window.location.hash = "#/coordinator/dashboard";
+  } else if (normRole.includes("club admin") || normRole.includes("leader") || normRole.includes("club_admin")) {
+    window.location.hash = "#/club-dashboard";
   } else {
     window.location.hash = "#/student/dashboard";
   }

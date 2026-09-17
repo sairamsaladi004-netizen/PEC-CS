@@ -1,6 +1,7 @@
 import { getCurrentUser, updateProfile } from '../auth.js';
 import { getDB, saveDB, apiRequest } from '../db.js';
 import { showToast } from '../components/toast.js';
+import { renderCertificate } from '../utils/certificateRenderer.js';
 
 export function renderStudentProfileView() {
   const user = getCurrentUser() || {};
@@ -10,14 +11,25 @@ export function renderStudentProfileView() {
   const userCerts = (db.certificates || []).filter(c => c.studentId === user.id || c.rollNo === user.rollNo);
   const userProjects = (db.projects || []).filter(p => p.teamLeader === user.name || p.teamMembers?.includes(user.name));
 
+  // Find all registered events for this student
+  const registeredEvents = (db.events || []).filter(e => {
+    const inEventList = (e.registrations || []).some(r => r.studentId === user.id || r.rollNo === user.rollNo || r.studentName === user.name);
+    const inGlobalRegs = (db.event_registrations || []).some(r => r.event_id === e.id && (r.student_id === user.id || r.studentId === user.id));
+    return inEventList || inGlobalRegs;
+  });
+
   const skillsList = Array.isArray(user.skills) ? user.skills : (user.skills ? user.skills.split(",") : ["Python", "Machine Learning", "System Design", "Cloud Computing"]);
   const interestsList = Array.isArray(user.interests) ? user.interests : ["Deep Learning", "Full-Stack Dev", "Hackathons", "IoT"];
+
+  const rollNumber = user.rollNo || user.facultyId || "22A31A0501";
+  const passId = user.passId || `PEC-PASS-2026-${rollNumber.replace(/[^A-Z0-9]/gi, '')}`;
+  const memberId = user.membershipId || `PEC-MEM-2026-${user.department || 'CSE'}-${Math.floor(1000 + Math.random() * 9000)}`;
 
   return `
     <div class="space-y-8 pb-16 max-w-6xl mx-auto">
       
       <!-- Profile Hero Banner Card -->
-      <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+      <div id="student-profile-hero-card" class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
         <div class="h-36 bg-gradient-to-r from-blue-700 via-indigo-800 to-slate-950 relative">
           <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-400/20 via-transparent to-transparent"></div>
         </div>
@@ -34,21 +46,30 @@ export function renderStudentProfileView() {
                 </span>
               </div>
               <div class="text-xs text-slate-600 font-medium">
-                Roll No: <strong class="text-slate-900 font-mono">${user.rollNo || user.facultyId || '22A31A0501'}</strong> • Dept: <strong class="text-slate-900">${user.department || 'CSE'}</strong> • Year: <strong class="text-slate-900">${user.year || '3rd Year'}</strong>
+                Roll No: <strong class="text-slate-900 font-mono">${rollNumber}</strong> • Dept: <strong class="text-slate-900">${user.department || 'CSE'}</strong> • Year: <strong class="text-slate-900">${user.year || '3rd Year'}</strong>
               </div>
               <div class="text-[11px] text-slate-500 font-mono">
-                Institutional AID: <span class="text-blue-600 font-bold">${user.membershipId || 'PEC-MEM-2026-CSE-8492'}</span> • CGPA: <strong class="text-amber-600">${user.cgpa || '8.85'}</strong>
+                Institutional AID: <span class="text-blue-600 font-bold">${memberId}</span> • Gate Pass ID: <span class="text-emerald-700 font-bold font-mono">${passId}</span>
               </div>
             </div>
           </div>
 
-          <div class="flex items-center space-x-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="open-edit-profile-btn" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer">
+              <span>✏️</span>
+              <span>Edit Profile</span>
+            </button>
             <button id="open-ai-classification-modal-btn" class="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-500/20 transition-all flex items-center space-x-2 cursor-pointer">
               <span>⚡</span>
-              <span>Run Real AI Profiler</span>
+              <span>Run AI Profiler</span>
             </button>
-            <a href="#/membership-card" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all">
-              Digital ID Card
+            <button id="download-profile-card-btn" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center space-x-2 cursor-pointer">
+              <span>📷</span>
+              <span>Capture Profile Card</span>
+            </button>
+            <a href="#/badges" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center space-x-2">
+              <span>✨</span>
+              <span>Holographic Club Badges</span>
             </a>
           </div>
         </div>
@@ -64,6 +85,146 @@ export function renderStudentProfileView() {
             <span class="px-2.5 py-1 rounded-xl bg-blue-50 text-blue-700 font-medium text-xs border border-blue-100">${item.trim()}</span>
           `).join('')}
         </div>
+      </div>
+
+      <!-- ================= OFFICIAL DIGITAL GATE PASS & QR PASSPORT ================= -->
+      <div class="bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white border border-indigo-500/30 shadow-2xl relative overflow-hidden">
+        <!-- Ambient Glow -->
+        <div class="absolute -right-24 -top-24 w-72 h-72 bg-blue-500/15 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -left-24 -bottom-24 w-72 h-72 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10 space-y-6">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider border border-emerald-500/30 flex items-center space-x-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1"></span>
+                  <span>Active Gate Pass & QR Token</span>
+                </span>
+                <span class="text-[10px] font-mono text-slate-400">Pragati Autonomous Security Protocol</span>
+              </div>
+              <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight mt-1.5 flex items-center space-x-2">
+                <span>Official Digital Student Gate Pass</span>
+                <span class="text-amber-400 text-sm">✦ Verified</span>
+              </h2>
+              <p class="text-xs text-slate-300 mt-1 max-w-xl">
+                Generated upon registration. Scan this QR code at symposium entry gates, hackathon checkpoints, and high-performance labs for instantaneous accreditation.
+              </p>
+            </div>
+
+            <div class="flex items-center space-x-2 shrink-0">
+              <button id="copy-pass-token-btn" data-passtoken="${passId}" class="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl border border-white/15 transition-all flex items-center space-x-1.5 cursor-pointer">
+                <span>📋</span>
+                <span>Copy Token</span>
+              </button>
+              <button id="download-pass-qr-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center space-x-1.5 cursor-pointer">
+                <span>📥</span>
+                <span>Download Pass</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Pass Details & Live QR Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+            
+            <!-- Left Info Block -->
+            <div class="md:col-span-2 space-y-4">
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10">
+                  <div class="text-[10px] font-mono text-slate-400 uppercase">Student Name</div>
+                  <div class="text-xs sm:text-sm font-bold text-white mt-0.5 truncate">${user.name}</div>
+                </div>
+                <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10">
+                  <div class="text-[10px] font-mono text-slate-400 uppercase">Roll Number</div>
+                  <div class="text-xs sm:text-sm font-black text-amber-400 font-mono mt-0.5">${rollNumber}</div>
+                </div>
+                <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10">
+                  <div class="text-[10px] font-mono text-slate-400 uppercase">Department</div>
+                  <div class="text-xs sm:text-sm font-bold text-blue-300 mt-0.5">${user.department || 'CSE'}</div>
+                </div>
+                <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10">
+                  <div class="text-[10px] font-mono text-slate-400 uppercase">Gate Pass ID</div>
+                  <div class="text-xs font-mono font-bold text-emerald-400 mt-0.5 truncate">${passId}</div>
+                </div>
+                <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10">
+                  <div class="text-[10px] font-mono text-slate-400 uppercase">Validity</div>
+                  <div class="text-xs font-semibold text-slate-200 mt-0.5">30 June 2028</div>
+                </div>
+                <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10">
+                  <div class="text-[10px] font-mono text-slate-400 uppercase">Clearance Level</div>
+                  <div class="text-xs font-bold text-indigo-300 mt-0.5">LEVEL 1 • ALL 35 SOCIETIES</div>
+                </div>
+              </div>
+
+              <!-- Security Hash & NFC Status -->
+              <div class="p-3 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-between text-xs font-mono text-slate-400">
+                <div class="truncate mr-2">
+                  <span class="text-slate-500">SIGNATURE HASH:</span> <span class="text-blue-300">sha256:${rollNumber}::PEC_CCTSC_AUTH</span>
+                </div>
+                <span class="text-emerald-400 font-bold shrink-0">● NFC & OPTICAL READY</span>
+              </div>
+            </div>
+
+            <!-- Right QR Box -->
+            <div class="flex flex-col items-center justify-center p-4 bg-white/5 border border-white/10 rounded-2xl text-center space-y-2">
+              <div class="relative bg-white p-3 rounded-2xl shadow-xl">
+                <div id="student-pass-qr-box" class="w-36 h-36 flex items-center justify-center"></div>
+              </div>
+              <div class="text-[11px] font-mono text-slate-300 font-bold">SCAN TO VERIFY IDENTITY</div>
+              <div class="text-[9px] text-slate-400">Pragati Autonomous Central Council</div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ================= REGISTERED EVENT GATE TICKETS ================= -->
+      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-5">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h2 class="text-base sm:text-lg font-black text-slate-900">My Registered Event Passes (${registeredEvents.length})</h2>
+            <p class="text-xs text-slate-500">Event-specific admission passes with unique fast-track QR barcodes</p>
+          </div>
+          <a href="#/events" class="text-xs font-bold text-blue-600 hover:text-blue-700">Browse Upcoming Events →</a>
+        </div>
+
+        ${registeredEvents.length === 0 ? `
+          <div class="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-500 text-xs space-y-2">
+            <div class="text-2xl">🎟️</div>
+            <div class="font-bold text-slate-700">No active event registrations yet.</div>
+            <p class="text-slate-400 max-w-sm mx-auto">Register for hackathons, paper presentations, and robotics symposiums to receive instant event gate tickets.</p>
+            <a href="#/events" class="inline-block mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition-colors">
+              Explore Campus Events
+            </a>
+          </div>
+        ` : `
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ${registeredEvents.map(event => {
+              const ticketId = `TCK-${event.club_id || 'PEC'}-${rollNumber.slice(-4)}-${Math.floor(100 + Math.random() * 900)}`;
+              return `
+                <div class="p-5 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 text-white border border-indigo-900/60 shadow-md flex items-center justify-between gap-4">
+                  <div class="space-y-1.5 flex-1 min-w-0">
+                    <div class="flex items-center space-x-2">
+                      <span class="px-2 py-0.5 rounded bg-blue-500/30 text-blue-300 text-[9px] font-mono font-bold uppercase">${event.category || 'Technical'}</span>
+                      <span class="text-[10px] font-mono text-emerald-400">✓ Confirmed</span>
+                    </div>
+                    <div class="font-black text-sm text-white truncate">${event.title}</div>
+                    <div class="text-[11px] text-slate-300 font-medium">📅 ${event.date} • 📍 ${event.venue || 'Campus Auditorium'}</div>
+                    <div class="text-[10px] font-mono text-slate-400">Pass: <strong class="text-amber-400 font-bold">${ticketId}</strong></div>
+                  </div>
+
+                  <div class="flex flex-col items-center justify-center shrink-0">
+                    <button class="view-event-pass-btn px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md transition-colors" data-eventid="${event.id}" data-eventtitle="${event.title}" data-ticketid="${ticketId}" data-date="${event.date}" data-venue="${event.venue || 'PEC Campus'}">
+                      View QR Pass
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `}
       </div>
 
       <!-- Live AI Classification & Persona Diagnostic Card -->
@@ -214,6 +375,27 @@ export function renderStudentProfileView() {
 
       </div>
 
+      <!-- Event QR Pass Modal (Initially Hidden) -->
+      <div id="event-qr-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl animate-in zoom-in-95">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <span class="text-xs font-bold text-blue-600 font-mono uppercase">Event Gate Admission Ticket</span>
+            <button id="close-event-qr-modal-btn" class="text-slate-400 hover:text-slate-600 text-sm">✕</button>
+          </div>
+          <div id="modal-event-title" class="font-black text-slate-900 text-base">Campus Hackathon</div>
+          <div id="modal-event-meta" class="text-xs text-slate-500 font-medium">📅 Oct 15, 2026 • 📍 Auditorium</div>
+          
+          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col items-center justify-center space-y-2">
+            <div id="modal-qr-canvas" class="w-40 h-40 bg-white p-2 rounded-xl shadow-md flex items-center justify-center"></div>
+            <div id="modal-ticket-id" class="text-xs font-mono font-bold text-slate-800">TCK-HAC-101</div>
+          </div>
+
+          <div class="text-[11px] text-slate-400">
+            Show this dynamic QR code at the event gate to record immediate attendance.
+          </div>
+        </div>
+      </div>
+
       <!-- Full AI Student Classification & Question Assessment Modal -->
       <div id="ai-classification-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 my-8 max-h-[90vh] overflow-y-auto">
@@ -242,7 +424,7 @@ export function renderStudentProfileView() {
                 </div>
                 <div>
                   <label class="block font-semibold text-slate-700 mb-1">Roll Number / Student ID</label>
-                  <input type="text" id="prof-roll" value="${user.rollNo || user.facultyId || '22A31A0501'}" required class="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono" />
+                  <input type="text" id="prof-roll" value="${rollNumber}" required class="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono" />
                 </div>
               </div>
 
@@ -360,13 +542,143 @@ export function renderStudentProfileView() {
 }
 
 export function attachStudentProfileEvents() {
+  const user = getCurrentUser() || {};
+  const rollNumber = user.rollNo || user.facultyId || "22A31A0501";
+  const passId = user.passId || `PEC-PASS-2026-${rollNumber.replace(/[^A-Z0-9]/gi, '')}`;
+
+  // Capture student profile component as certificate/image using html2canvas
+  const captureProfileBtn = document.getElementById("download-profile-card-btn");
+  if (captureProfileBtn) {
+    captureProfileBtn.addEventListener("click", async () => {
+      const targetElement = document.getElementById("student-profile-hero-card");
+      if (targetElement) {
+        await renderCertificate(targetElement, {
+          action: 'download',
+          scale: 3.0,
+          filename: `PEC-PROFILE-CERTIFICATE-${rollNumber}.png`
+        });
+      } else {
+        showToast("Could not locate student profile component.", "error");
+      }
+    });
+  }
+
+  // 1. Render Student Pass QR Code
+  const passQrBox = document.getElementById("student-pass-qr-box");
+  if (passQrBox && window.QRCode) {
+    passQrBox.innerHTML = "";
+    const passPayload = JSON.stringify({
+      institution: "Pragati Engineering College (Autonomous)",
+      type: "STUDENT_GATE_PASS",
+      passId,
+      name: user.name,
+      roll: rollNumber,
+      dept: user.department || "CSE",
+      validUntil: "30 June 2028",
+      token: `sha256:${rollNumber}::PEC2026`
+    });
+
+    new window.QRCode(passQrBox, {
+      text: passPayload,
+      width: 144,
+      height: 144,
+      colorDark: "#0f172a",
+      colorLight: "#ffffff",
+      correctLevel: window.QRCode.CorrectLevel?.H || 2
+    });
+  }
+
+  // 2. Copy Pass Token
+  const copyBtn = document.getElementById("copy-pass-token-btn");
+  if (copyBtn) {
+    copyBtn.addEventListener("click", () => {
+      const token = copyBtn.dataset.passtoken || passId;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(token).then(() => {
+          showToast("Gate Pass Token Copied", `Pass ID "${token}" copied to clipboard.`, "success");
+        });
+      } else {
+        showToast("Gate Pass Token", token, "info");
+      }
+    });
+  }
+
+  // 3. Download Pass QR as Image
+  const downloadBtn = document.getElementById("download-pass-qr-btn");
+  if (downloadBtn) {
+    downloadBtn.addEventListener("click", () => {
+      const qrCanvas = passQrBox?.querySelector("canvas") || passQrBox?.querySelector("img");
+      if (qrCanvas) {
+        const link = document.createElement("a");
+        link.download = `PEC-GATE-PASS-${rollNumber}.png`;
+        link.href = qrCanvas.src || qrCanvas.toDataURL("image/png");
+        link.click();
+        showToast("Pass Downloaded", "Gate Pass PNG saved to your downloads.", "success");
+      } else {
+        showToast("Print Pass", "Opening print view...", "info");
+        window.print();
+      }
+    });
+  }
+
+  // 4. View Event QR Ticket Modals
+  const eventModal = document.getElementById("event-qr-modal");
+  const closeEventModalBtn = document.getElementById("close-event-qr-modal-btn");
+  if (closeEventModalBtn && eventModal) {
+    closeEventModalBtn.addEventListener("click", () => eventModal.classList.add("hidden"));
+    eventModal.addEventListener("click", (e) => {
+      if (e.target === eventModal) eventModal.classList.add("hidden");
+    });
+  }
+
+  document.querySelectorAll(".view-event-pass-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const eventTitle = btn.dataset.eventtitle;
+      const ticketId = btn.dataset.ticketid;
+      const date = btn.dataset.date;
+      const venue = btn.dataset.venue;
+      const eventId = btn.dataset.eventid;
+
+      document.getElementById("modal-event-title").textContent = eventTitle;
+      document.getElementById("modal-event-meta").textContent = `📅 ${date} • 📍 ${venue}`;
+      document.getElementById("modal-ticket-id").textContent = ticketId;
+
+      const modalQrCanvas = document.getElementById("modal-qr-canvas");
+      if (modalQrCanvas && window.QRCode) {
+        modalQrCanvas.innerHTML = "";
+        new window.QRCode(modalQrCanvas, {
+          text: JSON.stringify({
+            ticketId,
+            eventId,
+            rollNo: rollNumber,
+            studentName: user.name,
+            institution: "Pragati Engineering College"
+          }),
+          width: 140,
+          height: 140,
+          colorDark: "#0f172a",
+          colorLight: "#ffffff"
+        });
+      }
+
+      eventModal.classList.remove("hidden");
+    });
+  });
+
+  // 5. AI Classification Modal
   const openModalBtn = document.getElementById("open-ai-classification-modal-btn");
+  const openEditProfileBtn = document.getElementById("open-edit-profile-btn");
   const modal = document.getElementById("ai-classification-modal");
   const closeModalBtn = document.getElementById("close-ai-classification-modal-btn");
   const form = document.getElementById("ai-classification-form");
 
-  if (openModalBtn && modal) {
-    openModalBtn.addEventListener("click", () => modal.classList.remove("hidden"));
+  if (modal) {
+    if (openModalBtn) {
+      openModalBtn.addEventListener("click", () => modal.classList.remove("hidden"));
+    }
+    if (openEditProfileBtn) {
+      openEditProfileBtn.addEventListener("click", () => modal.classList.remove("hidden"));
+    }
     if (closeModalBtn) closeModalBtn.addEventListener("click", () => modal.classList.add("hidden"));
     modal.addEventListener("click", (e) => {
       if (e.target === modal) modal.classList.add("hidden");
@@ -375,7 +687,6 @@ export function attachStudentProfileEvents() {
     if (form) {
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const user = getCurrentUser() || {};
         const loadingBox = document.getElementById("ai-classification-loading");
         const submitBtn = document.getElementById("save-and-classify-btn");
 
@@ -403,7 +714,6 @@ export function attachStudentProfileEvents() {
         try {
           const res = await apiRequest('/api/intelligence/classify-student', 'POST', payload);
           if (res && res.success) {
-            // Update local user object
             const updatedProfile = {
               ...user,
               ...payload,
@@ -412,7 +722,6 @@ export function attachStudentProfileEvents() {
             };
             updateProfile(updatedProfile);
 
-            // Update local database
             const db = getDB();
             const userInDb = (db.users || []).find(u => u.id === user.id);
             if (userInDb) {

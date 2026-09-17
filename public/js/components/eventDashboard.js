@@ -1,4 +1,4 @@
-import { getDB, saveDB, logAudit } from '../db.js';
+import { getDB, apiRequest, saveDB, logAudit } from '../db.js';
 import { getCurrentUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 import { getStudentEventPrediction, getEventParticipationPrediction } from '../intelligenceEngine.js';
@@ -255,6 +255,10 @@ export function renderEventDashboard(options = {}) {
           </div>
 
           <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+            <a href="#/calendar" class="px-3.5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition-all flex items-center space-x-2 shadow-md shadow-indigo-600/30">
+              <span>📅</span>
+              <span>Interactive Calendar Grid</span>
+            </a>
             <a href="#/attendance" class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all flex items-center space-x-2 border border-slate-700 shadow-sm">
               <span>📷</span>
               <span>QR Attendance Kiosk</span>
@@ -1571,7 +1575,7 @@ function attachCardAndRowActionListeners() {
         event_id: evt.id,
         studentId: user.id,
         student_id: user.id,
-        studentName: user.name,
+        studentName: user.name || "Aarav Sharma",
         rollNo: user.rollNo || "22CS101",
         ticketId: ticketId,
         ticket_id: ticketId,
@@ -1584,18 +1588,50 @@ function attachCardAndRowActionListeners() {
 
       // Sync event_registrations relational table
       if (!currentDb.event_registrations) currentDb.event_registrations = [];
+      
       currentDb.event_registrations.push(newReg);
+      apiRequest('/api/events/register', 'POST', { eventId: evt.id }).catch(console.error);
 
-      saveDB(currentDb);
-      logAudit(`${user.name} (${user.role})`, "Registered for Technical Event", evt.title, `Ticket ID: ${ticketId}`);
       showToast(`Pass confirmed for "${evt.title}"! Gate Pass: ${ticketId}`, "success");
 
-      // Re-render
+      // Auto-Pop QR Gate Pass Modal
+      const modal = document.getElementById("dashboard-ticket-modal");
+      const titleEl = document.getElementById("dashboard-ticket-event-title");
+      const idEl = document.getElementById("dashboard-ticket-id-display");
+      const studentEl = document.getElementById("dashboard-ticket-student-display");
+      const metaEl = document.getElementById("dashboard-ticket-meta-display");
+      const qrBox = document.getElementById("dashboard-modal-qr-box");
+
+      if (modal) {
+        if (titleEl) titleEl.textContent = evt.title;
+        if (idEl) idEl.textContent = `PASS ID: ${ticketId}`;
+        if (studentEl) studentEl.textContent = `${user.name || 'Aarav Sharma'} (${user.rollNo || '22CS101'})`;
+        if (metaEl) metaEl.textContent = `${evt.date} • ${evt.venue || 'Central Seminar Complex'}`;
+
+        if (qrBox) {
+          qrBox.innerHTML = "";
+          if (typeof QRCode !== 'undefined') {
+            new QRCode(qrBox, {
+              text: JSON.stringify({ ticketId, name: user.name, roll: user.rollNo || "22CS101", event: evt.title }),
+              width: 140,
+              height: 140,
+              colorDark: "#0f172a",
+              colorLight: "#ffffff",
+              correctLevel: QRCode.CorrectLevel.H
+            });
+          } else {
+            qrBox.innerHTML = `<div class="p-4 bg-slate-100 rounded-xl font-mono text-xs font-bold text-slate-700">${ticketId}</div>`;
+          }
+        }
+        modal.classList.remove("hidden");
+      }
+
+      // Re-render dashboard view to reflect updated registered count and button state
       setTimeout(() => {
         const catBtn = document.querySelector(".category-tab-btn.bg-slate-900, .category-tab-btn.bg-blue-600, .category-tab-btn.bg-emerald-600, .category-tab-btn.bg-purple-600");
         const activeCat = catBtn?.dataset?.category || "ALL";
         attachEventDashboardEvents({ defaultCategory: activeCat });
-      }, 300);
+      }, 500);
     });
   });
 
@@ -1620,9 +1656,10 @@ function attachCardAndRowActionListeners() {
         rollNo: user.rollNo || "22CS101",
         queuedAt: new Date().toISOString()
       };
+      
       evt.waitlist.push(waitEntry);
-      saveDB(currentDb);
-      logAudit(`${user.name}`, "Joined Event Waitlist", evt.title, `Queue Pos: #${evt.waitlist.length}`);
+      apiRequest(`/api/events/${evt.id}/waitlist`, 'POST').catch(console.error);
+
       showToast(`Added to waitlist for "${evt.title}". Queue Position: #${evt.waitlist.length}`, "warning");
 
       setTimeout(() => {
@@ -1858,9 +1895,10 @@ function attachModalListeners() {
           waitlist: []
         };
 
+        
         currentDb.events.unshift(newEvt);
-        saveDB(currentDb);
-        logAudit(`${user.name} (${user.role})`, "Created Society Event", newEvt.title, `Capacity: ${newEvt.capacity}`);
+        apiRequest('/api/events/create', 'POST', newEvt).catch(console.error);
+
         showToast(`Event "${newEvt.title}" published! Official circular generated.`, "success");
         createModal.classList.add("hidden");
         createForm.reset();

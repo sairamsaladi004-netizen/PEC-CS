@@ -2,6 +2,7 @@ import { getDB, saveDB, logAudit } from '../db.js';
 import { getCurrentUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 import { addNotification } from '../notifications.js';
+import { renderCertificate } from '../utils/certificateRenderer.js';
 import { 
   renderCertificateHTML, 
   initializeCertificateQR, 
@@ -18,7 +19,7 @@ export function renderCertificatesView(params = {}) {
 
   // Active certificate if viewing specific ID or in template studio
   const currentCert = certId 
-    ? ((db.certificates || []).find(c => c.id === certId) || db.certificates[0])
+    ? ((db.certificates || []).find(c => c.id === certId || c.certificateId === certId || (c.id && c.id.toLowerCase() === certId.toLowerCase())) || db.certificates[0])
     : (db.certificates && db.certificates[0] ? db.certificates[0] : {
         id: `CERT-PEC-${new Date().getFullYear()}-CSE-8921`,
         recipientName: user.name || "Aarav Sharma",
@@ -88,6 +89,11 @@ export function renderCertificatesView(params = {}) {
               <span>Verify On-Chain</span>
               <span>↗</span>
             </a>
+
+            <button id="download-cert-png-btn" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-xl shadow-md shadow-indigo-500/20 transition-all flex items-center space-x-2 cursor-pointer">
+              <span>📥</span>
+              <span>Download PNG</span>
+            </button>
 
             <button id="print-cert-btn" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center space-x-2 cursor-pointer">
               <span>🖨️</span>
@@ -435,6 +441,23 @@ export function attachCertificatesEvents(params = {}) {
     secPrintBtn.addEventListener("click", executePrint);
   }
 
+  // PNG Capture Download Handler using html2canvas
+  const dlPngBtn = document.getElementById("download-cert-png-btn");
+  if (dlPngBtn) {
+    dlPngBtn.addEventListener("click", async () => {
+      const activeCert = document.querySelector(".certificate-printable-wrapper");
+      if (activeCert) {
+        await renderCertificate(activeCert, { 
+          action: 'download', 
+          scale: 3.0,
+          filename: `PEC-CERTIFICATE-${certId || 'DIGITAL'}.png`
+        });
+      } else {
+        showToast("Could not locate active certificate component element to download.", "error");
+      }
+    });
+  }
+
   // Auto-print if opened with print=true parameter
   if (params.print === "true" || params.print === true) {
     setTimeout(() => {
@@ -638,7 +661,7 @@ export function attachCertificatesEvents(params = {}) {
   // Initial QR Code Generation for the view
   if (certId || activeTab === "studio") {
     const db = getDB();
-    const cert = certId ? ((db.certificates || []).find(c => c.id === certId) || db.certificates[0]) : db.certificates[0];
+    const cert = certId ? ((db.certificates || []).find(c => c.id === certId || c.certificateId === certId || (c.id && c.id.toLowerCase() === certId.toLowerCase())) || db.certificates[0]) : db.certificates[0];
     if (cert) {
       initializeCertificateQR(cert.id, cert.qrHash || cert.id);
     }

@@ -2,6 +2,8 @@ import { getCurrentUser } from '../auth.js';
 import { getDB, apiRequest } from '../db.js';
 import { ROLES, normalizeRole } from '../rbac.js';
 import { renderAccessDenied, attachAccessDeniedEvents } from '../components/accessDenied.js';
+import { renderDepartmentParticipationChart, renderSystemActivityStream } from '../components/d3Visualizers.js';
+import { PermissionGuard, renderSuperAdminGuard, renderApprovalsGuard, renderAnalyticsGuard } from '../components/permissionGuard.js';
 
 export function renderAdminPortalView(subSection = "dashboard") {
   const user = getCurrentUser() || {};
@@ -11,7 +13,7 @@ export function renderAdminPortalView(subSection = "dashboard") {
     return renderAccessDenied({
       requiredRole: ROLES.SUPER_ADMIN,
       attemptedRoute: `#/admin/${subSection || 'dashboard'}`,
-      message: `Access denied. The Executive Admin Console is restricted to <strong>Super Admin</strong> (Central College Administration). Your active role is <strong>${currentRole}</strong>.`
+      message: `Access denied. The Executive Admin Console is restricted to <strong>Director(Academics)</strong> (Central College Administration). Your active role is <strong>${currentRole}</strong>.`
     });
   }
 
@@ -39,7 +41,7 @@ export function renderAdminPortalView(subSection = "dashboard") {
             <div class="flex items-center space-x-2 flex-wrap">
               <h1 class="text-xl font-black text-slate-900 tracking-tight">${user.name}</h1>
               <span class="px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 text-[10px] font-bold uppercase tracking-wider">
-                Super Admin
+                Director (Academics)
               </span>
               ${user.isDemo ? '<span class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-mono font-bold">DEMO ACCOUNT</span>' : ''}
             </div>
@@ -65,7 +67,7 @@ export function renderAdminPortalView(subSection = "dashboard") {
         </div>
       </div>
 
-      <!-- Navigation Tabs for Super Admin Portal -->
+      <!-- Navigation Tabs for Director(Academics) Portal -->
       <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 border-b border-slate-200 text-xs font-bold">
         <a href="#/admin/dashboard" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}">
           📊 Executive Console
@@ -169,7 +171,7 @@ export function renderAdminPortalView(subSection = "dashboard") {
               <option value="Student">Student</option>
               <option value="Club Student Leader">Club Student Leader (President / VP)</option>
               <option value="Club Coordinator">Club Coordinator (Faculty)</option>
-              <option value="Super Admin">Super Admin (Principal / Council)</option>
+              <option value="Director(Academics)">Director(Academics) (Principal / Council)</option>
             </select>
           </div>
 
@@ -232,7 +234,7 @@ function renderAdminTabContent(tab, ctx) {
                     let roleBadge = "bg-blue-100 text-blue-800";
                     if (u.role === "Club Coordinator") roleBadge = "bg-purple-100 text-purple-800";
                     if (u.role === "Club Student Leader") roleBadge = "bg-emerald-100 text-emerald-800";
-                    if (u.role === "Super Admin") roleBadge = "bg-rose-100 text-rose-800";
+                    if (u.role === "Super Admin" || u.role === "Director(Academics)") roleBadge = "bg-rose-100 text-rose-800";
 
                     return `
                       <tr class="hover:bg-slate-50/60">
@@ -567,6 +569,48 @@ function renderAdminTabContent(tab, ctx) {
             </div>
           </div>
 
+          <!-- D3 Visualizations: Department Participation & System Activity Stream -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- D3 Department Participation & Attendance Chart -->
+            <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center space-x-2">
+                  <span class="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center text-sm font-bold border border-blue-200">🏢</span>
+                  <div>
+                    <h3 class="text-sm font-black text-slate-900">Department-Wise Student Participation & Attendance</h3>
+                    <p class="text-[11px] text-slate-500">Cross-department engagement across 35 technical chapters</p>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-3 text-[10px] font-bold">
+                  <span class="flex items-center space-x-1 text-blue-600"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span><span>Registered</span></span>
+                  <span class="flex items-center space-x-1 text-emerald-600"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span><span>Attendance</span></span>
+                </div>
+              </div>
+
+              <div id="admin-dept-participation-chart" class="w-full min-h-[220px]"></div>
+            </div>
+
+            <!-- D3 Real-Time System Activity & Audit Stream -->
+            <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center space-x-2">
+                  <span class="w-8 h-8 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center text-sm font-bold border border-rose-200">⚡</span>
+                  <div>
+                    <h3 class="text-sm font-black text-slate-900">Real-Time System Activity & Governance Telemetry</h3>
+                    <p class="text-[11px] text-slate-500">Audit actions, QR check-ins, approvals, and credential minting</p>
+                  </div>
+                </div>
+                <span class="text-[10px] font-mono font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-xl border border-rose-200">
+                  ${totalAuditLogs} Logged
+                </span>
+              </div>
+
+              <div id="admin-system-activity-stream" class="w-full min-h-[180px]"></div>
+            </div>
+
+          </div>
+
           <!-- Institutional Governance Quick Links -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <a href="#/admin/users" class="p-5 rounded-2xl bg-white border border-slate-200 hover:border-rose-500 hover:shadow-md transition-all group">
@@ -601,6 +645,21 @@ function renderAdminTabContent(tab, ctx) {
 
 export function attachAdminPortalEvents() {
   attachAccessDeniedEvents();
+
+  // Initialize D3 Charts if containers are present
+  const deptChartContainer = document.getElementById("admin-dept-participation-chart");
+  const activityStreamContainer = document.getElementById("admin-system-activity-stream");
+
+  if (deptChartContainer || activityStreamContainer) {
+    const db = getDB();
+    if (deptChartContainer) {
+      renderDepartmentParticipationChart("admin-dept-participation-chart", db);
+    }
+    if (activityStreamContainer) {
+      renderSystemActivityStream("admin-system-activity-stream", db.audit_logs || []);
+    }
+  }
+
   // Circular modal
   const annModal = document.getElementById("admin-ann-modal");
   const openAnnBtn = document.getElementById("admin-publish-ann-btn");
@@ -625,7 +684,7 @@ export function attachAdminPortalEvents() {
     annAlert.textContent = "Publishing circular to all student devices...";
 
     const res = await apiRequest('/api/announcements/create', 'POST', {
-      title, content, target_audience: target, priority, author: `${user.name} (Super Admin)`
+      title, content, target_audience: target, priority, author: `${user.name} (Director(Academics))`
     });
 
     if (res && res.success) {

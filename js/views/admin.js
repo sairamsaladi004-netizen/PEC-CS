@@ -583,8 +583,11 @@ export function attachAdminEvents() {
       const pid = btn.dataset.propid;
       const prop = db.clubProposals.find(p => p.id === pid);
       if (prop) {
+        
+        apiRequest(`/api/admin/clubs/proposals/${pid}/approve`, 'POST', {}).catch(console.error);
         prop.status = "Approved & Chartered";
-        logAudit(`${user.name} (${user.role})`, "Approved Club Charter", prop.name, `Dept: ${prop.department}`);
+        logAudit(`${user.name} (${user.role})`, "Approved Club Charter", prop.name
+, `Dept: ${prop.department}`);
         saveDB(db);
         showToast("Charter Granted", `Official chapter status granted to ${prop.name}!`, "success");
         setTimeout(() => window.location.reload(), 300);
@@ -675,9 +678,12 @@ export function attachAdminEvents() {
           upcomingEventsCount: 0
         };
 
+        
+        apiRequest('/api/admin/clubs/create', 'POST', newClub).catch(console.error);
         db.clubs.push(newClub);
         saveDB(db);
-        logAudit(`${user.name} (${user.role})`, "Chartered Society", newClub.name, `Dept: ${newClub.department}`);
+        logAudit(`${user.name} (${user.role})`, "Chartered Society"
+, newClub.name, `Dept: ${newClub.department}`);
         showToast("Society Chartered", `${newClub.name} officially added!`, "success");
         clubModal.classList.add("hidden");
         setTimeout(() => window.location.reload(), 300);
@@ -712,9 +718,12 @@ export function attachAdminEvents() {
           agenda: ["Inauguration", "Hands-on Sprints", "Project Demos"]
         };
 
+        
+        apiRequest('/api/admin/events/create', 'POST', newEvent).catch(console.error);
         db.events.push(newEvent);
         saveDB(db);
-        logAudit(`${user.name} (${user.role})`, "Scheduled Event", newEvent.title, `Date: ${newEvent.date}`);
+        logAudit(`${user.name} (${user.role})`, "Scheduled Event"
+, newEvent.title, `Date: ${newEvent.date}`);
         showToast("Event Scheduled", `${newEvent.title} is now open for registration!`, "success");
         eventModal.classList.add("hidden");
         setTimeout(() => window.location.reload(), 300);
@@ -757,9 +766,12 @@ export function attachAdminEvents() {
           status: "Verified & Active"
         };
 
+        
+        apiRequest('/api/admin/certificates/create', 'POST', newCert).catch(console.error);
         db.certificates.unshift(newCert);
         saveDB(db);
-        logAudit(`${user.name} (${user.role})`, "Issued Certificate", certId, `Recipient: ${studentName}`);
+        logAudit(`${user.name} (${user.role})`, "Issued Certificate"
+, certId, `Recipient: ${studentName}`);
         showToast("Certificate Minted", `Issued ${certId} with cryptographic signature!`, "success");
         certModal.classList.add("hidden");
         setTimeout(() => window.location.reload(), 300);

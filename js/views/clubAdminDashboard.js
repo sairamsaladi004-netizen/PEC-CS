@@ -1,4 +1,4 @@
-import { getDB, saveDB, logAudit, apiRequest } from '../db.js';
+import { getDB, apiRequest, saveDB, logAudit } from '../db.js';
 import { getCurrentUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 import { ROLES, normalizeRole, isUserAuthorizedForClub } from '../rbac.js';
@@ -1006,10 +1006,11 @@ export function attachClubAdminDashboardEvents(params = {}) {
       const db = getDB();
       const mem = (db.club_memberships || []).find(m => m.id === memId);
       if (mem) {
+        
         mem.status = "Approved";
         mem.approved_at = new Date().toISOString();
-        saveDB(db);
-        logAudit("Club Admin", "Approved Student Membership", mem.studentName || mem.student_id, `Club: ${mem.club_id}`);
+        apiRequest('/api/memberships/review', 'POST', { membershipId: memId, action: 'approve' }).catch(console.error);
+
         showToast("Membership Approved", "Student approved for club access!", "success");
         setTimeout(() => window.location.reload(), 300);
       }
@@ -1023,9 +1024,10 @@ export function attachClubAdminDashboardEvents(params = {}) {
       const db = getDB();
       const mem = (db.club_memberships || []).find(m => m.id === memId);
       if (mem) {
+        
         mem.status = "Rejected";
-        saveDB(db);
-        logAudit("Club Admin", "Declined Student Membership", mem.studentName || mem.student_id, `Club: ${mem.club_id}`);
+        apiRequest('/api/memberships/review', 'POST', { membershipId: memId, action: 'decline' }).catch(console.error);
+
         showToast("Application Declined", "Student application declined.", "info");
         setTimeout(() => window.location.reload(), 300);
       }
@@ -1067,18 +1069,14 @@ export function attachClubAdminDashboardEvents(params = {}) {
       const db = getDB();
       const user = getCurrentUser();
 
-      db.announcements.unshift({
-        id: `ann-${Date.now().toString().slice(-4)}`,
+      
+      apiRequest('/api/announcements/create', 'POST', {
         title,
-        content: body,
-        author: `${user.name} (Club Admin)`,
-        date: new Date().toISOString().split("T")[0],
-        targetRole: "Club Member",
-        priority: "High",
-        tags: ["Club Notice", "Delegates"]
-      });
-      saveDB(db);
-      logAudit(`${user.name} (${user.role})`, "Dispatched Club Notice", title, `Target: Members`);
+        content: message,
+        club_id: activeClub,
+        target_audience: "All Students"
+      }).catch(console.error);
+
       showToast("Notice Dispatched", "Notification sent to enrolled members.", "success");
       broadcastModal.classList.add("hidden");
       broadcastForm.reset();

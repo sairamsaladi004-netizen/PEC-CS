@@ -1,4 +1,4 @@
-import { getDB, saveDB } from '../db.js';
+import { getDB, apiRequest, saveDB } from '../db.js';
 import { showToast } from '../components/toast.js';
 
 export function renderRoadmapsView() {
@@ -111,8 +111,15 @@ export function attachRoadmapsEvents() {
           const node = rm.nodes.find(n => n.id === nodeId);
           if (node) {
             node.completed = e.target.checked;
+            
+            apiRequest(`/api/roadmaps/${rmId}/toggle-node`, 'POST', {
+                nodeId,
+                completed: e.target.checked
+            }).catch(console.error);
+
             saveDB(db);
-            showToast(node.completed ? `Completed: ${node.title}!` : `Marked incomplete: ${node.title}`, "info");
+            showToast(node.completed ?
+ `Completed: ${node.title}!` : `Marked incomplete: ${node.title}`, "info");
             if (container) {
               container.innerHTML = renderActiveRoadmap(rm);
               attachCheckboxes();

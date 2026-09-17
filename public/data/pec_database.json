@@ -84,7 +84,7 @@
       "facultyId": "FAC-CSE-AIML-01",
       "email": "yamuna.l@pragati.ac.in",
       "demoAlias": "coordinator.demo@pragati.ac.in",
-      "role": "Club Coordinator",
+      "role": "Faculty Coordinator",
       "department": "CSE(AIML)",
       "designation": "Assistant Professor & Faculty Coordinator",
       "phone": "+91 884 2383305",
@@ -115,7 +115,7 @@
       "rollNo": "22CS142",
       "email": "priya.patel@pragati.ac.in",
       "demoAlias": "leader.demo@pragati.ac.in",
-      "role": "Club Student Leader",
+      "role": "Club Admin",
       "studentLeaderRole": "President",
       "clubId": "I4-08",
       "department": "CSE(AIML)",
@@ -139,7 +139,10 @@
       "emailVerified": true,
       "membershipId": "PEC-MEM-2026-AIML-5120",
       "validUntil": "30 June 2027",
-      "isDemo": true
+      "isDemo": true,
+      "assignedClubs": [
+        "I4-08"
+      ]
     },
     {
       "id": "admin-001",
@@ -487,6 +490,30 @@
       "membershipId": "PEC-MEM-2026-AIML-112",
       "validUntil": "30 June 2028",
       "isDemo": false
+    },
+    {
+      "id": "guest-001",
+      "name": "Public Guest",
+      "email": "guest@pragati.ac.in",
+      "demoAlias": "guest.demo@pragati.ac.in",
+      "role": "Guest",
+      "department": "General Public",
+      "designation": "Prospective Student / Public Visitor",
+      "phone": "+91 00000 00000",
+      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80",
+      "skills": [
+        "Visitor"
+      ],
+      "interests": [
+        "Technology Exploration"
+      ],
+      "bio": "Public visitor exploring technical clubs at Pragati Engineering College.",
+      "salt": "pec_secure_salt_2026",
+      "passwordHash": "8df6e901d9ba1d299baecfaf12772e80bc423abeb0009be38bfe831426605436",
+      "emailVerified": false,
+      "membershipId": "PEC-GUEST-2026",
+      "validUntil": "Session Only",
+      "isDemo": true
     }
   ],
   "clubs": [
@@ -2026,6 +2053,87 @@
       "status": "Completed",
       "club_id": "I4-08",
       "year": "2025-2026"
+    },
+    {
+      "id": "proj-002",
+      "title": "RoboTrack: Autonomous Warehouse AGV with SLAM & Obstacle Avoidance",
+      "description": "Automated guided vehicle with 2D LiDAR SLAM, ROS2 navigation stack, and differential drive odometry.",
+      "problem_statement": "Automated intra-facility transport of electronics bins with dynamic obstacle replanning.",
+      "solution": "Embedded Teensy 4.1 microcontroller running RTOS communicating over micro-ROS with Jetson Orin.",
+      "technologies": [
+        "ROS2",
+        "C++",
+        "Python",
+        "LiDAR",
+        "Gazebo"
+      ],
+      "team_members": [
+        "Sneha Reddy",
+        "Vikram Aditya"
+      ],
+      "mentor": "Mr. S. Rajesh",
+      "github_link": "https://github.com/pragati-eng/robotrack-agv",
+      "demo_link": "https://robotrack.pragati.ac.in",
+      "images": [
+        "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&auto=format&fit=crop&q=80"
+      ],
+      "status": "Completed",
+      "club_id": "I4-03",
+      "year": "2025-2026"
+    },
+    {
+      "id": "proj-003",
+      "title": "SentinelCore: Zero-Trust Network Traffic Anomaly & Intrusion Guardian",
+      "description": "Deep packet inspection engine parsing NetFlow logs in real-time to alert on unauthorized privilege escalation.",
+      "problem_statement": "Preventing lateral movement and data exfiltration inside campus server clusters.",
+      "solution": "eBPF kernel probe capturing packet flow headers with isolation sandbox rules.",
+      "technologies": [
+        "eBPF",
+        "Go",
+        "Snort",
+        "Wireshark",
+        "Docker"
+      ],
+      "team_members": [
+        "Rohan Varma",
+        "Kavya Madhavan"
+      ],
+      "mentor": "Mrs. N. Swathi",
+      "github_link": "https://github.com/pragati-eng/sentinel-core",
+      "demo_link": "https://sentinel.pragati.ac.in",
+      "images": [
+        "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&auto=format&fit=crop&q=80"
+      ],
+      "status": "Completed",
+      "club_id": "I4-06",
+      "year": "2025-2026"
+    },
+    {
+      "id": "proj-004",
+      "title": "CloudMatrix: Multi-Region Microservices Mesh with Automated Canary Rollouts",
+      "description": "Kubernetes operator orchestrating blue-green traffic switching based on Prometheus error budget burn rate.",
+      "problem_statement": "Minimizing downtime during production microservice upgrades across hybrid cloud nodes.",
+      "solution": "Custom Envoy proxy filter and CRD controller built in Golang with OpenTelemetry tracing.",
+      "technologies": [
+        "Kubernetes",
+        "Golang",
+        "Envoy",
+        "Prometheus",
+        "Helm"
+      ],
+      "team_members": [
+        "Aarav Sharma",
+        "Ananya Deshmukh"
+      ],
+      "mentor": "Mr. K Siva Shankar",
+      "github_link": "https://github.com/pragati-eng/cloud-matrix-mesh",
+      "demo_link": "https://matrix.pragati.ac.in",
+      "images": [
+        "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80"
+      ],
+      "status": "Completed",
+      "club_id": "I4-07",
+      "year": "2025-2026"
     }
   ],
   "activity_reports": [
@@ -2059,6 +2167,24 @@
     }
   ],
   "audit_logs": [
+    {
+      "id": "log-1789669371277-532",
+      "timestamp": "2026-09-17 18:22:51",
+      "user_id": "std-101",
+      "user_role": "Student",
+      "user_name": "Aarav Sharma",
+      "actor": "Aarav Sharma (Student)",
+      "user": "Aarav Sharma (Student)",
+      "user_display": "Aarav Sharma (Student)",
+      "action": "USER_LOGIN",
+      "resource": "auth",
+      "resource_id": "std-101",
+      "affected_record": "auth: std-101",
+      "ip_address": "127.0.0.1",
+      "old_value": null,
+      "new_value": null,
+      "details": "Logged in successfully as Student"
+    },
     {
       "id": "log-1789629580885",
       "timestamp": "2026-09-17 07:19:40",
@@ -2114,6 +2240,33 @@
       "action": "Approved Symposium",
       "affected_record": "Turing AI Symposium 2026",
       "details": "Authorized convention hall and laboratory sessions."
+    }
+  ],
+  "student_engagement": [],
+  "club_engagement_scores": [],
+  "recommendations": [],
+  "engagement_predictions": [],
+  "inactive_members": [],
+  "event_intelligence": [],
+  "analytics_snapshots": [],
+  "intelligence_config": [
+    {
+      "id": "cfg-1",
+      "key": "inactive_event_days",
+      "value": 60,
+      "description": "Days without event attendance before flag"
+    },
+    {
+      "id": "cfg-2",
+      "key": "inactive_activity_days",
+      "value": 45,
+      "description": "Days without general activity before flag"
+    },
+    {
+      "id": "cfg-3",
+      "key": "inactive_project_days",
+      "value": 90,
+      "description": "Days without project participation before flag"
     }
   ]
 }

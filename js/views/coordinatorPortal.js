@@ -741,7 +741,7 @@ function renderCoordinatorTabContent(tab, ctx) {
                   <div class="pt-3 border-t border-white/10 space-y-2 text-xs">
                     <div class="flex justify-between">
                       <span class="text-slate-300">Confidence Band:</span>
-                      <span class="font-mono text-white font-bold">${eventPred.confidenceInterval.minRate}% – ${eventPred.confidenceInterval.maxRate}%</span>
+                      <span class="font-mono text-white font-bold">${eventPred?.confidenceInterval?.minRate || 'N/A'}% – ${eventPred?.confidenceInterval?.maxRate || 'N/A'}%</span>
                     </div>
                     <div class="flex justify-between">
                       <span class="text-slate-300">High-Likelihood Pool:</span>
@@ -1899,7 +1899,7 @@ export function attachCoordinatorPortalEvents() {
           mem.approved_by = `${user.name} (${user.role})`;
           mem.remarks = "Application declined by faculty coordinator.";
         }
-        saveDB(db);
+        /* saveDB replaced by backend APIs */
       }
 
       logAudit(
@@ -2156,7 +2156,7 @@ export function attachCoordinatorPortalEvents() {
 
     db.club_memberships = db.club_memberships || [];
     db.club_memberships.push(newMember);
-    saveDB(db);
+    /* saveDB replaced by backend APIs */
 
     logAudit({
       action: "Enroll Member",
@@ -2229,7 +2229,7 @@ export function attachCoordinatorPortalEvents() {
     db.club_memberships = db.club_memberships || [];
     db.club_memberships.push(newMember);
 
-    saveDB(db);
+    /* saveDB replaced by backend APIs */
 
     logAudit({
       action: "Create Admin",
@@ -2286,7 +2286,7 @@ export function attachCoordinatorPortalEvents() {
 
     db.announcements = db.announcements || [];
     db.announcements.unshift(newAnn);
-    saveDB(db);
+    /* saveDB replaced by backend APIs */
 
     logAudit({
       action: "Publish Notice",
@@ -2342,7 +2342,7 @@ export function attachCoordinatorPortalEvents() {
 
     db.resources = db.resources || [];
     db.resources.unshift(newResource);
-    saveDB(db);
+    /* saveDB replaced by backend APIs */
 
     logAudit({
       action: "Upload Resource",

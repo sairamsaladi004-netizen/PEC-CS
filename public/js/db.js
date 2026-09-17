@@ -1,4 +1,5 @@
 import { OFFICIAL_PEC_CLUBS } from "./officialClubs.js";
+import { INITIAL_RESOURCES } from "../data/resources.js";
 
 export const DB_KEY = "campustech_pec_db_v3";
 
@@ -96,20 +97,20 @@ export const INITIAL_SEED = {
       id: "admin-001",
       name: "Dr. K. Satyanarayana",
       facultyId: "FAC-PEC-001",
-      email: "principal@pragati.ac.in",
-      demoAlias: "admin.demo@pragati.ac.in",
+      email: "director.academics@pragati.ac.in",
+      demoAlias: "principal@pragati.ac.in",
       role: "Super Admin",
       department: "CSE",
-      designation: "Principal & Head of Academic Council",
-      year: "Principal",
+      designation: "Director (Academics) & Head of Academic Council",
+      year: "Director (Academics)",
       semester: "Permanent",
       phone: "+91 884 2383305",
       avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&auto=format&fit=crop&q=80",
       clubs: ["I4-01", "I4-08", "CC-05"],
       skills: ["Academic Administration", "NBA / NAAC Accreditation", "Institutional Leadership"],
       interests: ["Higher Technical Education", "Outcome-Based Education"],
-      bio: "Principal, Pragati Engineering College (Autonomous), Surampalem.",
-      badges: ["Institutional Head", "Council President"],
+      bio: "Director (Academics), Pragati Engineering College (Autonomous), Surampalem.",
+      badges: ["Director (Academics)", "Institutional Head", "Council President"],
       membershipId: "PEC-ADMIN-2026-HQ-001",
       validUntil: "Lifetime",
       emailVerified: true,
@@ -825,50 +826,7 @@ export const INITIAL_SEED = {
     }
   ],
 
-  resources: [
-    {
-      id: "res-001",
-      title: "Modern Docker & Kubernetes Lab Guide for Cloud Native Microservices",
-      description: "Comprehensive tutorial on multi-stage Docker builds, Kubernetes manifests, and Helm charts.",
-      club_id: "I4-07",
-      clubId: "I4-07",
-      category: "Lab Guide",
-      uploaded_by: "Mr. K Siva Shankar",
-      author: "Mr. K Siva Shankar",
-      upload_date: "2026-09-01",
-      dateAdded: "2026-09-01",
-      file_url: "https://kubernetes.io/docs/home/",
-      link: "https://kubernetes.io/docs/home/",
-      target_semester: "5th Semester",
-      targetSemester: "5th Semester",
-      readTime: "45 mins lab",
-      domain: "Cloud Computing",
-      difficulty: "Intermediate",
-      bookmarks: 142,
-      completions: 89
-    },
-    {
-      id: "res-002",
-      title: "PyTorch Vision Transformers (ViT) & Transfer Learning Notebook",
-      description: "Hands-on Jupyter notebook covering attention heads, fine-tuning, and ONNX deployment.",
-      club_id: "I4-08",
-      clubId: "I4-08",
-      category: "Code Notebook",
-      uploaded_by: "Mrs. L. Yamuna",
-      author: "Mrs. L. Yamuna",
-      upload_date: "2026-08-20",
-      dateAdded: "2026-08-20",
-      file_url: "https://pytorch.org/tutorials/",
-      link: "https://pytorch.org/tutorials/",
-      target_semester: "6th Semester",
-      targetSemester: "6th Semester",
-      readTime: "60 mins lab",
-      domain: "Artificial Intelligence & ML",
-      difficulty: "Advanced",
-      bookmarks: 230,
-      completions: 164
-    }
-  ],
+  resources: INITIAL_RESOURCES,
 
   projects: [
     {
@@ -1262,28 +1220,39 @@ export const INITIAL_SEED = {
 INITIAL_SEED.auditLogs = INITIAL_SEED.audit_logs;
 INITIAL_SEED.auditLog = INITIAL_SEED.audit_logs;
 
-// Database Access & Persistence Layer
+import { initSupabaseClient, getSupabaseClient } from './supabaseClient.js';
+
+// In-memory single source of truth for runtime database
+let memoryDB = null;
+let isDbInitialized = false;
+
+// Database Access & Persistence Layer backed by Supabase & Express API
 export function getDB() {
+  if (memoryDB) return memoryDB;
+
   try {
     const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(DB_KEY) : null;
     let data;
-    if (!raw) {
-      data = JSON.parse(JSON.stringify(INITIAL_SEED));
-      saveDB(data);
-      return data;
-    }
-    data = JSON.parse(raw);
-    
-    // Auto-migration: Ensure all 35 official Pragati Engineering College clubs are loaded
-    if (!data.clubs || data.clubs.length < 35 || data.clubs.some(c => c.id === "acm" || c.id === "gdsc")) {
-      data.clubs = JSON.parse(JSON.stringify(OFFICIAL_PEC_CLUBS));
-      saveDB(data);
+    if (raw) {
+      try {
+        data = JSON.parse(raw);
+      } catch (e) {
+        data = null;
+      }
     }
 
-    // Auto-migration: Ensure events across all categories exist
+    if (!data) {
+      data = JSON.parse(JSON.stringify(INITIAL_SEED));
+    }
+    
+    // Ensure all 35 official Pragati Engineering College clubs are loaded
+    if (!data.clubs || data.clubs.length < 35 || data.clubs.some(c => c.id === "acm" || c.id === "gdsc")) {
+      data.clubs = JSON.parse(JSON.stringify(OFFICIAL_PEC_CLUBS));
+    }
+
+    // Ensure events across all categories exist
     if (!Array.isArray(data.events) || data.events.length < 10) {
       data.events = JSON.parse(JSON.stringify(INITIAL_SEED.events));
-      saveDB(data);
     }
 
     // Ensure all relational arrays exist
@@ -1291,13 +1260,12 @@ export function getDB() {
     if (!Array.isArray(data.event_registrations)) data.event_registrations = INITIAL_SEED.event_registrations;
     if (!Array.isArray(data.attendance)) data.attendance = INITIAL_SEED.attendance;
     if (!Array.isArray(data.feedback)) data.feedback = INITIAL_SEED.feedback;
-    if (!Array.isArray(data.resources) || data.resources.length === 0) data.resources = INITIAL_SEED.resources;
+    if (!Array.isArray(data.resources) || data.resources.length < 10) data.resources = JSON.parse(JSON.stringify(INITIAL_RESOURCES));
     if (!Array.isArray(data.activity_reports) || data.activity_reports.length === 0) data.activity_reports = INITIAL_SEED.activity_reports;
     if (!Array.isArray(data.audit_logs)) data.audit_logs = INITIAL_SEED.audit_logs;
     if (!Array.isArray(data.projects) || data.projects.length < 3) data.projects = INITIAL_SEED.projects;
     if (!Array.isArray(data.certificates) || data.certificates.length < 3) {
       data.certificates = INITIAL_SEED.certificates;
-      saveDB(data);
     }
 
     // Ensure all certificate records have consistent dual naming fields
@@ -1331,20 +1299,46 @@ export function getDB() {
     data.auditLogs = data.audit_logs;
     data.auditLog = data.audit_logs;
 
-    return data;
+    memoryDB = data;
+
+    // Trigger async initialization from Supabase/Backend if not yet run
+    if (!isDbInitialized) {
+      initDB();
+    }
+
+    return memoryDB;
   } catch (err) {
-    console.error("Error reading database from localStorage:", err);
-    return JSON.parse(JSON.stringify(INITIAL_SEED));
+    console.error("Error initializing in-memory database:", err);
+    memoryDB = JSON.parse(JSON.stringify(INITIAL_SEED));
+    return memoryDB;
   }
 }
 
 export function saveDB(data) {
+  memoryDB = data;
+
+  // Persist asynchronously to the backend / Supabase PostgreSQL
+  if (typeof fetch !== 'undefined') {
+    apiRequest('/api/db/sync', 'POST', {
+      feedback: data.feedback,
+      notifications: data.notifications,
+      events: data.events,
+      announcements: data.announcements,
+      resources: data.resources,
+      projects: data.projects,
+      attendance: data.attendance
+    }).catch(err => {
+      console.warn("[SaveDB] Asynchronous sync notice:", err.message);
+    });
+  }
+
+  // Backup cache in localStorage strictly for instantaneous offline resume
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(DB_KEY, JSON.stringify(data));
     }
   } catch (err) {
-    console.error("Error saving database to localStorage:", err);
+    // Ignore storage quota warnings
   }
 }
 
@@ -1355,47 +1349,114 @@ export function resetDB() {
     localStorage.removeItem("campustech_pec_db_v1");
   }
   const clean = JSON.parse(JSON.stringify(INITIAL_SEED));
+  memoryDB = clean;
   saveDB(clean);
   return clean;
 }
 
 export function logAudit(actor, action, target, details) {
+  let finalActor = actor;
+  let finalAction = action;
+  let finalTarget = target;
+  let finalDetails = details;
+
+  if (actor && typeof actor === "object" && !action && !target && !details) {
+    // Single object configuration style
+    finalAction = actor.action;
+    finalTarget = actor.target || actor.category || "General";
+    finalDetails = actor.details;
+    
+    try {
+      const activeId = typeof localStorage !== "undefined" ? localStorage.getItem("campustech_active_user_id") : null;
+      if (activeId) {
+        const db = getDB();
+        const user = (db.users || []).find(u => u.id === activeId);
+        if (user) {
+          finalActor = `${user.name} (${user.role})`;
+        } else {
+          finalActor = activeId;
+        }
+      } else {
+        finalActor = "System / Guest";
+      }
+    } catch (e) {
+      finalActor = "System";
+    }
+  }
+
   const db = getDB();
   const now = new Date();
   const timestamp = now.toISOString().replace("T", " ").substring(0, 19);
   const logEntry = {
     id: "log-" + Date.now(),
     timestamp,
-    actor,
-    user: actor,
-    action,
-    target,
-    affected_record: target,
-    details
+    actor: finalActor,
+    user: finalActor,
+    action: finalAction,
+    target: finalTarget,
+    affected_record: finalTarget,
+    details: finalDetails
   };
   if (!db.audit_logs) db.audit_logs = [];
   db.audit_logs.unshift(logEntry);
   db.auditLogs = db.audit_logs;
   db.auditLog = db.audit_logs;
-  saveDB(db);
+
+  // Dispatch directly to the audit log API in backend/Supabase
+  if (typeof fetch !== 'undefined') {
+    apiRequest('/api/audit-logs', 'POST', {
+      action,
+      affected_record: target,
+      details,
+      actor
+    }).catch(() => {});
+  }
+
+  return logEntry;
 }
 
-export function initDB() {
-  // Sync in background with /api/db if server is up
+export async function initDB() {
+  isDbInitialized = true;
+
+  // Initialize Supabase browser client
+  try {
+    await initSupabaseClient();
+  } catch (err) {
+    console.warn("[InitDB] Supabase client init notice:", err);
+  }
+
+  // Fetch live synchronized database from the backend Express API backed by Supabase
   if (typeof fetch !== 'undefined') {
-    fetch('/api/db')
-      .then(r => r.ok ? r.json() : null)
-      .then(serverData => {
+    try {
+      const sessionToken = typeof localStorage !== 'undefined' ? localStorage.getItem("campustech_session_token") : null;
+      const headers = { "Content-Type": "application/json" };
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
+
+      const res = await fetch('/api/db', { headers });
+      if (res.ok) {
+        const serverData = await res.json();
         if (serverData && serverData.clubs && serverData.clubs.length >= 35) {
-          const local = getDB();
-          // Merge server data with local preservation
-          const merged = { ...local, ...serverData };
-          saveDB(merged);
+          const current = memoryDB || getDB();
+          memoryDB = {
+            ...current,
+            ...serverData,
+            // Retain local client preferences if any
+            preferences: current.preferences || {}
+          };
+          // Update cache
+          try {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem(DB_KEY, JSON.stringify(memoryDB));
+            }
+          } catch (e) {}
+          console.log(`[InitDB] Synchronized ${memoryDB.clubs.length} clubs and ${memoryDB.events?.length || 0} events from Supabase backend.`);
         }
-      })
-      .catch(err => {
-        // Silently use cached local db
-      });
+      }
+    } catch (err) {
+      console.warn("[InitDB] Backend fetch notice:", err.message);
+    }
   }
   return getDB();
 }
@@ -1407,13 +1468,38 @@ export async function apiRequest(endpoint, method = "GET", body = null) {
       method,
       headers: { "Content-Type": "application/json" }
     };
-    const activeUserId = typeof localStorage !== 'undefined' ? localStorage.getItem("campustech_active_user_id") : null;
-    if (activeUserId) {
-      opts.headers['x-user-id'] = activeUserId;
-      opts.headers['Authorization'] = `Bearer ${activeUserId}`;
+    
+    // Check for session token: Supabase Auth Session token or secure session token
+    let token = typeof localStorage !== 'undefined' ? localStorage.getItem("campustech_session_token") : null;
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          token = session.access_token;
+        }
+      } catch (e) {}
     }
+
+    if (token) {
+      opts.headers['Authorization'] = `Bearer ${token}`;
+    }
+
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(endpoint, opts);
+
+    // Handle 401 Unauthorized: clear invalid session token
+    if (res.status === 401 && token) {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem("campustech_session_token");
+        localStorage.removeItem("campustech_active_user_id");
+      }
+      if (typeof window !== 'undefined' && window.location.hash !== '#/login') {
+        window.dispatchEvent(new CustomEvent("auth-changed", { detail: null }));
+        window.location.hash = "#/login";
+      }
+    }
+
     const data = await res.json();
     if (data && typeof data === 'object') {
       data._httpStatus = res.status;
@@ -1427,3 +1513,6 @@ export async function apiRequest(endpoint, method = "GET", body = null) {
     return null;
   }
 }
+
+export { escapeHtml, sanitizeUrl } from "./utils.js";
+

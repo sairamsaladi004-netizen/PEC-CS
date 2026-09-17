@@ -1,4 +1,4 @@
-import { getDB, saveDB, logAudit } from '../db.js';
+import { getDB, apiRequest, saveDB, logAudit } from '../db.js';
 import { getCurrentUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 import { addNotification } from '../notifications.js';
