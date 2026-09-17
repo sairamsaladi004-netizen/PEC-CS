@@ -150,6 +150,32 @@ export function attachSearchModalEvents() {
         }
       });
 
+      // Search Announcements
+      (db.announcements || []).forEach(ann => {
+        if (ann.title.toLowerCase().includes(q) || (ann.content && ann.content.toLowerCase().includes(q)) || ann.category.toLowerCase().includes(q)) {
+          results.push({
+            title: ann.title,
+            subtitle: `${ann.date} • ${ann.category} (${ann.department})`,
+            category: "Announcement",
+            link: `#/announcements`,
+            badgeColor: "bg-rose-500/20 text-rose-300"
+          });
+        }
+      });
+
+      // Search Members / Coordinators
+      (db.users || []).forEach(u => {
+        if (u.name.toLowerCase().includes(q) || (u.rollNo && u.rollNo.toLowerCase().includes(q)) || u.role.toLowerCase().includes(q) || (u.email && u.email.toLowerCase().includes(q))) {
+          results.push({
+            title: u.name,
+            subtitle: `${u.role} • ${u.department || 'CSE'} (${u.rollNo || u.facultyId || u.adminId || 'PEC'})`,
+            category: "Member",
+            link: `#/student-profile`,
+            badgeColor: "bg-indigo-500/20 text-indigo-300"
+          });
+        }
+      });
+
       if (results.length === 0) {
         resultsContainer.innerHTML = `<div class="p-6 text-center text-slate-500 text-xs">No matching records found for "${q}".</div>`;
         return;

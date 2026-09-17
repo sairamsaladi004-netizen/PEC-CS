@@ -1,5 +1,6 @@
 import { renderNavbar, attachNavbarEvents } from './components/navbar.js';
 import { renderSearchModal } from './components/searchModal.js';
+import { renderAuthModal, attachAuthModalEvents } from './components/authModal.js';
 
 import { renderHomeView, attachHomeEvents } from './views/home.js';
 import { renderClubsView, attachClubsEvents } from './views/clubs.js';
@@ -19,6 +20,7 @@ import { renderAnalyticsView, attachAnalyticsEvents } from './views/analytics.js
 import { renderReportsView, attachReportsEvents } from './views/reports.js';
 import { renderVerificationView, attachVerificationEvents } from './views/verification.js';
 import { renderAdminView, attachAdminEvents } from './views/admin.js';
+import { renderClubAdminDashboardView, attachClubAdminDashboardEvents } from './views/clubAdminDashboard.js';
 import { renderAboutView, attachAboutEvents } from './views/about.js';
 
 export function parseHash() {
@@ -48,10 +50,12 @@ export function handleRoute() {
       </main>
       ${renderFooter()}
       <div id="search-modal-container">${renderSearchModal()}</div>
+      <div id="auth-modal-container">${renderAuthModal()}</div>
     </div>
   `;
 
   attachNavbarEvents();
+  attachAuthModalEvents();
 
   const mountPoint = document.getElementById("view-container");
   if (!mountPoint) return;
@@ -140,6 +144,12 @@ export function handleRoute() {
     case "#/admin":
       mountPoint.innerHTML = renderAdminView();
       attachAdminEvents();
+      break;
+
+    case "#/club-dashboard":
+    case "#/club-admin":
+      mountPoint.innerHTML = renderClubAdminDashboardView(params);
+      attachClubAdminDashboardEvents(params);
       break;
 
     case "#/reports":

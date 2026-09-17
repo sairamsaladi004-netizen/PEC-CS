@@ -39,6 +39,7 @@ export function renderNavbar() {
               <a href="#/announcements" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/announcements') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">Notices</a>
               <a href="#/analytics" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/analytics') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">Analytics</a>
               <a href="#/verify" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/verify') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">Verify</a>
+              <a href="#/club-dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/club-dashboard') ? 'bg-amber-600 text-white' : 'text-amber-300 hover:text-white hover:bg-amber-900/40'}">Club Admin</a>
               ${user.role === 'Super Admin' || user.role === 'Department Admin' ? `
                 <a href="#/admin" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/admin') ? 'bg-indigo-600 text-white' : 'text-indigo-300 hover:text-white hover:bg-indigo-900/40'}">Admin</a>
               ` : ''}
@@ -78,6 +79,12 @@ export function renderNavbar() {
               </div>
             </div>
 
+            <!-- Auth / Single Sign-On Modal Trigger -->
+            <button id="nav-auth-modal-btn" class="px-2.5 py-1.5 rounded-xl bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 text-xs font-bold border border-blue-500/40 transition-colors flex items-center space-x-1" title="PEC Single Sign-On & Account Management">
+              <span>🔐</span>
+              <span class="hidden md:inline">Auth / Roles</span>
+            </button>
+
             <!-- Role Persona Switcher -->
             <div class="hidden sm:flex items-center space-x-1 bg-slate-800 p-1 rounded-xl border border-slate-700/60">
               <span class="text-[10px] uppercase font-bold text-slate-400 px-2">Role</span>
@@ -116,6 +123,7 @@ export function renderNavbar() {
           <a href="#/gallery" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Gallery</a>
           <a href="#/announcements" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Notices</a>
           <a href="#/analytics" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Analytics</a>
+          <a href="#/club-dashboard" class="px-3 py-2 rounded-lg bg-amber-600/30 text-amber-300 font-bold border border-amber-500/30">Club Admin Dashboard</a>
           <a href="#/membership-card" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Digital ID Card</a>
           <a href="#/attendance" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">QR Kiosk</a>
           <a href="#/event-poster" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Poster Studio</a>
@@ -227,6 +235,15 @@ export function attachNavbarEvents() {
         const input = document.getElementById("global-search-input");
         if (input) input.focus();
       }
+    });
+  }
+
+  // Auth modal trigger
+  const authModalBtn = document.getElementById("nav-auth-modal-btn");
+  if (authModalBtn) {
+    authModalBtn.addEventListener("click", () => {
+      const modal = document.getElementById("auth-modal");
+      if (modal) modal.classList.remove("hidden");
     });
   }
 }

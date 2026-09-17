@@ -484,6 +484,29 @@ export const INITIAL_SEED = {
         { id: "sec-3", title: "Active Directory Exploitation & Kerberoasting", level: "Intermediate", completed: false },
         { id: "sec-4", title: "x86/x64 Buffer Overflow & ROP Chains", level: "Advanced", completed: false }
       ]
+    },
+    {
+      id: "rm-web",
+      title: "Modern Full Stack Web Architecture",
+      domain: "Web Development",
+      description: "From TypeScript and Next.js reactive frontends to distributed GraphQL, PostgreSQL, and Redis cache clusters.",
+      nodes: [
+        { id: "w-1", title: "TypeScript & Modern ECMAScript Essentials", level: "Beginner", completed: true },
+        { id: "w-2", title: "React & Next.js Server Components", level: "Intermediate", completed: true },
+        { id: "w-3", title: "PostgreSQL & Prisma ORM Data Modeling", level: "Intermediate", completed: false },
+        { id: "w-4", title: "Micro-frontends & Edge CDN Caching", level: "Advanced", completed: false }
+      ]
+    },
+    {
+      id: "rm-mobile",
+      title: "Cross-Platform Mobile Engineering (Flutter & Android)",
+      domain: "Mobile Development",
+      description: "Building production Flutter, Dart, Kotlin Jetpack Compose apps with native device integrations and offline syncing.",
+      nodes: [
+        { id: "m-1", title: "Dart Language & Flutter Widget Tree", level: "Beginner", completed: true },
+        { id: "m-2", title: "State Management with Riverpod & BLoC", level: "Intermediate", completed: false },
+        { id: "m-3", title: "Native Platform Channels & Bluetooth Low Energy", level: "Advanced", completed: false }
+      ]
     }
   ],
 

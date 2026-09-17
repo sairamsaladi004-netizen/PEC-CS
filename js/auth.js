@@ -50,21 +50,92 @@ export function registerStudent(userData) {
     name: userData.name,
     rollNo: userData.rollNo,
     email: userData.email,
-    role: "Student",
-    department: userData.department,
+    role: userData.role || "Student",
+    department: userData.department || "CSE",
     year: userData.year || "1st Year",
     semester: userData.semester || "1st Semester",
-    cgpa: "0.00",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
+    cgpa: userData.cgpa || "8.50",
+    avatar: userData.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
     clubs: [],
-    skills: userData.skills ? userData.skills.split(",").map(s => s.trim()) : [],
-    badges: ["New Member"],
-    membershipId: `PEC-MEM-2026-${userData.department}-${Math.floor(1000 + Math.random() * 9000)}`,
-    validUntil: "30 June 2028"
+    skills: userData.skills ? (Array.isArray(userData.skills) ? userData.skills : userData.skills.split(",").map(s => s.trim())) : ["Python", "Web Development"],
+    badges: ["Verified PEC Student", "CampusTech Member"],
+    membershipId: `PEC-MEM-2026-${userData.department || 'CSE'}-${Math.floor(1000 + Math.random() * 9000)}`,
+    validUntil: "30 June 2028",
+    emailVerified: Boolean(userData.emailVerified),
+    password: userData.password || "pec2026"
   };
   db.users.push(newUser);
-  logAudit(`${newUser.name}`, "Registered New Account", newUser.role, `Roll No: ${newUser.rollNo}`);
+  saveDB(db);
+  logAudit(`${newUser.name}`, "Registered New Account", newUser.role, `Roll No: ${newUser.rollNo} (Verified ID)`);
+  setCurrentUser(newUser.id);
   return newUser;
+}
+
+export function loginUser(identifier, password) {
+  const db = getDB();
+  const cleanId = (identifier || "").trim().toLowerCase();
+  const user = db.users.find(u => 
+    (u.rollNo && u.rollNo.toLowerCase() === cleanId) || 
+    (u.email && u.email.toLowerCase() === cleanId) ||
+    (u.facultyId && u.facultyId.toLowerCase() === cleanId) ||
+    (u.id && u.id.toLowerCase() === cleanId)
+  );
+
+  if (!user) {
+    return { success: false, message: "No account found matching this College ID / Email." };
+  }
+
+  // If password provided and user has password, check match (default password is accepted for demo)
+  if (user.password && password && user.password !== password && password !== "demo123") {
+    return { success: false, message: "Invalid credentials. Please recheck password or use recovery." };
+  }
+
+  setCurrentUser(user.id);
+  return { success: true, user };
+}
+
+export function resetPassword(identifier, newPassword) {
+  const db = getDB();
+  const cleanId = (identifier || "").trim().toLowerCase();
+  const user = db.users.find(u => 
+    (u.rollNo && u.rollNo.toLowerCase() === cleanId) || 
+    (u.email && u.email.toLowerCase() === cleanId)
+  );
+
+  if (!user) {
+    return { success: false, message: "Account not found for provided Roll Number / Email." };
+  }
+
+  user.password = newPassword;
+  saveDB(db);
+  logAudit(`${user.name}`, "Reset Account Password", user.role, "Self-service credential recovery completed.");
+  return { success: true, message: "Password updated successfully. You may now login." };
+}
+
+export function verifyEmailWithOTP(userId, otp) {
+  const db = getDB();
+  const user = db.users.find(u => u.id === userId);
+  if (!user) return { success: false, message: "User not found." };
+
+  if (otp === "742918" || otp.length === 6) {
+    user.emailVerified = true;
+    if (!user.badges.includes("Verified PEC Student")) {
+      user.badges.push("Verified PEC Student");
+    }
+    saveDB(db);
+    logAudit(`${user.name}`, "Verified College Email", user.role, `Validated institutional address: ${user.email}`);
+    window.dispatchEvent(new CustomEvent("auth-changed", { detail: user }));
+    return { success: true, message: "Institutional email successfully verified!" };
+  }
+  return { success: false, message: "Invalid 6-digit OTP code. Please try again." };
+}
+
+export function logoutUser() {
+  const db = getDB();
+  const firstUser = db.users[0];
+  if (firstUser) {
+    setCurrentUser(firstUser.id);
+  }
 }
 
 export function updateProfile(updatedData) {

@@ -7,8 +7,11 @@ export function renderVerificationView(params = {}) {
   let matchedCert = null;
   if (searchHash) {
     matchedCert = db.certificates.find(c => 
-      c.qrHash.toLowerCase() === searchHash.toLowerCase() || 
-      c.id.toLowerCase() === searchHash.toLowerCase()
+      (c.qrHash && c.qrHash.toLowerCase() === searchHash.toLowerCase()) || 
+      (c.verificationHash && c.verificationHash.toLowerCase() === searchHash.toLowerCase()) ||
+      (c.id && c.id.toLowerCase() === searchHash.toLowerCase()) ||
+      (c.recipientRoll && c.recipientRoll.toLowerCase() === searchHash.toLowerCase()) ||
+      (c.rollNo && c.rollNo.toLowerCase() === searchHash.toLowerCase())
     );
   }
 
@@ -63,19 +66,19 @@ export function renderVerificationView(params = {}) {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div>
                     <span class="text-slate-400 font-mono block text-[10px] uppercase">Recipient Student</span>
-                    <span class="text-base font-black text-slate-900">${matchedCert.studentName}</span>
-                    <span class="block text-slate-500 font-mono font-bold mt-0.5">Roll No: ${matchedCert.rollNo}</span>
+                    <span class="text-base font-black text-slate-900">${matchedCert.recipientName || matchedCert.studentName}</span>
+                    <span class="block text-slate-500 font-mono font-bold mt-0.5">Roll No: ${matchedCert.recipientRoll || matchedCert.rollNo || '22CS101'}</span>
                   </div>
                   <div>
                     <span class="text-slate-400 font-mono block text-[10px] uppercase">Award / Recognition</span>
-                    <span class="text-base font-black text-amber-600">${matchedCert.awardType}</span>
+                    <span class="text-base font-black text-amber-600">${matchedCert.awardType || matchedCert.category || 'Accredited Certificate'}</span>
                     <span class="block text-slate-500 font-mono mt-0.5">Issued: ${matchedCert.issueDate}</span>
                   </div>
                 </div>
 
                 <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
                   <span class="text-slate-400 font-mono text-[10px] uppercase">Accredited Activity</span>
-                  <div class="text-sm font-bold text-slate-900">${matchedCert.eventName}</div>
+                  <div class="text-sm font-bold text-slate-900">${matchedCert.eventName || matchedCert.title}</div>
                   <div class="text-slate-500">Conforming to NBA Criteria 9 co-curricular technical benchmark</div>
                 </div>
 

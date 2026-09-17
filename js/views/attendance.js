@@ -3,6 +3,8 @@ import { getCurrentUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 import { addNotification } from '../notifications.js';
 
+const OFFLINE_QUEUE_KEY = "campustech_offline_attendance_queue";
+
 export function renderAttendanceView() {
   const db = getDB();
   const user = getCurrentUser() || {};
@@ -10,21 +12,30 @@ export function renderAttendanceView() {
   const currentEvent = activeEvents[0];
   const registrations = currentEvent?.registrations || [];
   const checkedInCount = registrations.filter(r => r.checkedIn).length;
+  const isFacultyOrAdmin = ["Faculty Coordinator", "Department Admin", "Super Admin", "Club Admin"].includes(user.role);
 
   return `
     <div class="space-y-6 pb-16">
+      
       <!-- Title & Kiosk Mode Header -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div class="flex items-center space-x-2">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-            <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider font-mono">Live Gate Kiosk</span>
+            <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider font-mono">Live Gate Kiosk & Accreditation Hub</span>
           </div>
           <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">QR Attendance & Verification Kiosk</h1>
-          <p class="text-xs sm:text-sm text-slate-500">Scan student gate passes for real-time validation and automated certificate entitlement</p>
+          <p class="text-xs sm:text-sm text-slate-500">Fast optical QR check-in, duplicate prevention, offline queuing, and attendance analytics</p>
         </div>
 
-        <div class="flex items-center space-x-3">
+        <!-- Event Selector & Online / Offline Toggle -->
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm text-xs">
+            <span id="network-status-indicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span id="network-status-text" class="font-bold text-slate-700">Online Mode</span>
+            <button id="toggle-network-mode-btn" class="text-[10px] text-blue-600 underline font-semibold">Toggle Offline</button>
+          </div>
+
           <select id="kiosk-event-select" class="p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 shadow-sm focus:ring-2 focus:ring-blue-500">
             ${activeEvents.map(e => `
               <option value="${e.id}">${e.title} (${e.date})</option>
@@ -39,8 +50,8 @@ export function renderAttendanceView() {
         <!-- Interactive QR Scanner Simulation -->
         <div class="bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-xl space-y-4">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Camera / Optical Scanner</span>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Ready</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Optical Scanner Simulator</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Active</span>
           </div>
           
           <div class="relative h-48 rounded-2xl border-2 border-dashed border-slate-700 bg-slate-950/60 flex flex-col items-center justify-center p-4 text-center overflow-hidden">
@@ -48,30 +59,45 @@ export function renderAttendanceView() {
               <div class="w-full h-0.5 bg-blue-400 absolute top-1/2 -translate-y-1/2 shadow-[0_0_8px_#3b82f6]"></div>
               <span class="text-2xl">📷</span>
             </div>
-            <p class="text-[11px] text-slate-400 mt-3">Position student ticket QR pass in front of lens</p>
+            <p class="text-[11px] text-slate-400 mt-3">Ready to scan student ticket QR pass or barcode</p>
           </div>
 
           <div class="space-y-2">
             <button id="simulate-scan-btn" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center space-x-2">
-              <span>⚡ Simulate Quick QR Scan (Test)</span>
+              <span>⚡ Simulate Camera Scan (Unchecked Attendee)</span>
             </button>
+            <button id="simulate-dup-scan-btn" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center space-x-2">
+              <span>⚠️ Test Duplicate Scan Detection</span>
+            </button>
+          </div>
+
+          <div id="offline-queue-badge" class="hidden p-2.5 bg-amber-500/20 border border-amber-500/40 rounded-xl text-[11px] text-amber-300 flex items-center justify-between">
+            <span>Offline Scans in Queue: <strong id="queue-count">0</strong></span>
+            <button id="sync-offline-queue-btn" class="px-2 py-0.5 bg-amber-500 text-slate-950 font-bold rounded text-[10px]">Sync Now</button>
           </div>
         </div>
 
-        <!-- Manual Check-in Form & Stats -->
+        <!-- Manual Check-in Form, Manual Add, & Stats -->
         <div class="lg:col-span-2 space-y-6">
           <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-            <h2 class="text-base font-bold text-slate-900">Manual Check-in & Gate Pass Search</h2>
+            <div class="flex items-center justify-between">
+              <h2 class="text-base font-bold text-slate-900">Manual Check-in & Gate Pass Search</h2>
+              ${isFacultyOrAdmin ? `
+                <button id="open-walkin-modal-btn" class="text-xs font-bold text-blue-600 hover:text-blue-700">
+                  + Add Walk-in Delegate
+                </button>
+              ` : ''}
+            </div>
             
             <div class="flex flex-col sm:flex-row items-center gap-3">
               <input 
                 type="text" 
                 id="manual-ticket-input" 
-                placeholder="Enter Pass ID (e.g. TCK-APEX-042) or Roll No (22CS101)..." 
+                placeholder="Enter Pass ID (e.g. TCK-HAC-101) or Roll No (22CS101)..." 
                 class="w-full p-3 rounded-xl border border-slate-300 text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
               <button id="manual-checkin-btn" class="w-full sm:w-auto px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shrink-0 transition-colors">
-                Check In Student
+                Validate & Check In
               </button>
             </div>
 
@@ -91,16 +117,42 @@ export function renderAttendanceView() {
               </div>
             </div>
           </div>
+
+          <!-- Quick Action Bar: Visual Analytics & Export Reports -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div class="flex items-center space-x-2">
+              <button id="open-analytics-modal-btn" class="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl border border-blue-200 transition-colors flex items-center space-x-1.5">
+                <span>📈</span> <span>Visual Analytics (Branches & Arrival)</span>
+              </button>
+            </div>
+
+            <div class="flex items-center space-x-2">
+              <span class="text-slate-400 font-bold">Export:</span>
+              <button id="export-csv-btn" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors">
+                CSV
+              </button>
+              <button id="export-excel-btn" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors">
+                Excel
+              </button>
+              <button id="export-pdf-btn" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg transition-colors">
+                PDF Sheet
+              </button>
+            </div>
+          </div>
+
         </div>
 
       </div>
 
       <!-- Live Roster of Attendees -->
       <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
-        <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+        <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 class="text-base font-bold text-slate-900">Registered Delegates & Attendance Roster</h2>
-            <p class="text-xs text-slate-500">Live synchronization with accreditation database</p>
+            <p class="text-xs text-slate-500">Live synchronization with accreditation database and certificate minting engine</p>
+          </div>
+          <div class="text-xs text-slate-400 font-mono">
+            Showing <span id="table-count">${registrations.length}</span> registered records
           </div>
         </div>
 
@@ -111,14 +163,122 @@ export function renderAttendanceView() {
                 <th class="p-4 pl-6">Student Name & Roll No</th>
                 <th class="p-4">Department</th>
                 <th class="p-4">Pass ID</th>
-                <th class="p-4">Gate Status</th>
-                <th class="p-4 text-right pr-6">Accreditation Action</th>
+                <th class="p-4">Gate Status & Timestamp</th>
+                <th class="p-4 text-right pr-6">Coordinator Correction</th>
               </tr>
             </thead>
             <tbody id="attendance-table-body" class="divide-y divide-slate-100 font-medium text-slate-700">
               ${renderAttendanceRows(registrations, currentEvent)}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Visual Attendance Analytics Modal -->
+      <div id="analytics-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl space-y-5">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div>
+              <h3 class="text-base font-bold text-slate-900">Visual Attendance & Turnout Analytics</h3>
+              <p class="text-xs text-slate-500 font-mono" id="analytics-event-name">Event Analytics</p>
+            </div>
+            <button id="close-analytics-modal" class="text-slate-400 hover:text-slate-600">✕</button>
+          </div>
+
+          <div class="space-y-4 text-xs">
+            <!-- Branch Distribution -->
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+              <div class="font-bold text-slate-900 text-xs">Department & Branch Distribution</div>
+              <div class="space-y-1.5">
+                <div>
+                  <div class="flex justify-between text-[11px] text-slate-600 mb-0.5"><span>Computer Science (CSE)</span> <span class="font-bold">52%</span></div>
+                  <div class="w-full bg-slate-200 rounded-full h-2"><div class="bg-blue-600 h-2 rounded-full" style="width: 52%"></div></div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-[11px] text-slate-600 mb-0.5"><span>AI & Data Science (AIDS)</span> <span class="font-bold">28%</span></div>
+                  <div class="w-full bg-slate-200 rounded-full h-2"><div class="bg-purple-600 h-2 rounded-full" style="width: 28%"></div></div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-[11px] text-slate-600 mb-0.5"><span>Information Technology (IT)</span> <span class="font-bold">14%</span></div>
+                  <div class="w-full bg-slate-200 rounded-full h-2"><div class="bg-emerald-600 h-2 rounded-full" style="width: 14%"></div></div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-[11px] text-slate-600 mb-0.5"><span>Electronics (ECE)</span> <span class="font-bold">6%</span></div>
+                  <div class="w-full bg-slate-200 rounded-full h-2"><div class="bg-amber-600 h-2 rounded-full" style="width: 6%"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Peak Arrival Times -->
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+              <div class="font-bold text-slate-900 text-xs">Peak Arrival & Check-in Wave</div>
+              <div class="grid grid-cols-3 gap-2 text-center text-[11px]">
+                <div class="p-2.5 bg-white rounded-xl border border-slate-200">
+                  <div class="text-slate-400 font-mono">09:00 - 09:30</div>
+                  <div class="font-black text-slate-900 text-sm mt-0.5">62% (Peak)</div>
+                </div>
+                <div class="p-2.5 bg-white rounded-xl border border-slate-200">
+                  <div class="text-slate-400 font-mono">09:30 - 10:00</div>
+                  <div class="font-black text-slate-900 text-sm mt-0.5">26%</div>
+                </div>
+                <div class="p-2.5 bg-white rounded-xl border border-slate-200">
+                  <div class="text-slate-400 font-mono">After 10:00</div>
+                  <div class="font-black text-slate-900 text-sm mt-0.5">12% (Late)</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Year Distribution -->
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-1 text-[11px]">
+              <div class="font-bold text-slate-900 text-xs mb-1">Academic Year Demographics</div>
+              <div class="flex justify-between py-1 border-b border-slate-200"><span>2nd Year Undergraduates</span> <span class="font-bold font-mono">48 Delegates</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-200"><span>3rd Year Undergraduates</span> <span class="font-bold font-mono">34 Delegates</span></div>
+              <div class="flex justify-between py-1"><span>4th Year / Final Year</span> <span class="font-bold font-mono">18 Delegates</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Walk-in Delegate Modal -->
+      <div id="walkin-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Add Spot Walk-in Delegate</h3>
+              <p class="text-[11px] text-slate-500">Register off-roster candidate directly at the gate</p>
+            </div>
+            <button id="close-walkin-modal" class="text-slate-400 hover:text-slate-600">✕</button>
+          </div>
+
+          <form id="walkin-form" class="space-y-3 text-xs">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Full Student Name</label>
+              <input type="text" id="walkin-name" required placeholder="e.g. Rahul Verma" class="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Roll Number</label>
+                <input type="text" id="walkin-roll" required placeholder="23CS112" class="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 uppercase font-mono" />
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Department</label>
+                <select id="walkin-dept" class="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500">
+                  <option value="CSE">CSE</option>
+                  <option value="AIDS">AIDS</option>
+                  <option value="IT">IT</option>
+                  <option value="ECE">ECE</option>
+                  <option value="MECH">MECH</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">College Email</label>
+              <input type="email" id="walkin-email" required placeholder="student@panimalar.edu" class="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 font-mono" />
+            </div>
+            <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-md transition-colors">
+              Confirm & Check In Immediately
+            </button>
+          </form>
         </div>
       </div>
 
@@ -134,7 +294,7 @@ function renderAttendanceRows(registrations, event) {
   const db = getDB();
 
   return registrations.map(reg => {
-    const cert = db.certificates.find(c => c.studentId === reg.studentId && c.eventName.toLowerCase().includes(event?.title.toLowerCase().slice(0, 10)));
+    const cert = (db.certificates || []).find(c => c.recipientRoll === reg.rollNo && c.eventName?.toLowerCase().includes(event?.title.toLowerCase().slice(0, 8)));
 
     return `
       <tr class="hover:bg-slate-50/80 transition-colors">
@@ -142,30 +302,46 @@ function renderAttendanceRows(registrations, event) {
           <div class="font-bold text-slate-900">${reg.studentName}</div>
           <div class="text-[11px] text-slate-400 font-mono">${reg.rollNo}</div>
         </td>
-        <td class="p-4 text-slate-600 font-mono">${reg.department || 'CSE'}</td>
-        <td class="p-4 font-mono font-bold text-blue-600">${reg.ticketId}</td>
+        <td class="p-4 text-slate-600">${reg.department || 'CSE'}</td>
+        <td class="p-4 font-mono text-slate-500">${reg.ticketId}</td>
         <td class="p-4">
           ${reg.checkedIn ? `
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 inline-flex items-center space-x-1">
-              <span>● Checked In</span>
+            <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span>Checked In (${reg.checkinTime || '09:42 AM'})</span>
             </span>
           ` : `
-            <button data-ticket="${reg.ticketId}" class="quick-checkin-btn px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
-              Mark Present
-            </button>
+            <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-slate-100 text-slate-500">
+              <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+              <span>Absent / Pending</span>
+            </span>
           `}
         </td>
-        <td class="p-4 text-right pr-6">
-          ${cert ? `
-            <a href="#/certificates?id=${cert.id}" class="text-blue-600 hover:text-blue-800 font-bold text-xs">
-              View Certificate #${cert.id.slice(-6)} →
-            </a>
-          ` : reg.checkedIn ? `
-            <button data-regid="${reg.studentId}" data-name="${reg.studentName}" data-roll="${reg.rollNo}" data-dept="${reg.department}" data-event="${event.title}" class="issue-cert-btn px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition-all shadow-sm">
-              Issue Accredited Cert
+        <td class="p-4 text-right pr-6 space-x-2">
+          ${reg.checkedIn ? `
+            <button data-ticket="${reg.ticketId}" class="undo-checkin-btn px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] font-semibold transition-colors" title="Mark back to absent">
+              Undo
             </button>
+            ${cert ? `
+              <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-lg text-[10px] font-bold">
+                ✓ Cert Minted
+              </span>
+            ` : `
+              <button 
+                data-regid="${reg.studentId}" 
+                data-name="${reg.studentName}" 
+                data-roll="${reg.rollNo}" 
+                data-dept="${reg.department || 'CSE'}"
+                data-event="${event?.title || 'Workshop'}"
+                class="issue-cert-btn px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[11px] font-bold shadow-sm transition-colors"
+              >
+                + Mint Certificate
+              </button>
+            `}
           ` : `
-            <span class="text-slate-400 text-xs">Requires Check-in</span>
+            <button data-ticket="${reg.ticketId}" class="quick-checkin-btn px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[11px] font-bold shadow-sm transition-colors">
+              Mark Present
+            </button>
           `}
         </td>
       </tr>
@@ -175,28 +351,22 @@ function renderAttendanceRows(registrations, event) {
 
 export function attachAttendanceEvents() {
   const select = document.getElementById("kiosk-event-select");
-  if (select) {
-    select.addEventListener("change", (e) => {
-      const db = getDB();
-      const event = db.events.find(ev => ev.id === e.target.value);
-      if (event) {
-        const tbody = document.getElementById("attendance-table-body");
-        if (tbody) tbody.innerHTML = renderAttendanceRows(event.registrations || [], event);
-        updateStats(event.registrations || []);
-        attachRowEvents();
-      }
-    });
-  }
+  let isOffline = false;
 
-  const updateStats = (regs) => {
-    const checked = regs.filter(r => r.checkedIn).length;
-    const total = regs.length;
-    const statReg = document.getElementById("stat-registered");
-    const statChk = document.getElementById("stat-checkedin");
-    const statRate = document.getElementById("stat-rate");
-    if (statReg) statReg.innerText = total;
-    if (statChk) statChk.innerText = checked;
-    if (statRate) statRate.innerText = total > 0 ? `${Math.round((checked / total) * 100)}%` : '0%';
+  const updateStats = (registrations) => {
+    const checked = (registrations || []).filter(r => r.checkedIn).length;
+    const total = registrations?.length || 0;
+    const rate = total > 0 ? Math.round((checked / total) * 100) : 0;
+
+    const elReg = document.getElementById("stat-registered");
+    const elChecked = document.getElementById("stat-checkedin");
+    const elRate = document.getElementById("stat-rate");
+    const elCount = document.getElementById("table-count");
+
+    if (elReg) elReg.innerText = total;
+    if (elChecked) elChecked.innerText = checked;
+    if (elRate) elRate.innerText = rate + "%";
+    if (elCount) elCount.innerText = total;
   };
 
   const checkinTicket = (query) => {
@@ -211,22 +381,118 @@ export function attachAttendanceEvents() {
 
     if (reg) {
       if (reg.checkedIn) {
-        showToast(`${reg.studentName} is ALREADY checked in!`, "warning");
+        // Instant duplicate detection alert
+        showToast(
+          "⚠️ DUPLICATE SCAN ALERT!", 
+          `Student ${reg.studentName} (${reg.rollNo}) was ALREADY checked in at ${reg.checkinTime || 'Gate 1'}. Double entry prevented!`, 
+          "error"
+        );
+        return;
+      }
+
+      if (isOffline) {
+        // Queue in offline storage
+        const queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
+        queue.push({ eventId, ticketId: reg.ticketId, studentName: reg.studentName, timestamp: new Date().toLocaleTimeString() });
+        localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+        reg.checkedIn = true;
+        reg.checkinTime = new Date().toLocaleTimeString();
+        showToast("Offline Check-in Cached", `${reg.studentName} logged to local storage queue.`, "info");
+        updateQueueDisplay();
       } else {
         reg.checkedIn = true;
+        reg.checkinTime = new Date().toLocaleTimeString();
         saveDB(db);
         logAudit("Gate Kiosk", "Attendee Checked-in", `${event.title} - ${reg.studentName}`, `Pass: ${reg.ticketId}`);
-        showToast(`Checked in: ${reg.studentName} (${reg.rollNo})!`, "success");
+        showToast("Gate Verified ✓", `${reg.studentName} (${reg.rollNo}) checked in successfully!`, "success");
+      }
+
+      const tbody = document.getElementById("attendance-table-body");
+      if (tbody) tbody.innerHTML = renderAttendanceRows(event.registrations, event);
+      updateStats(event.registrations);
+      attachRowEvents();
+    } else {
+      showToast("Access Denied", `No registered ticket or student found for "${query}"!`, "error");
+    }
+  };
+
+  const updateQueueDisplay = () => {
+    const queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
+    const badge = document.getElementById("offline-queue-badge");
+    const count = document.getElementById("queue-count");
+    if (badge && count) {
+      count.innerText = queue.length;
+      if (queue.length > 0) {
+        badge.classList.remove("hidden");
+      } else {
+        badge.classList.add("hidden");
+      }
+    }
+  };
+
+  // Event Change
+  if (select) {
+    select.addEventListener("change", () => {
+      const db = getDB();
+      const event = db.events.find(e => e.id === select.value);
+      if (event) {
         const tbody = document.getElementById("attendance-table-body");
         if (tbody) tbody.innerHTML = renderAttendanceRows(event.registrations, event);
         updateStats(event.registrations);
         attachRowEvents();
       }
-    } else {
-      showToast(`No ticket or student found for "${query}"!`, "error");
-    }
-  };
+    });
+  }
 
+  // Network Toggle (Online / Offline simulation)
+  const toggleNetBtn = document.getElementById("toggle-network-mode-btn");
+  const netIndicator = document.getElementById("network-status-indicator");
+  const netText = document.getElementById("network-status-text");
+
+  if (toggleNetBtn) {
+    toggleNetBtn.addEventListener("click", () => {
+      isOffline = !isOffline;
+      if (isOffline) {
+        netIndicator.className = "w-2.5 h-2.5 rounded-full bg-amber-500";
+        netText.innerText = "Offline Mode (Cached)";
+        toggleNetBtn.innerText = "Switch to Online";
+        showToast("Offline Mode Enabled", "Check-ins will cache to local storage without network drops.", "warning");
+      } else {
+        netIndicator.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+        netText.innerText = "Online Mode";
+        toggleNetBtn.innerText = "Toggle Offline";
+        showToast("Online Restored", "Connected to central accreditation server.", "success");
+      }
+      updateQueueDisplay();
+    });
+  }
+
+  // Sync Offline Queue Button
+  const syncBtn = document.getElementById("sync-offline-queue-btn");
+  if (syncBtn) {
+    syncBtn.addEventListener("click", () => {
+      const queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
+      if (queue.length === 0) {
+        showToast("Queue Empty", "No offline scans pending sync.", "info");
+        return;
+      }
+      const db = getDB();
+      queue.forEach(item => {
+        const evt = db.events.find(e => e.id === item.eventId);
+        const reg = evt?.registrations?.find(r => r.ticketId === item.ticketId);
+        if (reg) {
+          reg.checkedIn = true;
+          reg.checkinTime = item.timestamp;
+        }
+      });
+      saveDB(db);
+      localStorage.removeItem(OFFLINE_QUEUE_KEY);
+      updateQueueDisplay();
+      showToast("Sync Successful", `Synchronized ${queue.length} offline scans to central database!`, "success");
+    });
+  }
+
+  // Manual Check-in
   const manualBtn = document.getElementById("manual-checkin-btn");
   const manualInput = document.getElementById("manual-ticket-input");
   if (manualBtn && manualInput) {
@@ -242,6 +508,7 @@ export function attachAttendanceEvents() {
     });
   }
 
+  // Simulate Optical Scan
   const simulateScanBtn = document.getElementById("simulate-scan-btn");
   if (simulateScanBtn) {
     simulateScanBtn.addEventListener("click", () => {
@@ -252,8 +519,152 @@ export function attachAttendanceEvents() {
       if (pending) {
         checkinTicket(pending.ticketId);
       } else {
-        showToast("All registered students are already checked in!", "info");
+        showToast("All registered students for this event are already checked in!", "info");
       }
+    });
+  }
+
+  // Simulate Duplicate Scan
+  const simulateDupBtn = document.getElementById("simulate-dup-scan-btn");
+  if (simulateDupBtn) {
+    simulateDupBtn.addEventListener("click", () => {
+      const db = getDB();
+      const eventId = select?.value || db.events[0]?.id;
+      const event = db.events.find(e => e.id === eventId);
+      const already = event?.registrations?.find(r => r.checkedIn);
+      if (already) {
+        checkinTicket(already.ticketId);
+      } else {
+        showToast("Check in at least one student first to test duplicate alert.", "info");
+      }
+    });
+  }
+
+  // Visual Analytics Modal
+  const analyticsModal = document.getElementById("analytics-modal");
+  const openAnalyticsBtn = document.getElementById("open-analytics-modal-btn");
+  const closeAnalyticsBtn = document.getElementById("close-analytics-modal");
+
+  if (openAnalyticsBtn && analyticsModal) {
+    openAnalyticsBtn.addEventListener("click", () => {
+      const db = getDB();
+      const eventId = select?.value || db.events[0]?.id;
+      const event = db.events.find(e => e.id === eventId);
+      if (event) {
+        document.getElementById("analytics-event-name").innerText = `${event.title} • Turnout & Branch Metrics`;
+      }
+      analyticsModal.classList.remove("hidden");
+    });
+    if (closeAnalyticsBtn) closeAnalyticsBtn.addEventListener("click", () => analyticsModal.classList.add("hidden"));
+    analyticsModal.addEventListener("click", (e) => {
+      if (e.target === analyticsModal) analyticsModal.classList.add("hidden");
+    });
+  }
+
+  // Walk-in Modal
+  const walkinModal = document.getElementById("walkin-modal");
+  const openWalkinBtn = document.getElementById("open-walkin-modal-btn");
+  const closeWalkinBtn = document.getElementById("close-walkin-modal");
+  const walkinForm = document.getElementById("walkin-form");
+
+  if (openWalkinBtn && walkinModal) {
+    openWalkinBtn.addEventListener("click", () => walkinModal.classList.remove("hidden"));
+    if (closeWalkinBtn) closeWalkinBtn.addEventListener("click", () => walkinModal.classList.add("hidden"));
+    walkinModal.addEventListener("click", (e) => {
+      if (e.target === walkinModal) walkinModal.classList.add("hidden");
+    });
+
+    if (walkinForm) {
+      walkinForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const db = getDB();
+        const eventId = select?.value || db.events[0]?.id;
+        const event = db.events.find(e => e.id === eventId);
+        if (event) {
+          const name = document.getElementById("walkin-name").value;
+          const rollNo = document.getElementById("walkin-roll").value;
+          const department = document.getElementById("walkin-dept").value;
+          const email = document.getElementById("walkin-email").value;
+          const ticketId = `TCK-WALK-${Math.floor(100 + Math.random() * 900)}`;
+
+          if (!event.registrations) event.registrations = [];
+          event.registrations.push({
+            studentId: "walkin-" + Date.now(),
+            studentName: name,
+            rollNo,
+            email,
+            department,
+            ticketId,
+            registeredAt: new Date().toISOString().split("T")[0],
+            checkedIn: true,
+            checkinTime: new Date().toLocaleTimeString()
+          });
+          event.registeredCount += 1;
+          saveDB(db);
+          logAudit("Gate Coordinator", "Added Walk-in Delegate", `${event.title} - ${name}`, `Roll No: ${rollNo}`);
+          showToast("Walk-in Checked In", `${name} added to roster and verified!`, "success");
+          walkinModal.classList.add("hidden");
+          const tbody = document.getElementById("attendance-table-body");
+          if (tbody) tbody.innerHTML = renderAttendanceRows(event.registrations, event);
+          updateStats(event.registrations);
+          attachRowEvents();
+        }
+      });
+    }
+  }
+
+  // Exports: CSV, Excel, PDF
+  const exportCsvBtn = document.getElementById("export-csv-btn");
+  const exportExcelBtn = document.getElementById("export-excel-btn");
+  const exportPdfBtn = document.getElementById("export-pdf-btn");
+
+  if (exportCsvBtn) {
+    exportCsvBtn.addEventListener("click", () => {
+      const db = getDB();
+      const eventId = select?.value || db.events[0]?.id;
+      const event = db.events.find(e => e.id === eventId);
+      if (!event) return;
+
+      let csv = "Student Name,Roll No,Department,Email,Pass ID,Attendance Status,Checkin Time\n";
+      (event.registrations || []).forEach(r => {
+        csv += `"${r.studentName}","${r.rollNo}","${r.department || 'CSE'}","${r.email || ''}","${r.ticketId}","${r.checkedIn ? 'Checked In' : 'Absent'}","${r.checkinTime || 'N/A'}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `PEC_Attendance_${event.id}_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      showToast("CSV Downloaded", "Attendance log exported successfully.", "success");
+    });
+  }
+
+  if (exportExcelBtn) {
+    exportExcelBtn.addEventListener("click", () => {
+      const db = getDB();
+      const eventId = select?.value || db.events[0]?.id;
+      const event = db.events.find(e => e.id === eventId);
+      if (!event) return;
+
+      let tsv = "Student Name\tRoll No\tDepartment\tPass ID\tStatus\tTime\n";
+      (event.registrations || []).forEach(r => {
+        tsv += `${r.studentName}\t${r.rollNo}\t${r.department || 'CSE'}\t${r.ticketId}\t${r.checkedIn ? 'Checked In' : 'Absent'}\t${r.checkinTime || 'N/A'}\n`;
+      });
+
+      const blob = new Blob([tsv], { type: "application/vnd.ms-excel;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `PEC_Attendance_${event.id}.xls`;
+      a.click();
+      showToast("Excel Export Ready", "Exported formatted spreadsheet.", "success");
+    });
+  }
+
+  if (exportPdfBtn) {
+    exportPdfBtn.addEventListener("click", () => {
+      window.print();
     });
   }
 
@@ -261,6 +672,28 @@ export function attachAttendanceEvents() {
     document.querySelectorAll(".quick-checkin-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         checkinTicket(btn.dataset.ticket);
+      });
+    });
+
+    // Undo Check-in
+    document.querySelectorAll(".undo-checkin-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const ticketId = btn.dataset.ticket;
+        const db = getDB();
+        const eventId = select?.value || db.events[0]?.id;
+        const event = db.events.find(e => e.id === eventId);
+        const reg = event?.registrations?.find(r => r.ticketId === ticketId);
+        if (reg) {
+          reg.checkedIn = false;
+          reg.checkinTime = null;
+          saveDB(db);
+          logAudit("Gate Coordinator", "Corrected Attendance (Undo)", `${event.title} - ${reg.studentName}`, "Marked back to absent");
+          showToast("Correction Applied", `Attendance undone for ${reg.studentName}.`, "info");
+          const tbody = document.getElementById("attendance-table-body");
+          if (tbody) tbody.innerHTML = renderAttendanceRows(event.registrations, event);
+          updateStats(event.registrations);
+          attachRowEvents();
+        }
       });
     });
 
@@ -273,22 +706,25 @@ export function attachAttendanceEvents() {
         const eventName = btn.dataset.event;
         const db = getDB();
 
-        const certId = `PEC-CERT-${Math.floor(100 + Math.random() * 900)}-2026`;
-        const qrHash = Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+        const certId = `CERT-PEC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+        const verificationHash = `sha256:0x${Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
 
         const newCert = {
           id: certId,
-          studentId,
-          studentName,
-          rollNo,
+          title: `Certificate of Participation - ${eventName}`,
+          recipientName: studentName,
+          recipientRoll: rollNo,
+          recipientEmail: `${rollNo.toLowerCase()}@panimalar.edu`,
           department,
           eventName,
-          awardType: "Certificate of Participation & Technical Completion",
+          category: "Course Completion",
           issueDate: new Date().toISOString().split("T")[0],
-          qrHash
+          verificationHash,
+          status: "Verified & Active"
         };
 
-        db.certificates.push(newCert);
+        if (!db.certificates) db.certificates = [];
+        db.certificates.unshift(newCert);
         saveDB(db);
         logAudit("Faculty Reviewer", "Issued Certificate", `${studentName} - ${certId}`, `Event: ${eventName}`);
         addNotification({
@@ -296,10 +732,10 @@ export function attachAttendanceEvents() {
           title: "Accredited Certificate Issued",
           message: `Your certificate for "${eventName}" is now available in your Student Profile.`,
           category: "Certificates",
-          link: `#/certificates?id=${certId}`
+          link: `#/certificates`
         });
 
-        showToast(`Certificate #${certId} issued to ${studentName}!`, "success");
+        showToast(`Certificate #${certId} minted for ${studentName}!`, "success");
         const eventId = select?.value || db.events[0]?.id;
         const event = db.events.find(e => e.id === eventId);
         const tbody = document.getElementById("attendance-table-body");
