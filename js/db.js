@@ -635,10 +635,12 @@ export const INITIAL_SEED = {
       problem_statement: "Early detection of agricultural crop fires and thermal hazards before uncontrolled spreading.",
       solution: "Lightweight computer vision model running at 30 FPS on onboard edge compute with LoRa telemetry downlink.",
       technologies: ["PyTorch", "TensorRT", "Python", "ROS2", "LoRaWAN"],
+      techStack: ["PyTorch", "TensorRT", "Python", "ROS2", "LoRaWAN"],
       team_members: ["Aarav Sharma", "Priya Patel"],
       teamMembers: ["Aarav Sharma", "Priya Patel"],
       teamLeader: "Aarav Sharma",
       mentor: "Mrs. L. Yamuna",
+      facultyMentor: "Mrs. L. Yamuna",
       github_link: "https://github.com/pragati-eng/aeroshield",
       github: "https://github.com/pragati-eng/aeroshield",
       demo_link: "https://aeroshield.pragati.ac.in",
@@ -649,6 +651,11 @@ export const INITIAL_SEED = {
       domain: "Artificial Intelligence & ML",
       department: "CSE",
       year: "2025-2026",
+      upvotes: 48,
+      comments: [
+        { author: "Priya Patel", text: "Great flight stability during the live campus demonstration!" },
+        { author: "Dr. K. Satyanarayana", text: "Commendable interdisciplinary work combining aeronautics and computer vision." }
+      ],
       featured: true,
       facultyReview: {
         rating: 5,
@@ -656,6 +663,186 @@ export const INITIAL_SEED = {
         remarks: "Exemplary real-time vision pipeline and clean telemetry architecture.",
         reviewer: "Mrs. L. Yamuna",
         reviewedAt: "2026-09-11"
+      }
+    },
+    {
+      id: "proj-002",
+      title: "AgriBot: Autonomous Rover for Precision Crop Health & Soil NPK Analysis",
+      description: "Field rover equipped with multi-spectral cameras and spectroscopic sensors to analyze soil nitrogen, phosphorus, and potassium levels in real-time.",
+      problem_statement: "High cost of soil laboratory testing leading to delayed fertilizer balancing for local farmers in East Godavari district.",
+      solution: "Solar-powered tracked rover with localized computer vision disease classification and edge NPK telemetry mapped to GPS coordinates.",
+      technologies: ["Embedded C++", "ROS 2", "YOLOv8", "Raspberry Pi 5", "LoRa"],
+      techStack: ["Embedded C++", "ROS 2", "YOLOv8", "Raspberry Pi 5", "LoRa"],
+      team_members: ["Kavya Patel", "Sai Kumar", "Rohan Verma"],
+      teamMembers: ["Kavya Patel", "Sai Kumar", "Rohan Verma"],
+      teamLeader: "Kavya Patel",
+      mentor: "Mr. V.V.N. Sarath",
+      facultyMentor: "Mr. V.V.N. Sarath",
+      github_link: "https://github.com/pragati-eng/agribot-rover",
+      github: "https://github.com/pragati-eng/agribot-rover",
+      demo_link: "https://agribot.pragati.ac.in",
+      demo: "https://agribot.pragati.ac.in",
+      images: ["https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"],
+      status: "Approved",
+      club_id: "I4-03",
+      domain: "Robotics & Automation",
+      department: "ECE / CSE",
+      year: "2025-2026",
+      upvotes: 39,
+      comments: [
+        { author: "Sneha Reddy", text: "The field accuracy on ground testing was impressive." }
+      ],
+      featured: true,
+      facultyReview: {
+        rating: 5,
+        status: "Approved",
+        remarks: "Robust mechanical chassis design and high sensor calibration accuracy.",
+        reviewer: "Mr. V.V.N. Sarath",
+        reviewedAt: "2026-09-12"
+      }
+    },
+    {
+      id: "proj-003",
+      title: "MediChain: Decentralized Zero-Knowledge EHR Records Ledger",
+      description: "Privacy-preserving electronic health records storage utilizing zk-SNARKs and IPFS decentralized encryption with patient-governed access delegation.",
+      problem_statement: "Inter-hospital medical record interoperability without compromising patient confidentiality under HIPAA and Indian DPDP Act standards.",
+      solution: "Smart contracts on Polygon zkEVM with client-side zero-knowledge encryption key derivation for instant provider verification.",
+      technologies: ["Solidity", "Rust", "Circom", "Next.js", "IPFS", "Ethers.js"],
+      techStack: ["Solidity", "Rust", "Circom", "Next.js", "IPFS", "Ethers.js"],
+      team_members: ["Aarav Sharma", "Sneha Reddy", "Aditya Joshi"],
+      teamMembers: ["Aarav Sharma", "Sneha Reddy", "Aditya Joshi"],
+      teamLeader: "Aarav Sharma",
+      mentor: "Dr. K. Satyanarayana",
+      facultyMentor: "Dr. K. Satyanarayana",
+      github_link: "https://github.com/pragati-eng/medichain-zk",
+      github: "https://github.com/pragati-eng/medichain-zk",
+      demo_link: "https://medichain.pragati.ac.in",
+      demo: "https://medichain.pragati.ac.in",
+      images: ["https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80"],
+      status: "Approved",
+      club_id: "I4-08",
+      domain: "Web3 & Blockchain",
+      department: "CSE",
+      year: "2025-2026",
+      upvotes: 56,
+      comments: [
+        { author: "K. Devanand", text: "Zero knowledge proof verification benchmarks look super fast!" }
+      ],
+      featured: true,
+      facultyReview: {
+        rating: 5,
+        status: "Approved",
+        remarks: "Excellent cryptographic rigor and patient privacy protocol implementation.",
+        reviewer: "Dr. K. Satyanarayana",
+        reviewedAt: "2026-09-14"
+      }
+    },
+    {
+      id: "proj-004",
+      title: "QuantumGuard: Automated CTF Penetration Testing & Binary Analysis Engine",
+      description: "Interactive security assessment platform featuring live sandboxed containers, automated vulnerability scanning, and dynamic symbol tracing.",
+      problem_statement: "Lack of isolated, reproducible offensive security practice labs for cybersecurity club students preparing for national competitions.",
+      solution: "Docker-in-Docker sandboxing engine with real-time audit logging and automated exploit evaluation harnesses.",
+      technologies: ["Python", "Ghidra API", "Docker", "FastAPI", "WebSockets", "TailwindCSS"],
+      techStack: ["Python", "Ghidra API", "Docker", "FastAPI", "WebSockets", "TailwindCSS"],
+      team_members: ["Sneha Reddy", "Varun Teja"],
+      teamMembers: ["Sneha Reddy", "Varun Teja"],
+      teamLeader: "Sneha Reddy",
+      mentor: "Mrs. K Sireesha",
+      facultyMentor: "Mrs. K Sireesha",
+      github_link: "https://github.com/pragati-eng/quantumguard-ctf",
+      github: "https://github.com/pragati-eng/quantumguard-ctf",
+      demo_link: "https://ctf.pragati.ac.in",
+      demo: "https://ctf.pragati.ac.in",
+      images: ["https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&auto=format&fit=crop&q=80"],
+      status: "Approved",
+      club_id: "I4-06",
+      domain: "Cyber Security & Networks",
+      department: "CSE(CS)",
+      year: "2025-2026",
+      upvotes: 62,
+      comments: [
+        { author: "Aarav Sharma", text: "Solved the reverse engineering challenge track—the sandbox is seamless!" }
+      ],
+      featured: true,
+      facultyReview: {
+        rating: 5,
+        status: "Approved",
+        remarks: "High industrial utility. Safe sandboxing containment confirmed.",
+        reviewer: "Mrs. K Sireesha",
+        reviewedAt: "2026-09-14"
+      }
+    },
+    {
+      id: "proj-005",
+      title: "SolarGrid: Smart Micro-Grid Load Balancer with IoT Smart Metering",
+      description: "Campus renewable energy management network monitoring solar generation panels, battery storage, and dynamic building power distribution.",
+      problem_statement: "Peak load fluctuations causing reliance on diesel generator backups across college laboratory blocks.",
+      solution: "Predictive load-shifting algorithm powered by weather forecasting APIs and MQTT energy sensor nodes across campus substations.",
+      technologies: ["ESP32", "MQTT", "Node-RED", "InfluxDB", "Grafana", "Python"],
+      techStack: ["ESP32", "MQTT", "Node-RED", "InfluxDB", "Grafana", "Python"],
+      team_members: ["Sai Kumar", "T. Rajesh", "P. Ananya"],
+      teamMembers: ["Sai Kumar", "T. Rajesh", "P. Ananya"],
+      teamLeader: "Sai Kumar",
+      mentor: "Mr L Praveen Kumar",
+      facultyMentor: "Mr L Praveen Kumar",
+      github_link: "https://github.com/pragati-eng/solargrid-iot",
+      github: "https://github.com/pragati-eng/solargrid-iot",
+      demo_link: "https://solargrid.pragati.ac.in",
+      demo: "https://solargrid.pragati.ac.in",
+      images: ["https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80"],
+      status: "Approved",
+      club_id: "I4-01",
+      domain: "IoT & Sustainable Infrastructure",
+      department: "EEE / Civil",
+      year: "2025-2026",
+      upvotes: 44,
+      comments: [
+        { author: "Mr L Praveen Kumar", text: "Successfully deployed in Block 3 with 14% energy savings logged." }
+      ],
+      featured: true,
+      facultyReview: {
+        rating: 5,
+        status: "Approved",
+        remarks: "Significant tangible energy reduction impact on campus infrastructure.",
+        reviewer: "Mr L Praveen Kumar",
+        reviewedAt: "2026-09-05"
+      }
+    },
+    {
+      id: "proj-006",
+      title: "DecentraVote: Quantum-Resistant Student Council Polling Protocol",
+      description: "Verifiable, anonymous electronic voting framework with lattice-based cryptography and instant verifiable tally generation.",
+      problem_statement: "Manual ballot counting errors and verification latency during annual student executive elections.",
+      solution: "Threshold cryptographic scheme ensuring anonymity while providing mathematical mathematical proof of tally integrity.",
+      technologies: ["Go", "Kyber/Dilithium", "WebAssembly", "TypeScript", "TailwindCSS"],
+      techStack: ["Go", "Kyber/Dilithium", "WebAssembly", "TypeScript", "TailwindCSS"],
+      team_members: ["Aditya Joshi", "Aarav Sharma", "Kavya Patel"],
+      teamMembers: ["Aditya Joshi", "Aarav Sharma", "Kavya Patel"],
+      teamLeader: "Aditya Joshi",
+      mentor: "Mrs. L. Yamuna",
+      facultyMentor: "Mrs. L. Yamuna",
+      github_link: "https://github.com/pragati-eng/decentravote",
+      github: "https://github.com/pragati-eng/decentravote",
+      demo_link: "https://vote.pragati.ac.in",
+      demo: "https://vote.pragati.ac.in",
+      images: ["https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?w=800&auto=format&fit=crop&q=80"],
+      status: "Approved",
+      club_id: "I4-08",
+      domain: "Cryptography & Security",
+      department: "CSE",
+      year: "2025-2026",
+      upvotes: 51,
+      comments: [
+        { author: "Sneha Reddy", text: "Tested with 500 simultaneous voters with zero collisions." }
+      ],
+      featured: true,
+      facultyReview: {
+        rating: 5,
+        status: "Approved",
+        remarks: "Novel cryptographic architecture with high voter privacy benchmarks.",
+        reviewer: "Mrs. L. Yamuna",
+        reviewedAt: "2026-09-15"
       }
     }
   ],
@@ -855,9 +1042,43 @@ export function getDB() {
     if (!Array.isArray(data.event_registrations)) data.event_registrations = INITIAL_SEED.event_registrations;
     if (!Array.isArray(data.attendance)) data.attendance = INITIAL_SEED.attendance;
     if (!Array.isArray(data.feedback)) data.feedback = INITIAL_SEED.feedback;
-    if (!Array.isArray(data.resources)) data.resources = INITIAL_SEED.resources;
-    if (!Array.isArray(data.activity_reports)) data.activity_reports = INITIAL_SEED.activity_reports;
+    if (!Array.isArray(data.resources) || data.resources.length === 0) data.resources = INITIAL_SEED.resources;
+    if (!Array.isArray(data.activity_reports) || data.activity_reports.length === 0) data.activity_reports = INITIAL_SEED.activity_reports;
     if (!Array.isArray(data.audit_logs)) data.audit_logs = INITIAL_SEED.audit_logs;
+    if (!Array.isArray(data.projects) || data.projects.length < 3) data.projects = INITIAL_SEED.projects;
+    if (!Array.isArray(data.certificates) || data.certificates.length < 3) {
+      data.certificates = INITIAL_SEED.certificates;
+      saveDB(data);
+    }
+
+    // Ensure all certificate records have consistent dual naming fields
+    if (Array.isArray(data.certificates)) {
+      data.certificates.forEach(c => {
+        const name = c.recipientName || c.student_name || c.studentName || 'Aarav Sharma';
+        const roll = c.recipientRoll || c.roll_no || c.rollNo || '22CS101';
+        const event = c.eventName || c.event_name || c.title || 'Technical Workshop';
+        const certType = c.awardType || c.certificate_type || c.category || 'Accredited Certificate';
+        const hash = c.qrHash || c.qr_hash || c.verificationHash || `sha256:0x${Math.random().toString(16).slice(2, 12)}`;
+        const issue = c.issueDate || c.issued_date || c.date || '2026-09-02';
+
+        c.recipientName = name;
+        c.student_name = name;
+        c.studentName = name;
+        c.recipientRoll = roll;
+        c.roll_no = roll;
+        c.rollNo = roll;
+        c.eventName = event;
+        c.event_name = event;
+        c.awardType = certType;
+        c.certificate_type = certType;
+        c.qrHash = hash;
+        c.qr_hash = hash;
+        c.verificationHash = hash;
+        c.issueDate = issue;
+        c.issued_date = issue;
+      });
+    }
+
     data.auditLogs = data.audit_logs;
     data.auditLog = data.audit_logs;
 

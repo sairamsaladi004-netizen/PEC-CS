@@ -51,26 +51,52 @@
 
 /* Print Styles for Certificate and Accreditation Reports */
 @media print {
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
   body * {
-    visibility: hidden;
+    visibility: hidden !important;
   }
+  
   .printable-area, .printable-area * {
-    visibility: visible;
+    visibility: visible !important;
   }
+  
   .printable-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0;
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 24px !important;
     box-shadow: none !important;
+    border-radius: 0 !important;
+    background-color: #ffffff !important;
+    box-sizing: border-box !important;
   }
-  .no-print {
+  
+  .no-print,
+  header,
+  nav,
+  aside,
+  footer,
+  #toast-container,
+  #sidebar,
+  .sidebar,
+  button,
+  .controls-bar {
     display: none !important;
   }
+  
   @page {
-    size: auto;
-    margin: 12mm;
+    size: landscape;
+    margin: 8mm;
   }
 }
