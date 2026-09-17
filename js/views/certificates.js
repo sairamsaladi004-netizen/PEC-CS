@@ -61,12 +61,16 @@ export function renderCertificatesView(params = {}) {
               <a href="#/certificates?id=${cert.id}&template=winner" class="px-2 py-1 rounded-lg ${templateType === 'winner' ? 'bg-rose-600 text-white font-bold' : 'text-slate-600'}">Winner</a>
             </div>
 
-            <button id="email-cert-btn" data-certid="${cert.id}" data-email="${certEmail}" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition-colors flex items-center space-x-1.5">
-              <span>📧 Email to Student</span>
+            <button id="email-cert-btn" data-certid="${cert.id}" data-email="${certEmail}" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition-colors flex items-center space-x-1.5 cursor-pointer">
+              <span>📧 Email PDF</span>
+            </button>
+
+            <button id="copy-cert-link-btn" data-hash="${certQrHash}" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-colors flex items-center space-x-1.5 cursor-pointer">
+              <span>🔗 Copy Ledger Link</span>
             </button>
 
             <a href="#/verify?hash=${certQrHash}" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-colors">
-              Verify Digital Ledger ↗
+              Verify On-Chain ↗
             </a>
 
             <button id="print-cert-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center space-x-1.5 cursor-pointer">
@@ -320,6 +324,22 @@ export function attachCertificatesEvents(params = {}) {
       const email = emailBtn.dataset.email;
       const certId = emailBtn.dataset.certid;
       showToast("Email Dispatched", `Accredited PDF certificate #${certId} delivered to ${email}.`, "success");
+    });
+  }
+
+  // Copy Verification Link
+  const copyLinkBtn = document.getElementById("copy-cert-link-btn");
+  if (copyLinkBtn) {
+    copyLinkBtn.addEventListener("click", () => {
+      const hash = copyLinkBtn.dataset.hash;
+      const verifyUrl = `${window.location.origin}${window.location.pathname}#/verify?hash=${hash}`;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(verifyUrl).then(() => {
+          showToast("Ledger Link Copied", "Public cryptographic proof link copied to clipboard!", "success");
+        });
+      } else {
+        showToast("Public Ledger Link", verifyUrl, "info");
+      }
     });
   }
 

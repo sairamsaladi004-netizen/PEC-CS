@@ -33,6 +33,13 @@ import {
   INACTIVITY_CONFIG,
   MODEL_VERSIONS
 } from './intelligenceEngine.js';
+import {
+  isGeminiAvailable,
+  generateStudentAIAdvisor,
+  generateAIEventOptimization,
+  generateAINudgeMessage,
+  classifyStudentWithAI
+} from './geminiIntegration.js';
 
 export const apiRouter = express.Router();
 
@@ -2235,5 +2242,278 @@ apiRouter.post('/intelligence/config', requireAuth, (req, res) => {
     currentThresholds: INACTIVITY_CONFIG
   });
 });
+
+// =========================================================================
+// REAL AI/ML API INTEGRATION — POWERED BY @google/genai (gemini-3.8-flash)
+// =========================================================================
+
+// 1. AI Integration Health & Capabilities Status
+apiRouter.get('/intelligence/ai/status', (req, res) => {
+  const isAvailable = isGeminiAvailable();
+  res.json({
+    success: true,
+    platform: "Pragati Engineering College AI Studio CampusTech",
+    isGeminiConfigured: isAvailable,
+    model: "gemini-3.8-flash",
+    fallbackEngine: "deterministic-expert-synthesis",
+    status: isAvailable ? "OPERATIONAL_CONNECTED" : "OPERATIONAL_FALLBACK_ACTIVE",
+    capabilities: [
+      "Real-time Student Career & Society Advisor",
+      "Dynamic Event Copilot & Curriculum Optimization",
+      "Empathetic Dormancy & Re-engagement Nudge Synthesis",
+      "Multi-pillar Explainable Engagement Diagnostics"
+    ],
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 2. Real AI Student Career & Society Advisor
+apiRouter.post('/intelligence/ai/advisor', async (req, res) => {
+  try {
+    const db = getDB();
+    const targetStudentId = req.body?.studentId || (req.user ? req.user.id : null);
+    
+    // Edge case: No student specified
+    if (!targetStudentId) {
+      return res.status(400).json({
+        success: false,
+        code: "INVALID_STUDENT_ID",
+        message: "A valid student ID is required to generate the AI Advisor profile."
+      });
+    }
+
+    const student = (db.users || []).find(u => u.id === targetStudentId);
+    // Edge case: Student not found in database
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        code: "STUDENT_NOT_FOUND",
+        message: `Student record for ID '${targetStudentId}' was not found.`
+      });
+    }
+
+    // Compute deterministic match recommendations as foundational evidence
+    const algorithmicRecs = recommendClubsForStudent(student, db, { limit: 5 });
+
+    // Invoke Gemini AI advisor
+    const advisorResult = await generateStudentAIAdvisor(student, algorithmicRecs, db);
+
+    res.json({
+      success: true,
+      studentId: student.id,
+      studentName: student.name,
+      department: student.department,
+      year: student.year,
+      skills: student.skills || [],
+      interests: student.interests || [],
+      algorithmicMatchesCount: algorithmicRecs.length,
+      ...advisorResult,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error("[API] AI Advisor route exception:", err);
+    res.status(500).json({
+      success: false,
+      code: "AI_ADVISOR_EXCEPTION",
+      message: "An error occurred while generating the AI Advisor profile.",
+      error: err.message
+    });
+  }
+});
+
+// 3. Real AI Event Copilot & Curriculum Optimizer
+apiRouter.post('/intelligence/ai/optimize-event', async (req, res) => {
+  try {
+    const db = getDB();
+    const { eventId, title, clubId, category, recommendedWindow } = req.body || {};
+
+    let eventRecord = null;
+    let clubRecord = null;
+
+    if (eventId) {
+      eventRecord = (db.events || []).find(e => e.id === eventId);
+    }
+
+    const effectiveClubId = clubId || (eventRecord ? (eventRecord.club_id || eventRecord.clubId) : null);
+    if (effectiveClubId) {
+      clubRecord = (db.clubs || []).find(c => c.id === effectiveClubId);
+    }
+
+    const payload = {
+      title: title || eventRecord?.title || "Applied Engineering Sprint",
+      category: category || eventRecord?.category || "Workshop",
+      recommendedWindow: recommendedWindow || "Saturday 14:00 - 17:30"
+    };
+
+    const optimizationResult = await generateAIEventOptimization(payload, clubRecord);
+
+    res.json({
+      success: true,
+      clubId: effectiveClubId,
+      clubName: clubRecord ? clubRecord.name : "Technical Society",
+      ...optimizationResult,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error("[API] AI Event Optimize route exception:", err);
+    res.status(500).json({
+      success: false,
+      code: "AI_OPTIMIZER_EXCEPTION",
+      message: "An error occurred while generating the AI event curriculum optimization.",
+      error: err.message
+    });
+  }
+});
+
+// 4. Real AI Empathetic Re-engagement Nudge Generator
+apiRouter.post('/intelligence/ai/reengagement-nudge', async (req, res) => {
+  try {
+    const db = getDB();
+    const { studentId, clubId, daysInactive, factors } = req.body || {};
+
+    if (!studentId) {
+      return res.status(400).json({
+        success: false,
+        code: "MISSING_STUDENT_ID",
+        message: "Target student ID is required for generating a personalized nudge."
+      });
+    }
+
+    const student = (db.users || []).find(u => u.id === studentId);
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        code: "STUDENT_NOT_FOUND",
+        message: `Student with ID '${studentId}' was not found.`
+      });
+    }
+
+    const club = (db.clubs || []).find(c => c.id === clubId);
+
+    const nudgeResult = await generateAINudgeMessage(student, club, {
+      daysInactive: Number(daysInactive) || 60,
+      factors: Array.isArray(factors) ? factors : [factors || "Dormant activity"]
+    });
+
+    res.json({
+      success: true,
+      studentId,
+      studentName: student.name,
+      clubId,
+      clubName: club ? club.name : "Technical Society",
+      ...nudgeResult,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error("[API] AI Nudge Generator route exception:", err);
+    res.status(500).json({
+      success: false,
+      code: "AI_NUDGE_EXCEPTION",
+      message: "An error occurred while generating the AI re-engagement nudge.",
+      error: err.message
+    });
+  }
+});
+
+// 5. Real AI Student Classification & Dynamic Society Profiling
+apiRouter.post('/intelligence/classify-student', async (req, res) => {
+  try {
+    const db = getDB();
+    const payload = req.body || {};
+    const targetStudentId = payload.studentId || (req.user ? req.user.id : null);
+
+    let student = null;
+    if (targetStudentId) {
+      student = (db.users || []).find(u => u.id === targetStudentId);
+    }
+
+    // Merge provided profile fields onto existing student or construct virtual profile
+    const studentProfile = {
+      ...(student || {}),
+      id: targetStudentId || student?.id || "std-active",
+      name: payload.name || student?.name || "Student Scholar",
+      rollNo: payload.rollNo || student?.rollNo || "22CS101",
+      department: payload.department || student?.department || "CSE",
+      year: payload.year || student?.year || "3rd Year",
+      semester: payload.semester || student?.semester || "5th Semester",
+      cgpa: payload.cgpa || student?.cgpa || "8.5",
+      skills: Array.isArray(payload.skills) ? payload.skills : (typeof payload.skills === "string" ? payload.skills.split(",").map(s => s.trim()).filter(Boolean) : (student?.skills || [])),
+      interests: Array.isArray(payload.interests) ? payload.interests : (typeof payload.interests === "string" ? payload.interests.split(",").map(s => s.trim()).filter(Boolean) : (student?.interests || [])),
+      primaryDomain: payload.primaryDomain || payload.domain || student?.primaryDomain || student?.domain || "Artificial Intelligence & Software Engineering",
+      careerGoal: payload.careerGoal || payload.careerAspirations || student?.careerGoal || "Tier-1 Software Development",
+      experienceLevel: payload.experienceLevel || student?.experienceLevel || "Intermediate (Project Builder)",
+      preferredEventFormats: Array.isArray(payload.preferredEventFormats) ? payload.preferredEventFormats : (typeof payload.preferredEventFormats === "string" ? payload.preferredEventFormats.split(",").map(s => s.trim()).filter(Boolean) : (student?.preferredEventFormats || ["Hands-on Workshops", "Hackathons"])),
+      availabilityHours: payload.availabilityHours || student?.availabilityHours || "6-8 hours/week"
+    };
+
+    // Update database user record if exists
+    if (student) {
+      Object.assign(student, {
+        name: studentProfile.name,
+        rollNo: studentProfile.rollNo,
+        department: studentProfile.department,
+        year: studentProfile.year,
+        semester: studentProfile.semester,
+        cgpa: studentProfile.cgpa,
+        skills: studentProfile.skills,
+        interests: studentProfile.interests,
+        primaryDomain: studentProfile.primaryDomain,
+        careerGoal: studentProfile.careerGoal,
+        experienceLevel: studentProfile.experienceLevel,
+        preferredEventFormats: studentProfile.preferredEventFormats,
+        availabilityHours: studentProfile.availabilityHours
+      });
+      saveDB(db);
+    }
+
+    // Run AI / Deep heuristic classifier
+    const aiClassificationResult = await classifyStudentWithAI(studentProfile, db);
+
+    // Also run mathematical vector ranker across all 35 societies
+    const algorithmicMatches = recommendClubsForStudent(studentProfile, db, { limit: 8 });
+
+    res.json({
+      success: true,
+      studentProfile,
+      classificationResult: aiClassificationResult,
+      algorithmicMatches,
+      weights: RECOMMENDATION_WEIGHTS,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error("[API] AI Student Classification exception:", err);
+    res.status(500).json({
+      success: false,
+      code: "AI_CLASSIFICATION_EXCEPTION",
+      message: "An error occurred while generating student classification.",
+      error: err.message
+    });
+  }
+});
+
+// GET /api/intelligence/classify-student/:studentId
+apiRouter.get('/intelligence/classify-student/:studentId', async (req, res) => {
+  try {
+    const db = getDB();
+    const student = (db.users || []).find(u => u.id === req.params.studentId);
+    if (!student) {
+      return res.status(404).json({ success: false, message: "Student record not found" });
+    }
+    const aiClassificationResult = await classifyStudentWithAI(student, db);
+    const algorithmicMatches = recommendClubsForStudent(student, db, { limit: 8 });
+
+    res.json({
+      success: true,
+      studentProfile: student,
+      classificationResult: aiClassificationResult,
+      algorithmicMatches,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error("[API] AI Student Classification lookup exception:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 
 

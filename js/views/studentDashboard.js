@@ -1,5 +1,6 @@
 import { getCurrentUser } from '../auth.js';
 import { getDB, apiRequest } from '../db.js';
+import { showToast } from '../components/toast.js';
 import {
   getStudentClubRecommendations,
   getEventParticipationPrediction,
@@ -1279,9 +1280,9 @@ export function attachStudentDashboardEvents() {
               <span>⏳</span><span>Application Under Review</span>
             </span>
           `;
-          alert(`Application submitted to ${clubName}! The Faculty Coordinator will review your enrollment credentials.`);
+          showToast("Application Submitted", `Application submitted to ${clubName}! The Faculty Coordinator will review your enrollment credentials.`, "success");
         } else {
-          alert(res?.message || "Application could not be completed.");
+          showToast("Notice", res?.message || "Application could not be completed.", "warning");
           btn.textContent = "Apply for Membership →";
           btn.disabled = false;
         }
