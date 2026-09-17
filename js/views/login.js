@@ -19,67 +19,79 @@ export function renderLoginView() {
         </p>
       </div>
 
-      <!-- Role-Wise Login Credentials Quick Access Banner -->
+      <!-- Direct Demo Login Banner for 4 Roles -->
       <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 border border-slate-700/80 mb-8 shadow-xl text-white space-y-4">
         <div class="flex items-center justify-between flex-wrap gap-2">
           <div class="flex items-center space-x-2">
             <span class="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider font-mono">
-              ROLE CREDENTIALS REFERENCE
+              DIRECT 1-CLICK DEMO LOGIN
             </span>
-            <span class="text-xs font-bold text-slate-200">Pre-Configured System Personas</span>
+            <span class="text-xs font-bold text-slate-200">Select Any Institutional Persona</span>
           </div>
-          <span class="text-[11px] text-slate-400 font-mono">Select any role card to auto-fill credentials</span>
+          <span class="text-[11px] text-emerald-400 font-mono font-bold">● Click card for instant portal access</span>
         </div>
         
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           
-          <!-- Student Credential -->
-          <div class="demo-login-btn text-left p-3.5 rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-emerald-500/30 transition-all hover:scale-[1.02] cursor-pointer group" data-demo-id="demo-student">
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">🎓 Student</span>
-              <span class="text-[10px] font-mono text-slate-400 group-hover:text-emerald-400">Fill & Login →</span>
+          <!-- Student Role Direct Login -->
+          <button type="button" class="demo-login-btn text-left p-4 rounded-2xl bg-slate-800/90 hover:bg-slate-800 border border-emerald-500/40 hover:border-emerald-400 transition-all hover:scale-[1.02] cursor-pointer group shadow-md" data-user-id="std-101" data-demo-email="aarav.sharma@pragati.ac.in" data-role="Student">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">🎓 Student Member</span>
+              <span class="text-[10px] font-mono text-emerald-400 group-hover:underline">1-Click Login 🚀</span>
             </div>
-            <div class="text-xs font-bold text-white">Aarav Sharma</div>
+            <div class="text-sm font-bold text-white">Aarav Sharma</div>
             <div class="text-[10px] font-mono text-slate-300 mt-0.5">aarav.sharma@pragati.ac.in</div>
-            <div class="text-[10px] text-slate-400 font-mono">Roll: <strong class="text-emerald-300">22CS101</strong></div>
-            <div class="text-[9px] text-slate-400 mt-1">Reg Code: <code class="bg-slate-900 px-1 rounded text-amber-400 font-mono">PECSTUDENT2026</code></div>
-          </div>
+            <div class="text-[10px] text-slate-400 font-mono mt-1">Roll No: <strong class="text-emerald-300">22CS101</strong></div>
+            <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px]">
+              <span class="text-slate-400">Target Portal:</span>
+              <span class="font-bold text-emerald-400">Student Dashboard</span>
+            </div>
+          </button>
 
-          <!-- Club Admin Credential -->
-          <div class="demo-login-btn text-left p-3.5 rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-blue-500/30 transition-all hover:scale-[1.02] cursor-pointer group" data-demo-id="demo-student-leader">
-            <div class="flex items-center justify-between mb-1">
+          <!-- Club Admin Role Direct Login -->
+          <button type="button" class="demo-login-btn text-left p-4 rounded-2xl bg-slate-800/90 hover:bg-slate-800 border border-blue-500/40 hover:border-blue-400 transition-all hover:scale-[1.02] cursor-pointer group shadow-md" data-user-id="std-102" data-demo-email="priya.patel@pragati.ac.in" data-role="Club Admin">
+            <div class="flex items-center justify-between mb-1.5">
               <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40">⚡ Club Admin</span>
-              <span class="text-[10px] font-mono text-slate-400 group-hover:text-blue-400">Fill & Login →</span>
+              <span class="text-[10px] font-mono text-blue-400 group-hover:underline">1-Click Login 🚀</span>
             </div>
-            <div class="text-xs font-bold text-white">Priya Patel</div>
+            <div class="text-sm font-bold text-white">Priya Patel</div>
             <div class="text-[10px] font-mono text-slate-300 mt-0.5">priya.patel@pragati.ac.in</div>
-            <div class="text-[10px] text-slate-400 font-mono">Roll: <strong class="text-blue-300">22CS142</strong></div>
-            <div class="text-[9px] text-slate-400 mt-1">Reg Key: <code class="bg-slate-900 px-1 rounded text-blue-400 font-mono">CLUBADMIN2026</code></div>
-          </div>
+            <div class="text-[10px] text-slate-400 font-mono mt-1">Roll No: <strong class="text-blue-300">22CS142</strong></div>
+            <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px]">
+              <span class="text-slate-400">Target Portal:</span>
+              <span class="font-bold text-blue-400">Club Admin Panel</span>
+            </div>
+          </button>
 
-          <!-- Faculty Coordinator Credential -->
-          <div class="demo-login-btn text-left p-3.5 rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-purple-500/30 transition-all hover:scale-[1.02] cursor-pointer group" data-demo-id="demo-faculty">
-            <div class="flex items-center justify-between mb-1">
+          <!-- Faculty Coordinator Role Direct Login -->
+          <button type="button" class="demo-login-btn text-left p-4 rounded-2xl bg-slate-800/90 hover:bg-slate-800 border border-purple-500/40 hover:border-purple-400 transition-all hover:scale-[1.02] cursor-pointer group shadow-md" data-user-id="coord-201" data-demo-email="yamuna.l@pragati.ac.in" data-role="Faculty Coordinator">
+            <div class="flex items-center justify-between mb-1.5">
               <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40">🏫 Faculty Coord</span>
-              <span class="text-[10px] font-mono text-slate-400 group-hover:text-purple-400">Fill & Login →</span>
+              <span class="text-[10px] font-mono text-purple-400 group-hover:underline">1-Click Login 🚀</span>
             </div>
-            <div class="text-xs font-bold text-white">Dr. Ramesh Kumar</div>
-            <div class="text-[10px] font-mono text-slate-300 mt-0.5">dr.ramesh.k@pragati.ac.in</div>
-            <div class="text-[10px] text-slate-400 font-mono">ID: <strong class="text-purple-300">FAC-CSE-001</strong></div>
-            <div class="text-[9px] text-slate-400 mt-1">Reg Key: <code class="bg-slate-900 px-1 rounded text-purple-400 font-mono">PECFAC2026</code></div>
-          </div>
+            <div class="text-sm font-bold text-white">Mrs. L. Yamuna</div>
+            <div class="text-[10px] font-mono text-slate-300 mt-0.5">yamuna.l@pragati.ac.in</div>
+            <div class="text-[10px] text-slate-400 font-mono mt-1">Faculty ID: <strong class="text-purple-300">FAC-CSE-AIML-01</strong></div>
+            <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px]">
+              <span class="text-slate-400">Target Portal:</span>
+              <span class="font-bold text-purple-400">Faculty Coordinator</span>
+            </div>
+          </button>
 
-          <!-- Super Admin Credential -->
-          <div class="demo-login-btn text-left p-3.5 rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-rose-500/30 transition-all hover:scale-[1.02] cursor-pointer group" data-demo-id="demo-admin">
-            <div class="flex items-center justify-between mb-1">
+          <!-- Super Admin Role Direct Login -->
+          <button type="button" class="demo-login-btn text-left p-4 rounded-2xl bg-slate-800/90 hover:bg-slate-800 border border-rose-500/40 hover:border-rose-400 transition-all hover:scale-[1.02] cursor-pointer group shadow-md" data-user-id="admin-001" data-demo-email="principal@pragati.ac.in" data-role="Super Admin">
+            <div class="flex items-center justify-between mb-1.5">
               <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">👑 Super Admin</span>
-              <span class="text-[10px] font-mono text-slate-400 group-hover:text-rose-400">Fill & Login →</span>
+              <span class="text-[10px] font-mono text-rose-400 group-hover:underline">1-Click Login 🚀</span>
             </div>
-            <div class="text-xs font-bold text-white">Pragati Council HQ</div>
-            <div class="text-[10px] font-mono text-slate-300 mt-0.5">admin@pragati.ac.in</div>
-            <div class="text-[10px] text-slate-400 font-mono">ID: <strong class="text-rose-300">SUPERADMIN-01</strong></div>
-            <div class="text-[9px] text-slate-400 mt-1">Reg Key: <code class="bg-slate-900 px-1 rounded text-rose-400 font-mono">PEC2026ADMIN</code></div>
-          </div>
+            <div class="text-sm font-bold text-white">Dr. K. Satyanarayana</div>
+            <div class="text-[10px] font-mono text-slate-300 mt-0.5">principal@pragati.ac.in</div>
+            <div class="text-[10px] text-slate-400 font-mono mt-1">ID: <strong class="text-rose-300">FAC-PEC-001</strong></div>
+            <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px]">
+              <span class="text-slate-400">Target Portal:</span>
+              <span class="font-bold text-rose-400">Super Admin Panel</span>
+            </div>
+          </button>
 
         </div>
       </div>
@@ -322,15 +334,32 @@ export function attachLoginEvents() {
     loginSec.classList.add("hidden");
   });
 
-  // Demo Login Buttons
+  // Demo Login Buttons (1-Click Direct Role Access)
   document.querySelectorAll(".demo-login-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
-      const demoId = btn.getAttribute("data-demo-id");
-      const accounts = getAllDemoAccounts();
-      const target = accounts.find(a => a.id === demoId);
-      if (target) {
-        await loginUser(target.email, "Password@123");
-        redirectAfterLogin(target.role);
+      const userId = btn.getAttribute("data-user-id") || btn.getAttribute("data-demo-id");
+      const demoEmail = btn.getAttribute("data-demo-email");
+      const role = btn.getAttribute("data-role");
+      const alertBox = document.getElementById("login-alert");
+
+      if (alertBox) {
+        alertBox.className = "p-3 rounded-xl text-xs font-medium bg-emerald-50 text-emerald-700 block animate-pulse";
+        alertBox.textContent = `Authenticating Direct Demo Access as ${role || 'User'}...`;
+      }
+
+      // 1. Try switchUser directly
+      let user = await switchUser(userId);
+      if (!user && demoEmail) {
+        // 2. Try loginUser with email
+        const res = await loginUser(demoEmail, "Password@123");
+        if (res && res.success) user = res.user;
+      }
+
+      if (user) {
+        redirectAfterLogin(user.role || role);
+      } else {
+        // Direct redirect fallback
+        redirectAfterLogin(role);
       }
     });
   });
