@@ -1,8 +1,20 @@
 import { getCurrentUser } from '../auth.js';
 import { getDB, apiRequest } from '../db.js';
+import { ROLES, normalizeRole } from '../rbac.js';
+import { renderAccessDenied, attachAccessDeniedEvents } from '../components/accessDenied.js';
 
 export function renderAdminPortalView(subSection = "dashboard") {
   const user = getCurrentUser() || {};
+  const currentRole = normalizeRole(user.role);
+
+  if (currentRole !== ROLES.SUPER_ADMIN) {
+    return renderAccessDenied({
+      requiredRole: ROLES.SUPER_ADMIN,
+      attemptedRoute: `#/admin/${subSection || 'dashboard'}`,
+      message: `Access denied. The Executive Admin Console is restricted to <strong>Super Admin</strong> (Central College Administration). Your active role is <strong>${currentRole}</strong>.`
+    });
+  }
+
   const db = getDB();
 
   const totalUsers = (db.users || []).length;
@@ -588,6 +600,7 @@ function renderAdminTabContent(tab, ctx) {
 }
 
 export function attachAdminPortalEvents() {
+  attachAccessDeniedEvents();
   // Circular modal
   const annModal = document.getElementById("admin-ann-modal");
   const openAnnBtn = document.getElementById("admin-publish-ann-btn");

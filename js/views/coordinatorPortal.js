@@ -1,8 +1,20 @@
 import { getCurrentUser } from '../auth.js';
 import { getDB, apiRequest } from '../db.js';
+import { ROLES, normalizeRole } from '../rbac.js';
+import { renderAccessDenied, attachAccessDeniedEvents } from '../components/accessDenied.js';
 
 export function renderCoordinatorPortalView(subSection = "dashboard") {
   const user = getCurrentUser() || {};
+  const currentRole = normalizeRole(user.role);
+
+  if (currentRole !== ROLES.FACULTY_COORDINATOR && currentRole !== ROLES.SUPER_ADMIN) {
+    return renderAccessDenied({
+      requiredRole: ROLES.FACULTY_COORDINATOR,
+      attemptedRoute: `#/coordinator/${subSection || 'dashboard'}`,
+      message: `Access denied. The Faculty Coordinator Portal requires <strong>Faculty Coordinator</strong> or <strong>Super Admin</strong> privileges. Your active persona is <strong>${currentRole}</strong>.`
+    });
+  }
+
   const db = getDB();
 
   // Find coordinator's assigned club(s)
@@ -728,6 +740,7 @@ function renderCoordinatorTabContent(tab, ctx) {
 }
 
 export function attachCoordinatorPortalEvents() {
+  attachAccessDeniedEvents();
   // Event Creation Modal
   const createModal = document.getElementById("create-event-modal");
   const openCreateBtn = document.getElementById("coord-create-event-btn");
