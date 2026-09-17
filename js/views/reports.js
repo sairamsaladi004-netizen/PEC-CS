@@ -32,7 +32,7 @@ export function renderReportsView() {
         <!-- Institutional Header -->
         <div class="border-b border-slate-200 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div class="text-xs font-black uppercase tracking-widest text-slate-400 font-mono">PANIMALAR ENGINEERING COLLEGE</div>
+            <div class="text-xs font-black uppercase tracking-widest text-slate-400 font-mono">PRAGATI ENGINEERING COLLEGE</div>
             <h2 class="text-xl font-black text-slate-900 mt-0.5">Central Technical Societies & Student Chapters Council</h2>
             <div class="text-xs text-slate-500 font-mono">Accreditation Cycle: 2024-2027 • Current Academic Year: 2025-2026</div>
           </div>
@@ -55,9 +55,9 @@ export function renderReportsView() {
                 <tr>
                   <th class="p-3">Society Chapter</th>
                   <th class="p-3">Department</th>
-                  <th class="p-3">Domain Specialization</th>
-                  <th class="p-3">Faculty Advisor</th>
-                  <th class="p-3 text-right">Active Enrolled</th>
+                  <th class="p-3">Category / Domain</th>
+                  <th class="p-3">Faculty Coordinator</th>
+                  <th class="p-3 text-right">Status</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-200 font-medium">
@@ -65,9 +65,9 @@ export function renderReportsView() {
                   <tr>
                     <td class="p-3 font-bold">${c.name}</td>
                     <td class="p-3 font-mono">${c.department}</td>
-                    <td class="p-3">${c.domain}</td>
-                    <td class="p-3">${c.facultyCoordinator.name}</td>
-                    <td class="p-3 text-right font-mono font-bold">${c.memberCount}</td>
+                    <td class="p-3">${c.category || c.domain}</td>
+                    <td class="p-3">${typeof c.facultyCoordinator === 'object' ? c.facultyCoordinator.name : c.facultyCoordinator}</td>
+                    <td class="p-3 text-right font-mono font-bold text-emerald-600">${c.status || 'Active'}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -144,17 +144,17 @@ export function renderReportsView() {
         <!-- Signatures & Verification Endorsement -->
         <div class="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
           <div class="space-y-1">
-            <div class="font-serif italic text-sm text-slate-800 font-bold">M. S. Swaminathan</div>
+            <div class="font-serif italic text-sm text-slate-800 font-bold">K. Satyanarayana</div>
             <div class="w-40 h-0.5 bg-slate-300"></div>
-            <div class="text-xs font-bold text-slate-900">Dr. M. S. Swaminathan</div>
-            <div class="text-[10px] text-slate-500 font-mono">Chairman, CCTSC Accreditation Committee</div>
+            <div class="text-xs font-bold text-slate-900">Dr. K. Satyanarayana</div>
+            <div class="text-[10px] text-slate-500 font-mono">Principal, Pragati Engineering College</div>
           </div>
 
           <div class="space-y-1">
-            <div class="font-serif italic text-sm text-slate-800 font-bold">Rajesh Raman</div>
+            <div class="font-serif italic text-sm text-slate-800 font-bold">Career Guidance Cell</div>
             <div class="w-40 h-0.5 bg-slate-300"></div>
-            <div class="text-xs font-bold text-slate-900">Dr. Rajesh Raman</div>
-            <div class="text-[10px] text-slate-500 font-mono">Head of Department, CSE</div>
+            <div class="text-xs font-bold text-slate-900">Convener, CGC & Academic Council</div>
+            <div class="text-[10px] text-slate-500 font-mono">Pragati Engineering College (Autonomous)</div>
           </div>
         </div>
 
@@ -174,9 +174,10 @@ export function attachReportsEvents() {
   if (exportBtn) {
     exportBtn.addEventListener("click", () => {
       const db = getDB();
-      let csv = "Society,Department,Domain,Faculty Advisor,Members\n";
+      let csv = "ID,Society,Category,Department,Faculty Coordinator,Status\n";
       db.clubs.forEach(c => {
-        csv += `"${c.name}","${c.department}","${c.domain}","${c.facultyCoordinator.name}",${c.memberCount}\n`;
+        const coord = typeof c.facultyCoordinator === 'object' ? c.facultyCoordinator.name : c.facultyCoordinator;
+        csv += `"${c.id}","${c.name}","${c.category || c.domain}","${c.department}","${coord}","${c.status || 'Active'}"\n`;
       });
       csv += "\nEvent,Category,Date,Venue,Registrations\n";
       db.events.forEach(e => {

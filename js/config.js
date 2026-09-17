@@ -1,18 +1,31 @@
 export const APP_CONFIG = {
-  institutionName: "Panimalar Engineering College - Computer Science",
+  institutionName: "Pragati Engineering College, Andhra Pradesh",
   institutionShort: "PEC CampusTech",
   academicCouncil: "Central Council of Technical Societies & Clubs (CCTSC)",
   currentAcademicYear: "2025-2026",
-  currentSemester: "Fall 2026",
-  contactEmail: "techclubs@panimalar.edu",
+  currentSemester: "Academic Year 2025-2026",
+  contactEmail: "clubs@pragati.ac.in",
   portalUrl: typeof window !== 'undefined' ? (window.location.origin + window.location.pathname) : '',
+  officialClubReportsUrl: "https://pragati.ac.in/career-guidance-cell/industry-4-0-clubs/",
   
+  categories: [
+    "Industry 4.0",
+    "Co-Curricular",
+    "Extra-Curricular"
+  ],
+
   departments: [
-    { code: "CSE", name: "Computer Science & Engineering" },
-    { code: "AIDS", name: "Artificial Intelligence & Data Science" },
+    { code: "CE", name: "Civil Engineering" },
     { code: "IT", name: "Information Technology" },
+    { code: "ME", name: "Mechanical Engineering" },
+    { code: "CSE", name: "Computer Science & Engineering" },
+    { code: "CSE(CS)", name: "CSE - Cyber Security" },
+    { code: "CSE(AIML)", name: "CSE - Artificial Intelligence & Machine Learning" },
     { code: "ECE", name: "Electronics & Communication Engineering" },
-    { code: "MECH", name: "Mechanical & Mechatronics Engineering" }
+    { code: "EEE", name: "Electrical & Electronics Engineering" },
+    { code: "CSE(DS)", name: "CSE - Data Science" },
+    { code: "BSH", name: "Basic Sciences & Humanities" },
+    { code: "CSE(AI)", name: "CSE - Artificial Intelligence" }
   ],
   eventCategories: [
     { id: "hackathon", name: "Hackathon", color: "purple" },
@@ -20,15 +33,6 @@ export const APP_CONFIG = {
     { id: "coding_contest", name: "Coding Contest", color: "emerald" },
     { id: "tech_talk", name: "Tech Talk / Webinar", color: "amber" },
     { id: "bootcamp", name: "Bootcamp", color: "rose" }
-  ],
-  domains: [
-    "Artificial Intelligence & ML",
-    "Web3 & Blockchain",
-    "Cloud Computing & DevOps",
-    "Cybersecurity & Ethical Hacking",
-    "Mobile & Cross-Platform",
-    "Robotics, IoT & Embedded Systems",
-    "Open Source & Systems"
   ],
   roles: {
     STUDENT: "Student",

@@ -23,6 +23,12 @@ import { renderAdminView, attachAdminEvents } from './views/admin.js';
 import { renderClubAdminDashboardView, attachClubAdminDashboardEvents } from './views/clubAdminDashboard.js';
 import { renderAboutView, attachAboutEvents } from './views/about.js';
 
+// New Role-Specific Comprehensive Portals
+import { renderLoginView, attachLoginEvents } from './views/login.js';
+import { renderStudentDashboardView, attachStudentDashboardEvents } from './views/studentDashboard.js';
+import { renderCoordinatorPortalView, attachCoordinatorPortalEvents } from './views/coordinatorPortal.js';
+import { renderAdminPortalView, attachAdminPortalEvents } from './views/adminPortal.js';
+
 export function parseHash() {
   const raw = window.location.hash || "#/";
   const [route, queryStr] = raw.split("?");
@@ -63,7 +69,38 @@ export function handleRoute() {
   // Window scroll to top
   window.scrollTo({ top: 0, behavior: 'instant' });
 
-  // Route Dispatch Table
+  // 1. Dedicated Login Route
+  if (route === "#/login") {
+    mountPoint.innerHTML = renderLoginView();
+    attachLoginEvents();
+    return;
+  }
+
+  // 2. Student Portal Routes
+  if (route.startsWith("#/student")) {
+    const sub = route.replace("#/student/", "").replace("#/student", "");
+    mountPoint.innerHTML = renderStudentDashboardView(sub || "dashboard");
+    attachStudentDashboardEvents();
+    return;
+  }
+
+  // 3. Coordinator Portal Routes
+  if (route.startsWith("#/coordinator")) {
+    const sub = route.replace("#/coordinator/", "").replace("#/coordinator", "");
+    mountPoint.innerHTML = renderCoordinatorPortalView(sub || "dashboard");
+    attachCoordinatorPortalEvents();
+    return;
+  }
+
+  // 4. Super Admin Portal Routes
+  if (route.startsWith("#/admin")) {
+    const sub = route.replace("#/admin/", "").replace("#/admin", "");
+    mountPoint.innerHTML = renderAdminPortalView(sub || "dashboard");
+    attachAdminPortalEvents();
+    return;
+  }
+
+  // Standard Routes
   switch (route) {
     case "#/":
     case "":
@@ -87,6 +124,7 @@ export function handleRoute() {
       break;
 
     case "#/poster":
+    case "#/event-poster":
       mountPoint.innerHTML = renderEventPosterView(params);
       attachEventPosterEvents(params);
       break;
@@ -141,15 +179,10 @@ export function handleRoute() {
       attachAnalyticsEvents();
       break;
 
-    case "#/admin":
-      mountPoint.innerHTML = renderAdminView();
-      attachAdminEvents();
-      break;
-
     case "#/club-dashboard":
     case "#/club-admin":
-      mountPoint.innerHTML = renderClubAdminDashboardView(params);
-      attachClubAdminDashboardEvents(params);
+      mountPoint.innerHTML = renderCoordinatorPortalView("dashboard");
+      attachCoordinatorPortalEvents();
       break;
 
     case "#/reports":
@@ -158,6 +191,7 @@ export function handleRoute() {
       break;
 
     case "#/verify":
+    case "#/verify-certificate":
       mountPoint.innerHTML = renderVerificationView(params);
       attachVerificationEvents();
       break;
@@ -190,47 +224,47 @@ function renderFooter() {
           <div class="space-y-2 md:col-span-2">
             <div class="flex items-center space-x-2">
               <div class="w-6 h-6 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-xs">P</div>
-              <span class="font-black text-slate-900 tracking-tight text-sm">CampusTech PEC-CS</span>
+              <span class="font-black text-slate-900 tracking-tight text-sm">Pragati Engineering College</span>
             </div>
             <p class="text-slate-500 text-xs max-w-sm leading-relaxed">
-              Unified digital ecosystem for technical societies, accredited hackathons, peer learning, and tamper-proof student credentials at Panimalar Engineering College.
+              Unified digital management ecosystem for 35 official technical societies, Industry 4.0 clubs, accredited hackathons, and cryptographic credentials at Pragati Engineering College (Autonomous), Surampalem.
             </p>
             <div class="text-[10px] text-slate-400 font-mono">
-              Accredited by NBA & NAAC 'A++' Grade • Institution Innovation Council (IIC)
+              Accredited by NBA & NAAC 'A' Grade • Approved by AICTE • Career Guidance Cell
             </div>
           </div>
 
           <div class="space-y-2">
-            <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Ecosystem</h4>
+            <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Campus Portals</h4>
             <ul class="space-y-1.5 text-xs">
-              <li><a href="#/clubs" class="hover:text-blue-600 transition-colors">Technical Societies</a></li>
-              <li><a href="#/events" class="hover:text-blue-600 transition-colors">Hackathons & Bootcamps</a></li>
-              <li><a href="#/lms" class="hover:text-blue-600 transition-colors">Peer Learning LMS</a></li>
-              <li><a href="#/roadmaps" class="hover:text-blue-600 transition-colors">Career Roadmaps</a></li>
-              <li><a href="#/tools" class="hover:text-blue-600 transition-colors">Dev Software Directory</a></li>
+              <li><a href="#/login" class="hover:text-blue-600 transition-colors">🔐 Sign In / Register</a></li>
+              <li><a href="#/student/dashboard" class="hover:text-blue-600 transition-colors">Student Portal</a></li>
+              <li><a href="#/coordinator/dashboard" class="hover:text-blue-600 transition-colors">Faculty Coordinator Portal</a></li>
+              <li><a href="#/admin/dashboard" class="hover:text-blue-600 transition-colors">Admin Governance Console</a></li>
+              <li><a href="#/clubs" class="hover:text-blue-600 transition-colors">35 Official PEC Clubs</a></li>
             </ul>
           </div>
 
           <div class="space-y-2">
-            <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Governance</h4>
+            <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Credential Verification</h4>
             <ul class="space-y-1.5 text-xs">
               <li><a href="#/verify" class="hover:text-blue-600 transition-colors">Verify Certificate Ledger</a></li>
-              <li><a href="#/reports" class="hover:text-blue-600 transition-colors">NBA / NAAC Audit Reports</a></li>
-              <li><a href="#/analytics" class="hover:text-blue-600 transition-colors">Ecosystem Analytics</a></li>
-              <li><a href="#/about" class="hover:text-blue-600 transition-colors">Council Charter & Leadership</a></li>
-              <li><a href="#/admin" class="hover:text-blue-600 transition-colors">Admin Governance Console</a></li>
+              <li><a href="#/attendance" class="hover:text-blue-600 transition-colors">Gate Attendance Kiosk</a></li>
+              <li><a href="#/membership-card" class="hover:text-blue-600 transition-colors">Digital ID Verification</a></li>
+              <li><a href="#/reports" class="hover:text-blue-600 transition-colors">Accreditation Audit Ledger</a></li>
+              <li><a href="#/about" class="hover:text-blue-600 transition-colors">About College & Council</a></li>
             </ul>
           </div>
         </div>
 
         <div class="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-400">
           <div>
-            © 2026 Panimalar Engineering College — Central Council of Technical Societies. All rights reserved.
+            © 2026 Pragati Engineering College (Autonomous), Surampalem, Andhra Pradesh. All rights reserved.
           </div>
           <div class="flex items-center space-x-4">
-            <a href="#/membership-card" class="hover:text-slate-600">Digital ID Card</a>
-            <a href="#/poster" class="hover:text-slate-600">Poster Studio</a>
-            <a href="#/attendance" class="hover:text-slate-600">Gate Check-in</a>
+            <a href="#/membership-card" class="hover:text-slate-600">Digital ID</a>
+            <a href="#/verify" class="hover:text-slate-600">Cryptographic Ledger</a>
+            <a href="#/admin/audit-logs" class="hover:text-slate-600">Council Audit Logs</a>
           </div>
         </div>
       </div>

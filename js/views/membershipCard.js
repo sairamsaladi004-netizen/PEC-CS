@@ -40,7 +40,7 @@ export function renderMembershipCardView() {
                 <div class="flex items-center space-x-2">
                   <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black text-sm">P</div>
                   <div>
-                    <div class="text-[11px] font-black uppercase tracking-wider text-white">PANIMALAR ENGG COLLEGE</div>
+                    <div class="text-[11px] font-black uppercase tracking-wider text-white">PRAGATI ENGINEERING COLLEGE</div>
                     <div class="text-[9px] text-blue-300 font-mono">Central Technical Council (CCTSC)</div>
                   </div>
                 </div>
@@ -93,11 +93,11 @@ export function renderMembershipCardView() {
               <div class="space-y-1.5 pt-3 border-t border-white/10">
                 <div class="flex justify-between text-[10px] text-slate-400 font-mono">
                   <span>Emergency Campus Hotline:</span>
-                  <span class="text-white">+91 44 2649 0404</span>
+                  <span class="text-white">+91 884 2383305</span>
                 </div>
                 <div class="flex justify-between text-[10px] text-slate-400 font-mono">
                   <span>Council Secretariat Email:</span>
-                  <span class="text-white">techcouncil@panimalar.edu</span>
+                  <span class="text-white">cgc@pragati.ac.in</span>
                 </div>
                 <div class="text-center pt-2 text-[9px] text-blue-300 font-mono">
                   Click 'Flip Card' to return to credential front

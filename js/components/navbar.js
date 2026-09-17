@@ -1,4 +1,4 @@
-import { getCurrentUser, switchUser, getAllDemoAccounts } from '../auth.js';
+import { getCurrentUser, switchUser, getAllDemoAccounts, logoutUser } from '../auth.js';
 import { getNotificationsForUser, getUnreadCount, markAsRead, markAllAsRead } from '../notifications.js';
 
 export function renderNavbar() {
@@ -12,7 +12,7 @@ export function renderNavbar() {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
           
-          <!-- Logo & Brand -->
+          <!-- Logo & Institutional Brand -->
           <div class="flex items-center space-x-3">
             <a href="#/" class="flex items-center space-x-2.5 group">
               <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-black text-base shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
@@ -20,29 +20,32 @@ export function renderNavbar() {
               </div>
               <div>
                 <div class="text-sm font-black tracking-tight leading-none flex items-center space-x-1.5">
-                  <span>PEC CampusTech</span>
-                  <span class="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono">CSE</span>
+                  <span>Pragati Engineering College</span>
+                  <span class="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono">Autonomous</span>
                 </div>
-                <div class="text-[10px] text-slate-400 font-medium">Technical Societies Council</div>
+                <div class="text-[10px] text-slate-400 font-medium">Student Club Management System</div>
               </div>
             </a>
 
             <!-- Desktop Nav Links -->
             <nav class="hidden xl:flex items-center space-x-1 ml-6 text-xs font-semibold">
-              <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/clubs') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">Clubs</a>
+              <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/clubs') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">35 Clubs</a>
               <a href="#/events" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/events') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">Events</a>
-              <a href="#/roadmaps" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/roadmaps') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">Roadmaps</a>
-              <a href="#/projects" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/projects') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">Projects</a>
-              <a href="#/lms" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/lms') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">LMS Hub</a>
-              <a href="#/tools" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/tools') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">Tools</a>
-              <a href="#/gallery" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/gallery') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">Gallery</a>
-              <a href="#/announcements" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/announcements') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">Notices</a>
-              <a href="#/analytics" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/analytics') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">Analytics</a>
-              <a href="#/verify" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/verify') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">Verify</a>
-              <a href="#/club-dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/club-dashboard') ? 'bg-amber-600 text-white' : 'text-amber-300 hover:text-white hover:bg-amber-900/40'}">Club Admin</a>
-              ${user.role === 'Super Admin' || user.role === 'Department Admin' ? `
-                <a href="#/admin" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/admin') ? 'bg-indigo-600 text-white' : 'text-indigo-300 hover:text-white hover:bg-indigo-900/40'}">Admin</a>
+              
+              <!-- Role-Specific Portals -->
+              <a href="#/student/dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/student') ? 'bg-blue-600 text-white' : 'text-blue-300 hover:text-white hover:bg-blue-900/40'}">Student Portal</a>
+              
+              ${user.role === 'Club Coordinator' || user.role === 'Club Student Leader' || user.role === 'Super Admin' ? `
+                <a href="#/coordinator/dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/coordinator') ? 'bg-purple-600 text-white' : 'text-purple-300 hover:text-white hover:bg-purple-900/40'}">Coordinator Portal</a>
               ` : ''}
+
+              ${user.role === 'Super Admin' ? `
+                <a href="#/admin/dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/admin') ? 'bg-rose-600 text-white' : 'text-rose-300 hover:text-white hover:bg-rose-900/40'}">Admin Console</a>
+              ` : ''}
+
+              <a href="#/verify" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/verify') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">Verify Credential</a>
+              <a href="#/announcements" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/announcements') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">Notices</a>
+              <a href="#/about" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/about') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}">About PEC</a>
             </nav>
           </div>
 
@@ -79,11 +82,11 @@ export function renderNavbar() {
               </div>
             </div>
 
-            <!-- Auth / Single Sign-On Modal Trigger -->
-            <button id="nav-auth-modal-btn" class="px-2.5 py-1.5 rounded-xl bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 text-xs font-bold border border-blue-500/40 transition-colors flex items-center space-x-1" title="PEC Single Sign-On & Account Management">
+            <!-- Dedicated Login Link -->
+            <a href="#/login" class="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-xs transition-colors flex items-center space-x-1" title="Login with College Roll No or Email">
               <span>🔐</span>
-              <span class="hidden md:inline">Auth / Roles</span>
-            </button>
+              <span class="hidden md:inline">Sign In</span>
+            </a>
 
             <!-- Role Persona Switcher -->
             <div class="hidden sm:flex items-center space-x-1 bg-slate-800 p-1 rounded-xl border border-slate-700/60">
@@ -98,7 +101,7 @@ export function renderNavbar() {
             </div>
 
             <!-- User Avatar & Profile Quick Links -->
-            <a href="#/student-profile" class="flex items-center space-x-2 pl-1 group" title="Open Student Profile">
+            <a href="#/student-profile" class="flex items-center space-x-2 pl-1 group" title="Open Profile">
               <img src="${user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}" class="w-8 h-8 rounded-xl object-cover border border-blue-500/50 group-hover:ring-2 group-hover:ring-blue-400 transition-all" />
             </a>
 
@@ -114,22 +117,15 @@ export function renderNavbar() {
       <!-- Mobile Menu Dropdown -->
       <div id="mobile-menu" class="hidden xl:hidden bg-slate-900 border-b border-slate-800 px-4 pt-2 pb-4 space-y-2 text-xs font-semibold">
         <div class="grid grid-cols-2 gap-1.5 pb-2 border-b border-slate-800">
-          <a href="#/clubs" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Clubs</a>
-          <a href="#/events" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Events</a>
-          <a href="#/roadmaps" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Roadmaps</a>
-          <a href="#/projects" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Projects</a>
-          <a href="#/lms" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">LMS Hub</a>
-          <a href="#/tools" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Tools</a>
-          <a href="#/gallery" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Gallery</a>
-          <a href="#/announcements" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Notices</a>
-          <a href="#/analytics" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Analytics</a>
-          <a href="#/club-dashboard" class="px-3 py-2 rounded-lg bg-amber-600/30 text-amber-300 font-bold border border-amber-500/30">Club Admin Dashboard</a>
+          <a href="#/login" class="px-3 py-2 rounded-lg bg-blue-600 text-white font-bold">🔐 Sign In / Register</a>
+          <a href="#/student/dashboard" class="px-3 py-2 rounded-lg bg-blue-600/30 text-blue-300">Student Portal</a>
+          <a href="#/coordinator/dashboard" class="px-3 py-2 rounded-lg bg-purple-600/30 text-purple-300">Coordinator Console</a>
+          <a href="#/admin/dashboard" class="px-3 py-2 rounded-lg bg-rose-600/30 text-rose-300">Admin Governance</a>
+          <a href="#/clubs" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">35 Official Clubs</a>
+          <a href="#/events" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Events & Passes</a>
+          <a href="#/verify" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Verify Credential</a>
           <a href="#/membership-card" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Digital ID Card</a>
-          <a href="#/attendance" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">QR Kiosk</a>
-          <a href="#/event-poster" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Poster Studio</a>
-          <a href="#/reports" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Accreditation</a>
-          <a href="#/verify" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Verify QR</a>
-          <a href="#/about" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">Secretariat</a>
+          <a href="#/about" class="px-3 py-2 rounded-lg bg-slate-800/60 text-slate-200">About Pragati</a>
         </div>
         
         <div class="pt-2 sm:hidden flex items-center justify-between">
@@ -191,7 +187,7 @@ export function attachNavbarEvents() {
     });
   }
 
-  // Notifications dropdown toggle
+  // Notification dropdown toggle
   const notifBtn = document.getElementById("nav-notif-btn");
   const notifDropdown = document.getElementById("nav-notif-dropdown");
   if (notifBtn && notifDropdown) {
@@ -201,27 +197,27 @@ export function attachNavbarEvents() {
     });
 
     document.addEventListener("click", (e) => {
-      if (!notifDropdown.contains(e.target) && e.target !== notifBtn) {
+      if (!notifDropdown.contains(e.target) && !notifBtn.contains(e.target)) {
         notifDropdown.classList.add("hidden");
       }
     });
   }
 
-  // Mark all notifications read
+  // Mark all read
   const markAllBtn = document.getElementById("mark-all-read-btn");
   if (markAllBtn) {
     markAllBtn.addEventListener("click", () => {
       markAllAsRead();
-      if (notifDropdown) notifDropdown.classList.add("hidden");
+      const list = document.querySelector("#nav-notif-dropdown .max-h-64");
+      if (list) list.innerHTML = renderNotifList();
     });
   }
 
-  // Notification link click
+  // Individual notif read
   document.querySelectorAll(".notif-link").forEach(link => {
     link.addEventListener("click", (e) => {
-      const notifId = e.currentTarget.dataset.id;
-      if (notifId) markAsRead(notifId);
-      if (notifDropdown) notifDropdown.classList.add("hidden");
+      const id = e.currentTarget.getAttribute("data-id");
+      if (id) markAsRead(id);
     });
   });
 
@@ -229,21 +225,27 @@ export function attachNavbarEvents() {
   const searchTrigger = document.getElementById("nav-search-trigger");
   if (searchTrigger) {
     searchTrigger.addEventListener("click", () => {
-      const modal = document.getElementById("global-search-modal");
+      const modal = document.getElementById("search-modal");
       if (modal) {
         modal.classList.remove("hidden");
-        const input = document.getElementById("global-search-input");
+        const input = document.getElementById("search-input");
         if (input) input.focus();
       }
     });
   }
 
-  // Auth modal trigger
-  const authModalBtn = document.getElementById("nav-auth-modal-btn");
-  if (authModalBtn) {
-    authModalBtn.addEventListener("click", () => {
-      const modal = document.getElementById("auth-modal");
-      if (modal) modal.classList.remove("hidden");
-    });
-  }
+  // Keyboard shortcut cmd+k
+  document.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      e.preventDefault();
+      const modal = document.getElementById("search-modal");
+      if (modal) {
+        modal.classList.toggle("hidden");
+        const input = document.getElementById("search-input");
+        if (input && !modal.classList.contains("hidden")) {
+          input.focus();
+        }
+      }
+    }
+  });
 }

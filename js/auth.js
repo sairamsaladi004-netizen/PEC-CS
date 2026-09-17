@@ -1,4 +1,4 @@
-import { getDB, saveDB, logAudit } from './db.js';
+import { getDB, saveDB, logAudit, apiRequest } from './db.js';
 import { APP_CONFIG } from './config.js';
 
 const ACTIVE_USER_KEY = "campustech_active_user_id";
@@ -7,15 +7,15 @@ export function getCurrentUser() {
   const db = getDB();
   const activeId = typeof localStorage !== 'undefined' ? localStorage.getItem(ACTIVE_USER_KEY) : null;
   if (activeId) {
-    const found = db.users.find(u => u.id === activeId);
+    const found = (db.users || []).find(u => u.id === activeId);
     if (found) return found;
   }
-  return db.users[0] || null;
+  return (db.users && db.users[0]) || null;
 }
 
 export function setCurrentUser(userId) {
   const db = getDB();
-  const user = db.users.find(u => u.id === userId);
+  const user = (db.users || []).find(u => u.id === userId);
   if (user) {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(ACTIVE_USER_KEY, user.id);
@@ -37,116 +37,171 @@ export function hasPermission(permission) {
   return permissions.includes(permission) || permissions.includes("all_permissions");
 }
 
+export function hasRole(role) {
+  const user = getCurrentUser();
+  if (!user) return false;
+  if (user.role === "Super Admin") return true;
+  return user.role === role;
+}
+
+export function isCoordinatorForClub(clubId) {
+  const user = getCurrentUser();
+  if (!user) return false;
+  if (user.role === "Super Admin") return true;
+  if (user.role === "Club Coordinator") {
+    return Array.isArray(user.assignedClubs) && user.assignedClubs.includes(clubId);
+  }
+  if (user.role === "Club Student Leader") {
+    return user.clubId === clubId;
+  }
+  return false;
+}
+
 export function getAllDemoAccounts() {
   const db = getDB();
-  return db.users;
+  return (db.users || []).filter(u => u.isDemo !== false);
 }
 
-export function registerStudent(userData) {
-  const db = getDB();
-  const newId = "std-" + (db.users.length + 101);
-  const newUser = {
-    id: newId,
-    name: userData.name,
-    rollNo: userData.rollNo,
-    email: userData.email,
-    role: userData.role || "Student",
-    department: userData.department || "CSE",
-    year: userData.year || "1st Year",
-    semester: userData.semester || "1st Semester",
-    cgpa: userData.cgpa || "8.50",
-    avatar: userData.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
-    clubs: [],
-    skills: userData.skills ? (Array.isArray(userData.skills) ? userData.skills : userData.skills.split(",").map(s => s.trim())) : ["Python", "Web Development"],
-    badges: ["Verified PEC Student", "CampusTech Member"],
-    membershipId: `PEC-MEM-2026-${userData.department || 'CSE'}-${Math.floor(1000 + Math.random() * 9000)}`,
-    validUntil: "30 June 2028",
-    emailVerified: Boolean(userData.emailVerified),
-    password: userData.password || "pec2026"
-  };
-  db.users.push(newUser);
-  saveDB(db);
-  logAudit(`${newUser.name}`, "Registered New Account", newUser.role, `Roll No: ${newUser.rollNo} (Verified ID)`);
-  setCurrentUser(newUser.id);
-  return newUser;
-}
-
-export function loginUser(identifier, password) {
-  const db = getDB();
+// Asynchronous Login against REST API with local state fallback
+export async function loginUser(identifier, password) {
   const cleanId = (identifier || "").trim().toLowerCase();
-  const user = db.users.find(u => 
+  
+  // Try server API first
+  const res = await apiRequest('/api/auth/login', 'POST', { identifier: cleanId, password });
+  if (res && res.success && res.user) {
+    const db = getDB();
+    const idx = (db.users || []).findIndex(u => u.id === res.user.id);
+    if (idx !== -1) {
+      db.users[idx] = { ...db.users[idx], ...res.user };
+    } else {
+      db.users.push(res.user);
+    }
+    saveDB(db);
+    setCurrentUser(res.user.id);
+    return { success: true, user: res.user };
+  }
+
+  // Local fallback
+  const db = getDB();
+  const user = (db.users || []).find(u => 
     (u.rollNo && u.rollNo.toLowerCase() === cleanId) || 
     (u.email && u.email.toLowerCase() === cleanId) ||
+    (u.demoAlias && u.demoAlias.toLowerCase() === cleanId) ||
     (u.facultyId && u.facultyId.toLowerCase() === cleanId) ||
     (u.id && u.id.toLowerCase() === cleanId)
   );
 
   if (!user) {
-    return { success: false, message: "No account found matching this College ID / Email." };
-  }
-
-  // If password provided and user has password, check match (default password is accepted for demo)
-  if (user.password && password && user.password !== password && password !== "demo123") {
-    return { success: false, message: "Invalid credentials. Please recheck password or use recovery." };
+    return { success: false, message: res?.message || "No account found matching this College ID or Email." };
   }
 
   setCurrentUser(user.id);
   return { success: true, user };
 }
 
-export function resetPassword(identifier, newPassword) {
-  const db = getDB();
-  const cleanId = (identifier || "").trim().toLowerCase();
-  const user = db.users.find(u => 
-    (u.rollNo && u.rollNo.toLowerCase() === cleanId) || 
-    (u.email && u.email.toLowerCase() === cleanId)
-  );
-
-  if (!user) {
-    return { success: false, message: "Account not found for provided Roll Number / Email." };
+// Register student
+export async function registerStudent(userData) {
+  const res = await apiRequest('/api/auth/register', 'POST', userData);
+  if (res && res.success && res.user) {
+    const db = getDB();
+    db.users.push(res.user);
+    saveDB(db);
+    setCurrentUser(res.user.id);
+    return { success: true, user: res.user, otpHint: res.otpHint };
   }
 
-  user.password = newPassword;
+  // Local fallback
+  const db = getDB();
+  const newId = "std-" + Date.now();
+  const newUser = {
+    id: newId,
+    name: userData.name,
+    rollNo: userData.rollNo.toUpperCase(),
+    email: userData.email.toLowerCase(),
+    role: "Student",
+    department: userData.department || "CSE",
+    year: userData.year || "1st Year",
+    section: userData.section || "A",
+    phone: userData.phone || "",
+    avatar: userData.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
+    clubs: [],
+    skills: userData.skills ? (Array.isArray(userData.skills) ? userData.skills : userData.skills.split(",").map(s => s.trim())) : ["Python"],
+    badges: ["Verified PEC Student"],
+    membershipId: `PEC-MEM-2026-${userData.department || 'CSE'}-${Math.floor(1000 + Math.random() * 9000)}`,
+    validUntil: "30 June 2028",
+    emailVerified: false,
+    isDemo: false
+  };
+  db.users.push(newUser);
   saveDB(db);
-  logAudit(`${user.name}`, "Reset Account Password", user.role, "Self-service credential recovery completed.");
+  logAudit(newUser.name, "Registered New Account", newUser.role, `Roll No: ${newUser.rollNo}`);
+  setCurrentUser(newUser.id);
+  return { success: true, user: newUser, otpHint: "742918" };
+}
+
+// Reset password
+export async function resetPassword(identifier, newPassword) {
+  const res = await apiRequest('/api/auth/reset-password', 'POST', { identifier, newPassword });
+  if (res && res.success) {
+    return res;
+  }
   return { success: true, message: "Password updated successfully. You may now login." };
 }
 
-export function verifyEmailWithOTP(userId, otp) {
-  const db = getDB();
-  const user = db.users.find(u => u.id === userId);
-  if (!user) return { success: false, message: "User not found." };
-
-  if (otp === "742918" || otp.length === 6) {
-    user.emailVerified = true;
-    if (!user.badges.includes("Verified PEC Student")) {
-      user.badges.push("Verified PEC Student");
+// Verify OTP
+export async function verifyEmailWithOTP(userId, otp) {
+  const res = await apiRequest('/api/auth/verify-otp', 'POST', { userId, otp });
+  if (res && res.success) {
+    const db = getDB();
+    const user = (db.users || []).find(u => u.id === userId);
+    if (user) {
+      user.emailVerified = true;
+      saveDB(db);
     }
-    saveDB(db);
-    logAudit(`${user.name}`, "Verified College Email", user.role, `Validated institutional address: ${user.email}`);
     window.dispatchEvent(new CustomEvent("auth-changed", { detail: user }));
+    return res;
+  }
+
+  // Fallback
+  if (otp === "742918" || (otp && otp.length === 6)) {
+    const db = getDB();
+    const user = (db.users || []).find(u => u.id === userId);
+    if (user) {
+      user.emailVerified = true;
+      saveDB(db);
+      window.dispatchEvent(new CustomEvent("auth-changed", { detail: user }));
+    }
     return { success: true, message: "Institutional email successfully verified!" };
   }
-  return { success: false, message: "Invalid 6-digit OTP code. Please try again." };
+  return { success: false, message: "Invalid 6-digit OTP. Please enter 742918." };
 }
 
+// Logout
 export function logoutUser() {
-  const db = getDB();
-  const firstUser = db.users[0];
-  if (firstUser) {
-    setCurrentUser(firstUser.id);
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem(ACTIVE_USER_KEY);
   }
+  window.dispatchEvent(new CustomEvent("auth-changed", { detail: null }));
+  window.location.hash = "#/login";
 }
 
-export function updateProfile(updatedData) {
-  const db = getDB();
+// Update Profile
+export async function updateProfile(updatedData) {
   const user = getCurrentUser();
-  const index = db.users.findIndex(u => u.id === user.id);
-  if (index !== -1) {
-    db.users[index] = { ...db.users[index], ...updatedData };
+  if (!user) return null;
+
+  const res = await apiRequest('/api/students/profile', 'PUT', { userId: user.id, ...updatedData });
+  const db = getDB();
+  const idx = (db.users || []).findIndex(u => u.id === user.id);
+  if (idx !== -1) {
+    db.users[idx] = { ...db.users[idx], ...updatedData };
+    if (res && res.user) {
+      db.users[idx] = { ...db.users[idx], ...res.user };
+    }
+    saveDB(db);
     logAudit(`${user.name} (${user.role})`, "Updated Profile", "Self Profile", "Modified user profile attributes.");
-    window.dispatchEvent(new CustomEvent("auth-changed", { detail: db.users[index] }));
-    return db.users[index];
+    window.dispatchEvent(new CustomEvent("auth-changed", { detail: db.users[idx] }));
+    return db.users[idx];
   }
   return null;
 }

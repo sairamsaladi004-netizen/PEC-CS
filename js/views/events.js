@@ -179,9 +179,9 @@ export function renderEventsView() {
           <div id="printable-circular-content" class="p-6 sm:p-8 border-2 border-slate-900 rounded-2xl bg-white space-y-5 text-slate-900 text-xs">
             <!-- College Letterhead -->
             <div class="text-center border-b-2 border-slate-900 pb-4 space-y-1">
-              <h2 class="text-base sm:text-lg font-black tracking-wide uppercase">Panimalar Engineering College</h2>
-              <p class="text-[10px] text-slate-600 uppercase tracking-wider">An Autonomous Institution, Affiliated to Anna University, Chennai</p>
-              <p class="text-[10px] text-slate-500 font-mono">Bangalore Trunk Road, Varadharajapuram, Poonamallee, Chennai – 600 123</p>
+              <h2 class="text-base sm:text-lg font-black tracking-wide uppercase">Pragati Engineering College</h2>
+              <p class="text-[10px] text-slate-600 uppercase tracking-wider">An Autonomous Institution, Approved by AICTE, Permanently Affiliated to JNTUK, Kakinada</p>
+              <p class="text-[10px] text-slate-500 font-mono">1-378, ADB Road, Surampalem, Near Peddapuram, Kakinada District, Andhra Pradesh - 533437</p>
               <div class="inline-block px-3 py-0.5 bg-slate-900 text-white text-[10px] font-bold rounded-full mt-1">
                 CENTRAL COUNCIL OF TECHNICAL SOCIETIES (CCTSC)
               </div>
@@ -231,7 +231,7 @@ export function renderEventsView() {
               </div>
               <div class="space-y-8">
                 <div class="h-6 font-serif italic text-slate-400">[Signed]</div>
-                <div>Dean (Student Affairs) & Principal<br/><span class="text-[10px] text-slate-500 font-normal">Panimalar Engg. College</span></div>
+                <div>Dean (Student Affairs) & Principal<br/><span class="text-[10px] text-slate-500 font-normal">Pragati Engineering College</span></div>
               </div>
             </div>
           </div>
@@ -393,34 +393,51 @@ export function attachEventsEvents() {
 
   // Register for Event
   document.querySelectorAll(".register-event-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const eventId = btn.dataset.eventid;
-      const currentDb = getDB();
       const user = getCurrentUser();
+      if (!user) {
+        window.location.hash = "#/login";
+        return;
+      }
+      const currentDb = getDB();
       const evt = currentDb.events.find(e => e.id === eventId);
       if (evt && user) {
         if (!evt.registrations) evt.registrations = [];
         const already = evt.registrations.some(r => r.studentId === user.id);
         if (already) {
-          showToast("You are already registered for this event!", "warning");
+          showToast("Already Registered", "You are already registered for this event.", "info");
           return;
         }
-        const ticketId = `TCK-${evt.category.toUpperCase().slice(0, 3)}-${Math.floor(100 + Math.random() * 900)}`;
-        evt.registrations.push({
+
+        btn.textContent = "Registering...";
+        btn.disabled = true;
+
+        const ticketId = `TCK-${(evt.category || 'EVT').toUpperCase().slice(0, 3)}-${Math.floor(100 + Math.random() * 900)}`;
+        const regRecord = {
           studentId: user.id,
           studentName: user.name,
-          rollNo: user.rollNo || "22CS101",
+          rollNo: user.rollNo || "22A31A0501",
           email: user.email,
           department: user.department || "CSE",
           ticketId,
           registeredAt: new Date().toISOString().split("T")[0],
           checkedIn: false
-        });
-        evt.registeredCount += 1;
+        };
+
+        evt.registrations.push(regRecord);
+        evt.registeredCount = (evt.registeredCount || 0) + 1;
         saveDB(currentDb);
+
+        // Also notify backend API
+        await apiRequest('/api/events/register', 'POST', {
+          eventId: evt.id,
+          studentId: user.id
+        });
+
         logAudit(`${user.name} (${user.role})`, "Event Registration", evt.title, `Ticket #${ticketId}`);
-        showToast(`Registration confirmed! Pass #${ticketId} created.`, "success");
-        setTimeout(() => window.location.reload(), 250);
+        showToast("Registration Confirmed!", `Pass #${ticketId} created. You can scan this at the venue!`, "success");
+        setTimeout(() => window.location.reload(), 400);
       }
     });
   });

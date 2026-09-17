@@ -12,8 +12,8 @@ export function renderClubAdminDashboardView(params = {}) {
   const db = getDB();
   const currentUser = getCurrentUser() || {};
   
-  // Determine selected club: from query params, or user's assigned club, or fallback to first club (gdsc)
-  const defaultClubId = currentUser.adminForClub || (currentUser.clubs && currentUser.clubs[0]) || "gdsc";
+  // Determine selected club: from query params, or user's assigned club, or fallback to first club (I4-08)
+  const defaultClubId = currentUser.adminForClub || (currentUser.clubs && currentUser.clubs[0]) || "I4-08";
   const selectedClubId = params.id || defaultClubId;
   const club = db.clubs.find(c => c.id === selectedClubId) || db.clubs[0];
 
@@ -34,11 +34,11 @@ export function renderClubAdminDashboardView(params = {}) {
       <!-- Top Header & Club Switcher Bar -->
       <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div class="flex items-center space-x-4">
-          <img src="${club.icon}" alt="${club.name}" class="w-16 h-16 rounded-2xl border-2 border-slate-100 object-cover shadow-sm bg-slate-50 shrink-0" />
+          <img src="${club.logo || club.icon || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=100'}" alt="${club.name}" class="w-16 h-16 rounded-2xl border-2 border-slate-100 object-cover shadow-sm bg-slate-50 shrink-0" />
           <div>
             <div class="flex flex-wrap items-center gap-2">
               <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200">
-                ${club.domain}
+                ${club.category || club.domain || 'Technical Society'}
               </span>
               <span class="px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold bg-purple-50 text-purple-700 border border-purple-200">
                 Club Admin Portal
@@ -47,7 +47,7 @@ export function renderClubAdminDashboardView(params = {}) {
             </div>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight mt-1">${club.name}</h1>
             <p class="text-xs text-slate-500">
-              Department of ${club.department} • Faculty Coordinator: <span class="font-semibold text-slate-700">${club.facultyCoordinator?.name || 'Dr. M. S. Swaminathan'}</span>
+              Department of ${club.department} • Faculty Coordinator: <span class="font-semibold text-slate-700">${typeof club.facultyCoordinator === 'object' ? club.facultyCoordinator.name : (club.facultyCoordinator || 'Coordinator')}</span>
             </p>
           </div>
         </div>
@@ -59,7 +59,7 @@ export function renderClubAdminDashboardView(params = {}) {
             <select id="club-switcher-select" class="bg-white text-slate-800 text-xs font-bold rounded-xl px-3 py-1.5 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
               ${db.clubs.map(c => `
                 <option value="${c.id}" ${c.id === club.id ? 'selected' : ''}>
-                  ${c.shortName} (${c.name})
+                  ${c.id} - ${c.name}
                 </option>
               `).join('')}
             </select>
@@ -432,30 +432,32 @@ function renderClubAdminCharts(params = {}) {
   if (!window.Chart) return;
 
   const db = getDB();
-  const defaultClubId = "gdsc";
+  const defaultClubId = "I4-08";
   const selectedClubId = params.id || defaultClubId;
   const club = db.clubs.find(c => c.id === selectedClubId) || db.clubs[0];
 
   // Dynamic values tailored to specific club characteristics
-  const isAcm = club.id === 'acm';
-  const isCyber = club.id === 'cyber';
-  const isAiml = club.id === 'aiml';
+  const isAiml = club.id === 'I4-08';
+  const isRobo = club.id === 'I4-03';
+  const isCyber = club.id === 'I4-06';
 
   // Department proportions:
-  const deptData = isAcm 
-    ? [50, 20, 15, 10, 5] 
+  const deptData = isAiml 
+    ? [45, 20, 15, 12, 8] 
     : isCyber 
-    ? [45, 30, 10, 10, 5]
-    : isAiml
-    ? [35, 15, 40, 6, 4]
-    : [42, 26, 18, 9, 5];
+    ? [40, 30, 15, 10, 5]
+    : isRobo
+    ? [20, 15, 10, 35, 20]
+    : [35, 25, 20, 12, 8];
 
   // Event titles tailored
-  const eventLabels = isAcm 
-    ? ["ICPC Algo Qualifier", "C++23 Memory Sprint", "Graph Theory Bootcamp", "System Kernel Lab", "ACM Winter CodeJam"]
+  const eventLabels = isAiml 
+    ? ["Deep Learning Summit", "PyTorch Hands-on Sprint", "Computer Vision Hack", "MLOps Edge Lab", "Turing AI Conclave"]
     : isCyber
     ? ["OWASP Top 10 Lab", "Wireshark Packet Hunt", "Reverse Engineering 101", "Active Directory Pentest", "Campus CTF 2026"]
-    : ["Git & Open Source", "Flutter Bootcamp", "Docker & Cloud Jam", "Android Compose Lab", "DevHack Hackathon"];
+    : isRobo
+    ? ["Autonomous Line Rover", "ROS Gazebo Simulation", "Manipulator Kinematics", "Microcontroller Sprint", "RoboWars Exhibition"]
+    : ["Technical Bootcamp", "Annual Symposia", "Hands-on Workshop", "Student Project Expo", "Department Conclave"];
 
   const registeredData = isAcm 
     ? [140, 180, 165, 190, 240]
