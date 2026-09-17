@@ -1,4 +1,4 @@
-import { getCurrentUser, switchUser, getAllDemoAccounts } from '../auth.js';
+import { getCurrentUser, switchUser, getAllDemoAccounts, logoutUser } from '../auth.js';
 import { ROLES, normalizeRole } from '../rbac.js';
 import { getNotificationsForUser, getUnreadCount } from '../notifications.js';
 import { escapeHtml, sanitizeUrl } from '../utils.js';
@@ -98,7 +98,7 @@ export function renderNavbar() {
               </select>
             </div>
 
-            <!-- Sign In / Switch Account / Profile Link -->
+            <!-- Sign In / Sign Out & Profile Link -->
             ${currentRole === ROLES.GUEST ? `
               <a href="#/login" class="px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md transition-colors flex items-center space-x-1 shrink-0">
                 <span>🔐</span>
@@ -106,10 +106,10 @@ export function renderNavbar() {
               </a>
             ` : `
               <div class="flex items-center space-x-1.5 shrink-0">
-                <a href="#/login" class="px-2 sm:px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold border border-slate-700 transition-colors flex items-center space-x-1" title="Sign In or Switch Account">
-                  <span>🔐</span>
-                  <span class="hidden sm:inline">Sign In</span>
-                </a>
+                <button id="nav-logout-btn" class="px-2 sm:px-2.5 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/35 border border-rose-500/30 text-rose-300 hover:text-white text-xs font-bold transition-colors flex items-center space-x-1 cursor-pointer" title="Sign Out from Portal">
+                  <span>🚪</span>
+                  <span class="hidden sm:inline">Sign Out</span>
+                </button>
                 <a href="#/student-profile" class="flex items-center pl-0.5 group shrink-0" title="Open Profile (${user.name})">
                   <img src="${user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}" class="w-8 h-8 rounded-xl object-cover border border-blue-500/50 group-hover:ring-2 group-hover:ring-blue-400 transition-all" alt="${user.name}" />
                 </a>
@@ -144,6 +144,15 @@ export function renderNavbar() {
             `).join('')}
           </select>
         </div>
+
+        ${currentRole !== ROLES.GUEST ? `
+          <div class="pt-2 border-t border-slate-800">
+            <button id="mobile-logout-btn" class="w-full py-2.5 rounded-xl bg-rose-600/25 border border-rose-500/40 text-rose-300 hover:text-white font-bold flex items-center justify-center space-x-2 cursor-pointer">
+              <span>🚪</span>
+              <span>Sign Out from System</span>
+            </button>
+          </div>
+        ` : ''}
       </div>
     </header>
   `;
@@ -374,6 +383,21 @@ export function attachNavbarEvents() {
           if (input) input.focus();
         }
       }
+    });
+  }
+
+  // Sign Out event handlers
+  const logoutBtn = document.getElementById("nav-logout-btn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+      await logoutUser();
+    });
+  }
+
+  const mobileLogoutBtn = document.getElementById("mobile-logout-btn");
+  if (mobileLogoutBtn) {
+    mobileLogoutBtn.addEventListener("click", async () => {
+      await logoutUser();
     });
   }
 }

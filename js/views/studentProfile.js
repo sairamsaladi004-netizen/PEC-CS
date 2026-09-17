@@ -1,6 +1,7 @@
 import { getCurrentUser, updateProfile } from '../auth.js';
 import { getDB, saveDB, apiRequest } from '../db.js';
 import { showToast } from '../components/toast.js';
+import { renderCertificate } from '../utils/certificateRenderer.js';
 
 export function renderStudentProfileView() {
   const user = getCurrentUser() || {};
@@ -28,7 +29,7 @@ export function renderStudentProfileView() {
     <div class="space-y-8 pb-16 max-w-6xl mx-auto">
       
       <!-- Profile Hero Banner Card -->
-      <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+      <div id="student-profile-hero-card" class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
         <div class="h-36 bg-gradient-to-r from-blue-700 via-indigo-800 to-slate-950 relative">
           <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-400/20 via-transparent to-transparent"></div>
         </div>
@@ -53,10 +54,14 @@ export function renderStudentProfileView() {
             </div>
           </div>
 
-          <div class="flex items-center space-x-3">
+          <div class="flex flex-wrap items-center gap-2">
             <button id="open-ai-classification-modal-btn" class="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-500/20 transition-all flex items-center space-x-2 cursor-pointer">
               <span>⚡</span>
               <span>Run AI Profiler</span>
+            </button>
+            <button id="download-profile-card-btn" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center space-x-2 cursor-pointer">
+              <span>📷</span>
+              <span>Capture Profile Card</span>
             </button>
             <a href="#/badges" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center space-x-2">
               <span>✨</span>
@@ -536,6 +541,23 @@ export function attachStudentProfileEvents() {
   const user = getCurrentUser() || {};
   const rollNumber = user.rollNo || user.facultyId || "22A31A0501";
   const passId = user.passId || `PEC-PASS-2026-${rollNumber.replace(/[^A-Z0-9]/gi, '')}`;
+
+  // Capture student profile component as certificate/image using html2canvas
+  const captureProfileBtn = document.getElementById("download-profile-card-btn");
+  if (captureProfileBtn) {
+    captureProfileBtn.addEventListener("click", async () => {
+      const targetElement = document.getElementById("student-profile-hero-card");
+      if (targetElement) {
+        await renderCertificate(targetElement, {
+          action: 'download',
+          scale: 3.0,
+          filename: `PEC-PROFILE-CERTIFICATE-${rollNumber}.png`
+        });
+      } else {
+        showToast("Error", "Could not locate student profile component.", "error");
+      }
+    });
+  }
 
   // 1. Render Student Pass QR Code
   const passQrBox = document.getElementById("student-pass-qr-box");
