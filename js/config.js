@@ -1,9 +1,11 @@
-  institutionShort: "AIT CampusTech",
+export const APP_CONFIG = {
+  institutionName: "Panimalar Engineering College - Computer Science",
+  institutionShort: "PEC CampusTech",
   academicCouncil: "Central Council of Technical Societies & Clubs (CCTSC)",
   currentAcademicYear: "2025-2026",
   currentSemester: "Fall 2026",
-  contactEmail: "techclubs@apextech.edu",
-  portalUrl: window.location.origin + window.location.pathname,
+  contactEmail: "techclubs@panimalar.edu",
+  portalUrl: typeof window !== 'undefined' ? (window.location.origin + window.location.pathname) : '',
   
   departments: [
     { code: "CSE", name: "Computer Science & Engineering" },

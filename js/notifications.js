@@ -1,3 +1,6 @@
+import { getDB, saveDB } from './db.js';
+import { getCurrentUser } from './auth.js';
+import { showToast } from './components/toast.js';
 
 export function getNotificationsForUser() {
   const db = getDB();
@@ -5,10 +8,12 @@ export function getNotificationsForUser() {
   if (!user) return [];
   return db.notifications.filter(n => n.userId === user.id || n.userId === "all");
 }
+
 export function getUnreadCount() {
   const list = getNotificationsForUser();
   return list.filter(n => !n.read).length;
 }
+
 export function markAsRead(notificationId) {
   const db = getDB();
   const notif = db.notifications.find(n => n.id === notificationId);
@@ -18,6 +23,7 @@ export function markAsRead(notificationId) {
     window.dispatchEvent(new CustomEvent("notifications-changed"));
   }
 }
+
 export function markAllAsRead() {
   const db = getDB();
   const user = getCurrentUser();
@@ -29,6 +35,7 @@ export function markAllAsRead() {
   saveDB(db);
   window.dispatchEvent(new CustomEvent("notifications-changed"));
 }
+
 export function addNotification({ userId = "all", title, message, category = "General", link = "" }) {
   const db = getDB();
   const newNotif = {
@@ -48,4 +55,9 @@ export function addNotification({ userId = "all", title, message, category = "Ge
     showToast(`${title}: ${message}`, "info");
     window.dispatchEvent(new CustomEvent("notifications-changed"));
   }
+}
+
+export function initNotifications() {
+  const db = getDB();
+  return db.notifications || [];
 }

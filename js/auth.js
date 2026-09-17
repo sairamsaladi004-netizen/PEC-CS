@@ -1,7 +1,34 @@
+import { getDB, saveDB, logAudit } from './db.js';
+import { APP_CONFIG } from './config.js';
+
+const ACTIVE_USER_KEY = "campustech_active_user_id";
+
+export function getCurrentUser() {
+  const db = getDB();
+  const activeId = typeof localStorage !== 'undefined' ? localStorage.getItem(ACTIVE_USER_KEY) : null;
+  if (activeId) {
+    const found = db.users.find(u => u.id === activeId);
+    if (found) return found;
+  }
+  return db.users[0] || null;
+}
+
+export function setCurrentUser(userId) {
+  const db = getDB();
+  const user = db.users.find(u => u.id === userId);
+  if (user) {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(ACTIVE_USER_KEY, user.id);
+    }
     logAudit(`${user.name} (${user.role})`, "Role Switch / Session Start", user.role, "Switched active persona session.");
     window.dispatchEvent(new CustomEvent("auth-changed", { detail: user }));
   }
 }
+
+export function switchUser(userId) {
+  setCurrentUser(userId);
+}
+
 export function hasPermission(permission) {
   const user = getCurrentUser();
   if (!user) return false;
@@ -9,10 +36,12 @@ export function hasPermission(permission) {
   const permissions = APP_CONFIG.rolePermissions[user.role] || [];
   return permissions.includes(permission) || permissions.includes("all_permissions");
 }
+
 export function getAllDemoAccounts() {
   const db = getDB();
   return db.users;
 }
+
 export function registerStudent(userData) {
   const db = getDB();
   const newId = "std-" + (db.users.length + 101);
@@ -30,13 +59,14 @@ export function registerStudent(userData) {
     clubs: [],
     skills: userData.skills ? userData.skills.split(",").map(s => s.trim()) : [],
     badges: ["New Member"],
-    membershipId: `AIT-MEM-2026-${userData.department}-${Math.floor(1000 + Math.random() * 9000)}`,
+    membershipId: `PEC-MEM-2026-${userData.department}-${Math.floor(1000 + Math.random() * 9000)}`,
     validUntil: "30 June 2028"
   };
   db.users.push(newUser);
   logAudit(`${newUser.name}`, "Registered New Account", newUser.role, `Roll No: ${newUser.rollNo}`);
   return newUser;
 }
+
 export function updateProfile(updatedData) {
   const db = getDB();
   const user = getCurrentUser();
@@ -48,4 +78,12 @@ export function updateProfile(updatedData) {
     return db.users[index];
   }
   return null;
+}
+
+export function initAuth() {
+  const user = getCurrentUser();
+  if (user && typeof localStorage !== 'undefined' && !localStorage.getItem(ACTIVE_USER_KEY)) {
+    localStorage.setItem(ACTIVE_USER_KEY, user.id);
+  }
+  return user;
 }

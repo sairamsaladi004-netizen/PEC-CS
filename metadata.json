@@ -1,0 +1,6 @@
+{
+  "name": "CampusTech - PEC-CS",
+  "description": "One Digital Ecosystem for Technical Innovation, Clubs, Events, and Accredited Portfolios at PEC.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

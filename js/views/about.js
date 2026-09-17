@@ -1,50 +1,102 @@
-              <div>
-                <div class="font-semibold text-slate-800">Phone Hotline</div>
-                <div>+91 80 2345 6789 (Mon-Fri 09:00 - 17:00 IST)</div>
-              </div>
+export function renderAboutView() {
+  return `
+    <div class="space-y-8 pb-16 max-w-5xl mx-auto">
+      
+      <!-- Hero Banner -->
+      <div class="bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 rounded-3xl p-8 sm:p-12 text-white shadow-xl relative overflow-hidden">
+        <div class="max-w-2xl space-y-3 relative z-10">
+          <span class="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-mono font-bold uppercase">
+            Official Institutional Charter
+          </span>
+          <h1 class="text-2xl sm:text-4xl font-black tracking-tight leading-tight">
+            Central Council of Technical Societies & Student Chapters (CCTSC)
+          </h1>
+          <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            Panimalar Engineering College's unified governing board synchronizing professional bodies, domain research chapters, hackathons, and cryptographic accreditation ledgers.
+          </p>
+        </div>
+      </div>
+
+      <!-- Core Institutional Pillars -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-2">
+          <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg font-bold">🏛️</div>
+          <h2 class="text-base font-bold text-slate-900">NBA Criteria 9 Benchmark</h2>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Direct institutional alignment with National Board of Accreditation parameters for co-curricular engineering design, student chapter activities, and professional society contributions.
+          </p>
+        </div>
+
+        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-2">
+          <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg font-bold">🔒</div>
+          <h2 class="text-base font-bold text-slate-900">Tamper-Proof Credentialing</h2>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Cryptographically minted SHA-256 certificates with embedded verification hashes, protecting student portfolios against fraudulent claims and providing public ledger verification.
+          </p>
+        </div>
+
+        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-2">
+          <div class="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg font-bold">🚀</div>
+          <h2 class="text-base font-bold text-slate-900">Peer-Led Innovation</h2>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Open-source repositories, hands-on student lab guides, competitive coding leagues, and campus hackathons bridging academic theory with production software architecture.
+          </p>
+        </div>
+      </div>
+
+      <!-- Executive Leadership Directory -->
+      <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-10 shadow-sm space-y-6">
+        <div>
+          <h2 class="text-lg font-black text-slate-900">Council Executive Leadership</h2>
+          <p class="text-xs text-slate-500">Distinguished faculty advisors and student secretariat guiding the council</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center space-x-3">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" class="w-12 h-12 rounded-xl object-cover" />
+            <div>
+              <div class="text-xs font-black text-slate-900">Dr. M. S. Swaminathan</div>
+              <div class="text-[11px] text-blue-600 font-semibold">President, Central Council</div>
+              <div class="text-[10px] text-slate-400 font-mono">swaminathan@panimalar.edu</div>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center space-x-3">
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" class="w-12 h-12 rounded-xl object-cover" />
+            <div>
+              <div class="text-xs font-black text-slate-900">Dr. Rajesh Raman</div>
+              <div class="text-[11px] text-blue-600 font-semibold">Head of Department, CSE</div>
+              <div class="text-[10px] text-slate-400 font-mono">cse.hod@panimalar.edu</div>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center space-x-3">
+            <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100" class="w-12 h-12 rounded-xl object-cover" />
+            <div>
+              <div class="text-xs font-black text-slate-900">Prof. Ananya Iyer</div>
+              <div class="text-[11px] text-blue-600 font-semibold">Faculty Advisor, ACM Chapter</div>
+              <div class="text-[10px] text-slate-400 font-mono">ananya.iyer@panimalar.edu</div>
             </div>
           </div>
         </div>
-        <form id="contact-council-form" class="space-y-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Your Full Name</label>
-            <input type="text" id="contact-name" required placeholder="e.g. Aarav Sharma" class="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">College Email</label>
-              <input type="email" id="contact-email" required placeholder="name@apextech.edu" class="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Subject</label>
-              <select id="contact-subject" class="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                <option>New Club Proposal</option>
-                <option>Event Clearance Inquiry</option>
-                <option>Certificate Verification Support</option>
-                <option>Lab Equipment Requisition</option>
-                <option>Other Feedback</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Your Message</label>
-            <textarea id="contact-message" rows="3" required placeholder="Provide concise details regarding your inquiry..." class="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
-          </div>
-          <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition-colors shadow-md shadow-blue-500/20">
-            Submit Inquiry to Secretariat
-          </button>
-        </form>
       </div>
+
+      <!-- Campus Contact & Secretariat Office -->
+      <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div class="space-y-1">
+          <h2 class="text-base font-bold text-slate-900">Council Secretariat Office</h2>
+          <p class="text-xs text-slate-500">Block 3, Innovation & Incubator Pavilion, Panimalar Engineering College, Chennai - 600123</p>
+          <div class="text-xs font-mono text-blue-600 font-bold">Email: techcouncil@panimalar.edu • Phone: +91 44 2649 0404</div>
+        </div>
+        <a href="#/events" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs shadow-md transition-colors shrink-0">
+          Browse Upcoming Events →
+        </a>
+      </div>
+
     </div>
   `;
 }
+
 export function attachAboutEvents() {
-  const form = document.getElementById("contact-council-form");
-  if (form) {
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      showToast("Thank you! Your inquiry has been logged with the Technical Council Secretariat.", "success");
-      form.reset();
-    });
-  }
+  // Static informative view
 }

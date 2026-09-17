@@ -1,46 +1,195 @@
+import { getDB } from '../db.js';
+import { showToast } from '../components/toast.js';
+
+export function renderReportsView() {
+  const db = getDB();
+
+  return `
+    <div class="space-y-6 pb-16">
+      
+      <!-- Top Action Bar -->
+      <div class="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider font-mono">NBA / NAAC Compliance Matrix</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Institutional Accreditation Dossier</h1>
+          <p class="text-xs sm:text-sm text-slate-500">Criteria 9 (Student Support & Technical Societies) & NAAC Criterion 5 compliance records</p>
+        </div>
+        <div class="flex items-center space-x-3">
+          <button id="export-csv-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-colors">
+            📊 Export CSV Dataset
+          </button>
+          <button id="print-report-btn" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md transition-all">
+            🖨️ Print Audit Sheet
+          </button>
+        </div>
+      </div>
+
+      <!-- Printable Accreditation Sheet -->
+      <div class="printable-area bg-white rounded-3xl border border-slate-200 p-6 sm:p-10 shadow-sm space-y-8 text-slate-900">
+        
+        <!-- Institutional Header -->
+        <div class="border-b border-slate-200 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div class="text-xs font-black uppercase tracking-widest text-slate-400 font-mono">PANIMALAR ENGINEERING COLLEGE</div>
+            <h2 class="text-xl font-black text-slate-900 mt-0.5">Central Technical Societies & Student Chapters Council</h2>
+            <div class="text-xs text-slate-500 font-mono">Accreditation Cycle: 2024-2027 • Current Academic Year: 2025-2026</div>
+          </div>
+          <div class="text-right font-mono text-xs text-slate-500 space-y-0.5">
+            <div>Audit Form: NBA-SAR-CR9-2026</div>
+            <div class="text-emerald-700 font-bold">STATUS: AUDIT-READY (TIER-1)</div>
+          </div>
+        </div>
+
+        <!-- Section 1: Professional Society Chapters -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Table 9.1: Active Professional Society Student Chapters</h3>
+            <span class="text-xs font-mono text-slate-400">${db.clubs.length} Recognized Chapters</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border border-slate-200">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                <tr>
+                  <th class="p-3">Society Chapter</th>
+                  <th class="p-3">Department</th>
+                  <th class="p-3">Domain Specialization</th>
+                  <th class="p-3">Faculty Advisor</th>
+                  <th class="p-3 text-right">Active Enrolled</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200 font-medium">
+                ${db.clubs.map(c => `
+                  <tr>
+                    <td class="p-3 font-bold">${c.name}</td>
+                    <td class="p-3 font-mono">${c.department}</td>
+                    <td class="p-3">${c.domain}</td>
+                    <td class="p-3">${c.facultyCoordinator.name}</td>
+                    <td class="p-3 text-right font-mono font-bold">${c.memberCount}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Section 2: Technical Events & Competitions Hosted -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Table 9.2: Technical Hackathons, Bootcamps & Workshops (Past 12 Months)</h3>
+            <span class="text-xs font-mono text-slate-400">${db.events.length} Major Activities</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border border-slate-200">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                <tr>
+                  <th class="p-3">Activity / Competition</th>
+                  <th class="p-3">Category</th>
+                  <th class="p-3">Date</th>
+                  <th class="p-3">Venue</th>
+                  <th class="p-3 text-right">Delegates Registered</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200 font-medium">
+                ${db.events.map(e => `
+                  <tr>
+                    <td class="p-3 font-bold">${e.title}</td>
+                    <td class="p-3 font-mono uppercase text-[10px]">${e.category}</td>
+                    <td class="p-3 font-mono">${e.date}</td>
+                    <td class="p-3">${e.venue}</td>
+                    <td class="p-3 text-right font-mono font-bold">${e.registeredCount}/${e.capacity}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Section 3: Verifiable Digital Certificates Registry -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Table 9.3: SHA-256 Digital Verification Registry</h3>
+            <span class="text-xs font-mono text-slate-400">Cryptographic Integrity Log</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border border-slate-200 font-mono text-[11px]">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                <tr>
+                  <th class="p-3">Certificate ID</th>
+                  <th class="p-3">Student Name</th>
+                  <th class="p-3">Roll No</th>
+                  <th class="p-3">Event Validated</th>
+                  <th class="p-3">SHA-256 Hash Prefix</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200">
+                ${db.certificates.map(cert => `
+                  <tr>
+                    <td class="p-3 font-bold text-blue-600">${cert.id}</td>
+                    <td class="p-3">${cert.studentName}</td>
+                    <td class="p-3">${cert.rollNo}</td>
+                    <td class="p-3">${cert.eventName}</td>
+                    <td class="p-3 text-slate-400">${cert.qrHash.slice(0, 20)}...</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Signatures & Verification Endorsement -->
+        <div class="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
+          <div class="space-y-1">
+            <div class="font-serif italic text-sm text-slate-800 font-bold">M. S. Swaminathan</div>
+            <div class="w-40 h-0.5 bg-slate-300"></div>
+            <div class="text-xs font-bold text-slate-900">Dr. M. S. Swaminathan</div>
+            <div class="text-[10px] text-slate-500 font-mono">Chairman, CCTSC Accreditation Committee</div>
+          </div>
+
+          <div class="space-y-1">
+            <div class="font-serif italic text-sm text-slate-800 font-bold">Rajesh Raman</div>
+            <div class="w-40 h-0.5 bg-slate-300"></div>
+            <div class="text-xs font-bold text-slate-900">Dr. Rajesh Raman</div>
+            <div class="text-[10px] text-slate-500 font-mono">Head of Department, CSE</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  `;
+}
 
 export function attachReportsEvents() {
-  const db = getDB();
-  function downloadCSV(filename, content) {
-    const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute("download", filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast(`Exported ${filename}!`, "success");
+  const printBtn = document.getElementById("print-report-btn");
+  if (printBtn) {
+    printBtn.addEventListener("click", () => window.print());
   }
-  // 1. Export Clubs CSV
-  document.getElementById("export-clubs-csv")?.addEventListener("click", () => {
-    let csv = "Club ID,Club Name,Domain,Department,Active Members,Status,Faculty Coordinator,Email\n";
-    db.clubs.forEach(c => {
-      csv += `"${c.id}","${c.name}","${c.domain}","${c.department}",${c.memberCount},"${c.activeStatus}","${c.facultyCoordinator.name}","${c.facultyCoordinator.email}"\n`;
+
+  const exportBtn = document.getElementById("export-csv-btn");
+  if (exportBtn) {
+    exportBtn.addEventListener("click", () => {
+      const db = getDB();
+      let csv = "Society,Department,Domain,Faculty Advisor,Members\n";
+      db.clubs.forEach(c => {
+        csv += `"${c.name}","${c.department}","${c.domain}","${c.facultyCoordinator.name}",${c.memberCount}\n`;
+      });
+      csv += "\nEvent,Category,Date,Venue,Registrations\n";
+      db.events.forEach(e => {
+        csv += `"${e.title}","${e.category}","${e.date}","${e.venue}",${e.registeredCount}\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.download = `pec_accreditation_report_${Date.now()}.csv`;
+      link.href = url;
+      link.click();
+      showToast("Accreditation dataset exported as CSV!", "success");
     });
-    downloadCSV("Clubs_Audit_Report_2026.csv", csv);
-  });
-  // 2. Export Events CSV
-  document.getElementById("export-events-csv")?.addEventListener("click", () => {
-    let csv = "Event ID,Title,Category,Host Club,Date,Venue,Capacity,Registrations,Status\n";
-    db.events.forEach(e => {
-      csv += `"${e.id}","${e.title}","${e.category}","${e.clubId}","${e.date}","${e.venue}",${e.capacity},${e.registeredCount},"${e.status}"\n`;
-    });
-    downloadCSV("Events_Attendance_Report_2026.csv", csv);
-  });
-  // 3. Export Certificates CSV
-  document.getElementById("export-certs-csv")?.addEventListener("click", () => {
-    let csv = "Certificate ID,Student Name,Roll No,Department,Event Name,Award Type,Issue Date,Security Hash\n";
-    db.certificates.forEach(c => {
-      csv += `"${c.id}","${c.studentName}","${c.rollNo}","${c.department}","${c.eventName}","${c.awardType}","${c.issueDate}","${c.qrHash}"\n`;
-    });
-    downloadCSV("Accredited_Certificates_Registry_2026.csv", csv);
-  });
-  // 4. Export Projects CSV
-  document.getElementById("export-projects-csv")?.addEventListener("click", () => {
-    let csv = "Project ID,Title,Domain,Department,Team Leader,Rating,Status,Reviewer\n";
-    db.projects.forEach(p => {
-      csv += `"${p.id}","${p.title}","${p.domain}","${p.department}","${p.teamLeader}",${p.facultyReview.rating},"${p.facultyReview.status}","${p.facultyReview.reviewer}"\n`;
-    });
-    downloadCSV("Projects_Showcase_Leaderboard_2026.csv", csv);
-  });
+  }
 }
