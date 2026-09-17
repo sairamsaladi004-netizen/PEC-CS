@@ -28,6 +28,7 @@ import { renderLoginView, attachLoginEvents } from './views/login.js';
 import { renderStudentDashboardView, attachStudentDashboardEvents } from './views/studentDashboard.js';
 import { renderCoordinatorPortalView, attachCoordinatorPortalEvents } from './views/coordinatorPortal.js';
 import { renderAdminPortalView, attachAdminPortalEvents } from './views/adminPortal.js';
+import { renderGuestDashboardView, attachGuestDashboardEvents } from './views/guestDashboard.js';
 
 export function parseHash() {
   const raw = window.location.hash || "#/";
@@ -114,6 +115,7 @@ export function handleRoute() {
       break;
 
     case "#/events":
+    case "#/event-dashboard":
       mountPoint.innerHTML = renderEventsView(params);
       attachEventsEvents(params);
       break;
@@ -145,8 +147,10 @@ export function handleRoute() {
       break;
 
     case "#/projects":
-      mountPoint.innerHTML = renderProjectsView();
-      attachProjectsEvents();
+    case "#/hackathon":
+    case "#/hackathons":
+      mountPoint.innerHTML = renderProjectsView(params);
+      attachProjectsEvents(params);
       break;
 
     case "#/lms":
@@ -181,8 +185,14 @@ export function handleRoute() {
 
     case "#/club-dashboard":
     case "#/club-analytics":
-      mountPoint.innerHTML = renderClubAdminDashboardView();
-      attachClubAdminDashboardEvents();
+      mountPoint.innerHTML = renderClubAdminDashboardView(params);
+      attachClubAdminDashboardEvents(params);
+      break;
+
+    case "#/guest":
+    case "#/guest-dashboard":
+      mountPoint.innerHTML = renderGuestDashboardView(params);
+      attachGuestDashboardEvents();
       break;
 
     case "#/reports":

@@ -65,27 +65,6 @@ const INITIAL_BACKEND_SEED = {
       isDemo: true
     },
     {
-      id: "dept-001",
-      name: "Dr. M. Radhika Mani",
-      facultyId: "HOD-CSE-001",
-      email: "hod.cse@pragati.ac.in",
-      demoAlias: "deptadmin.demo@pragati.ac.in",
-      role: "Department Admin",
-      department: "CSE",
-      designation: "Professor & Head of CSE Department",
-      phone: "+91 884 2383301",
-      avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&auto=format&fit=crop&q=80",
-      skills: ["Academic Leadership", "Curriculum Strategy", "NBA Accreditation", "Departmental Governance"],
-      interests: ["Data Science", "Research & Innovation", "Technical Societies"],
-      bio: "Head of Computer Science & Engineering Department overseeing all departmental technical societies and clubs.",
-      salt: DEFAULT_SALT,
-      passwordHash: DEFAULT_PASSWORD_HASH,
-      emailVerified: true,
-      membershipId: "PEC-HOD-2026-CSE",
-      validUntil: "Permanent",
-      isDemo: true
-    },
-    {
       id: "coord-201",
       name: "Mrs. L. Yamuna",
       facultyId: "FAC-CSE-AIML-01",

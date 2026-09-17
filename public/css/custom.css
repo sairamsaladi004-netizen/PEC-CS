@@ -51,26 +51,74 @@
 
 /* Print Styles for Certificate and Accreditation Reports */
 @media print {
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
   body * {
-    visibility: hidden;
+    visibility: hidden !important;
   }
+  
   .printable-area, .printable-area * {
-    visibility: visible;
+    visibility: visible !important;
   }
+  
   .printable-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0;
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    margin: 0 !important;
+    padding: 12mm 14mm !important;
     box-shadow: none !important;
+    border-radius: 0 !important;
+    background-color: #ffffff !important;
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+    page-break-before: avoid !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
   }
-  .no-print {
+
+  .certificate-sheet {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    box-shadow: none !important;
+    border-radius: 4px !important;
+    margin: 0 !important;
+  }
+  
+  .no-print,
+  header,
+  nav,
+  aside,
+  footer,
+  #toast-container,
+  #sidebar,
+  .sidebar,
+  button,
+  .controls-bar,
+  #search-modal-container,
+  #auth-modal-container {
     display: none !important;
   }
+  
   @page {
-    size: auto;
-    margin: 12mm;
+    size: landscape;
+    margin: 0;
   }
 }

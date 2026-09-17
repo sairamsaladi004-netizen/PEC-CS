@@ -311,6 +311,249 @@ export const INITIAL_SEED = {
       active_qr_token: null,
       qr_token_expiry: null,
       registrations: []
+    },
+    {
+      id: "evt-106",
+      title: "Edge Computing & LoRaWAN Smart Campus Hackathon",
+      category: "Hackathon",
+      event_type: "Hackathon",
+      club_id: "I4-09",
+      clubId: "I4-09",
+      date: "2026-10-24",
+      time: "08:30 - 20:30",
+      start_time: "08:30",
+      end_time: "20:30",
+      venue: "ECE Embedded Systems Lab & Open Courtyard",
+      capacity: 160,
+      max_participants: 160,
+      registeredCount: 128,
+      registration_deadline: "2026-10-22 23:59",
+      status: "Upcoming",
+      banner: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80",
+      description: "Build low-power long-range IoT sensor networks deployed across the PEC campus for air quality, solar tracking, and water flow monitoring.",
+      rules: ["Teams of 2 to 3 members.", "Hardware development boards (ESP32/LoRa) provided on deposit."],
+      tags: ["IoT", "LoRaWAN", "Edge Computing", "Hardware"],
+      created_by: "Mr. G. Durga Prasad",
+      created_at: "2026-09-05T10:00:00.000Z",
+      active_qr_token: null,
+      qr_token_expiry: null,
+      registrations: []
+    },
+    {
+      id: "evt-107",
+      title: "Spatial Computing & Digital Twin Industrial Workshop",
+      category: "Bootcamp",
+      event_type: "Bootcamp",
+      club_id: "I4-04",
+      clubId: "I4-04",
+      date: "2026-11-04",
+      time: "09:30 - 16:30",
+      start_time: "09:30",
+      end_time: "16:30",
+      venue: "AR/VR Simulation Lab, CSE Block",
+      capacity: 90,
+      max_participants: 90,
+      registeredCount: 72,
+      registration_deadline: "2026-11-02 23:59",
+      status: "Upcoming",
+      banner: "https://images.unsplash.com/photo-1593508512255-86ab42a8e620?w=800&auto=format&fit=crop&q=80",
+      description: "Hands-on development of real-time industrial digital twins using WebXR, Unity 3D, and real-time telemetry streaming pipelines.",
+      rules: ["Individual participation.", "Basic knowledge of 3D coordinates recommended."],
+      tags: ["AR/VR", "Digital Twin", "Unity3D", "WebXR"],
+      created_by: "Mr. A. Avinash",
+      created_at: "2026-09-06T10:00:00.000Z",
+      active_qr_token: null,
+      qr_token_expiry: null,
+      registrations: []
+    },
+    {
+      id: "evt-201",
+      title: "Smart Grid & Microgrid Renewable Energy Hackathon",
+      category: "Hackathon",
+      event_type: "Hackathon",
+      club_id: "CC-01",
+      clubId: "CC-01",
+      date: "2026-10-22",
+      time: "09:00 - 18:00",
+      start_time: "09:00",
+      end_time: "18:00",
+      venue: "EEE Power Systems Simulation Center",
+      capacity: 150,
+      max_participants: 150,
+      registeredCount: 114,
+      registration_deadline: "2026-10-20 23:59",
+      status: "Upcoming",
+      banner: "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=800&auto=format&fit=crop&q=80",
+      description: "Design automated peak load leveling algorithms and solar microgrid distribution systems for sustainable university campuses.",
+      rules: ["Teams of 2 to 4 students from all engineering disciplines.", "Simulink and Python models permitted."],
+      tags: ["Smart Grid", "Renewable Energy", "MATLAB", "Sustainability"],
+      created_by: "Mrs. K. Deepthi",
+      created_at: "2026-09-07T10:00:00.000Z",
+      active_qr_token: null,
+      qr_token_expiry: null,
+      registrations: []
+    },
+    {
+      id: "evt-202",
+      title: "Hydrological Sensor Networks & IoT Water Quality Conclave",
+      category: "Workshop",
+      event_type: "Workshop",
+      club_id: "CC-02",
+      clubId: "CC-02",
+      date: "2026-10-29",
+      time: "10:00 - 15:30",
+      start_time: "10:00",
+      end_time: "15:30",
+      venue: "Environmental Engineering Lab, CE Block",
+      capacity: 80,
+      max_participants: 80,
+      registeredCount: 65,
+      registration_deadline: "2026-10-27 23:59",
+      status: "Upcoming",
+      banner: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80",
+      description: "Real-time water quality monitoring, turbidity sensor telemetry, and automatic filtration feedback control for rural water safety.",
+      rules: ["Open to Civil, ECE, and CSE students."],
+      tags: ["Water Analytics", "Sensors", "Civil Engineering"],
+      created_by: "Mr. B. Rajesh",
+      created_at: "2026-09-08T10:00:00.000Z",
+      active_qr_token: null,
+      qr_token_expiry: null,
+      registrations: []
+    },
+    {
+      id: "evt-204",
+      title: "Campus Tech for Good: Rural Digital Empowerment Sprint",
+      category: "Hackathon",
+      event_type: "Hackathon",
+      club_id: "CC-05",
+      clubId: "CC-05",
+      date: "2026-11-12",
+      time: "09:00 - 19:00",
+      start_time: "09:00",
+      end_time: "19:00",
+      venue: "Central Seminar Hall 2",
+      capacity: 140,
+      max_participants: 140,
+      registeredCount: 98,
+      registration_deadline: "2026-11-10 23:59",
+      status: "Upcoming",
+      banner: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&auto=format&fit=crop&q=80",
+      description: "Develop lightweight multilingual PWA web tools and offline educational resources for nearby rural schools in East Godavari district.",
+      rules: ["Open-source solutions only.", "Mobile-first offline capability required."],
+      tags: ["Social Impact", "Open Source", "Mobile Web", "PWA"],
+      created_by: "Dr. P. V. S. Machiraju",
+      created_at: "2026-09-09T10:00:00.000Z",
+      active_qr_token: null,
+      qr_token_expiry: null,
+      registrations: []
+    },
+    {
+      id: "evt-301",
+      title: "Pragsoft 24-Hour Full-Stack Distributed Systems Buildathon",
+      category: "Hackathon",
+      event_type: "Hackathon",
+      club_id: "EC-04",
+      clubId: "EC-04",
+      date: "2026-10-26",
+      time: "09:00 - 09:00 (+1 day)",
+      start_time: "09:00",
+      end_time: "09:00",
+      venue: "Computer Center Lab 1 & 2 (Overnight Hackathon)",
+      capacity: 200,
+      max_participants: 200,
+      registeredCount: 176,
+      registration_deadline: "2026-10-24 23:59",
+      status: "Upcoming",
+      banner: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&auto=format&fit=crop&q=80",
+      description: "Pragsoft flagship overnight hackathon building distributed microservices, event queues, resilience engineering, and reactive frontends.",
+      rules: ["Teams of 2 to 4 members.", "Night pass consent required from college warden/HOD."],
+      tags: ["Microservices", "Full Stack", "Distributed Systems", "Cash Prize ₹50,000"],
+      created_by: "Mr. Ch. Venkata Ramana",
+      created_at: "2026-09-10T10:00:00.000Z",
+      active_qr_token: null,
+      qr_token_expiry: null,
+      registrations: []
+    },
+    {
+      id: "evt-302",
+      title: "WebXR & Spatial Metaverse Developer Conclave",
+      category: "Workshop",
+      event_type: "Workshop",
+      club_id: "EC-03",
+      clubId: "EC-03",
+      date: "2026-10-31",
+      time: "10:00 - 16:00",
+      start_time: "10:00",
+      end_time: "16:00",
+      venue: "CSE(AI) Advanced Multimedia Lab",
+      capacity: 110,
+      max_participants: 110,
+      registeredCount: 88,
+      registration_deadline: "2026-10-29 23:59",
+      status: "Upcoming",
+      banner: "https://images.unsplash.com/photo-1622979135225-d2ba269bc1df?w=800&auto=format&fit=crop&q=80",
+      description: "Three.js, WebGL shader optimization, and avatar synchronization in shared persistent 3D virtual spaces.",
+      rules: ["Laptop with WebGL 2.0 supported browser."],
+      tags: ["WebXR", "ThreeJS", "Metaverse", "WebGL"],
+      created_by: "Mr. M. Radhika Mani",
+      created_at: "2026-09-11T10:00:00.000Z",
+      active_qr_token: null,
+      qr_token_expiry: null,
+      registrations: []
+    },
+    {
+      id: "evt-303",
+      title: "Autonomous GO-KART EV Powertrain & Telemetry Grand Prix",
+      category: "Competition",
+      event_type: "Competition",
+      club_id: "EC-06",
+      clubId: "EC-06",
+      date: "2026-11-06",
+      time: "08:30 - 17:00",
+      start_time: "08:30",
+      end_time: "17:00",
+      venue: "PEC Automotive Testing Track & Workshop Grounds",
+      capacity: 120,
+      max_participants: 120,
+      registeredCount: 104,
+      registration_deadline: "2026-11-04 23:59",
+      status: "Upcoming",
+      banner: "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&auto=format&fit=crop&q=80",
+      description: "Track trials of student-built electric go-karts featuring CAN-bus telemetry, regenerative braking controllers, and thermal battery management.",
+      rules: ["Safety gear and fire safety briefing mandatory."],
+      tags: ["Electric Vehicles", "Automotive", "Mechanical", "Telemetry"],
+      created_by: "Mr. K. V. S. R. K. Prasad",
+      created_at: "2026-09-12T10:00:00.000Z",
+      active_qr_token: null,
+      qr_token_expiry: null,
+      registrations: []
+    },
+    {
+      id: "evt-304",
+      title: "High-Frequency VLSI & Embedded Signal Processing Symposium",
+      category: "Technical Session",
+      event_type: "Technical Session",
+      club_id: "EC-08",
+      clubId: "EC-08",
+      date: "2026-11-14",
+      time: "10:00 - 16:30",
+      start_time: "10:00",
+      end_time: "16:30",
+      venue: "IETE Seminar Hall, ECE Block",
+      capacity: 130,
+      max_participants: 130,
+      registeredCount: 92,
+      registration_deadline: "2026-11-12 23:59",
+      status: "Upcoming",
+      banner: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80",
+      description: "Keynotes and research presentations on FPGA accelerators, RISC-V softcores, and edge DSP pipelines in wireless communications.",
+      rules: ["Open to UG & PG students."],
+      tags: ["VLSI", "FPGA", "Signal Processing", "IETE"],
+      created_by: "Dr. V. Sailaja",
+      created_at: "2026-09-13T10:00:00.000Z",
+      active_qr_token: null,
+      qr_token_expiry: null,
+      registrations: []
     }
   ],
 
@@ -361,8 +604,10 @@ export const INITIAL_SEED = {
       studentId: "std-101",
       student_name: "Aarav Sharma",
       studentName: "Aarav Sharma",
+      recipientName: "Aarav Sharma",
       roll_no: "22CS101",
       rollNo: "22CS101",
+      recipientRoll: "22CS101",
       department: "CSE",
       event_id: "evt-105",
       event_name: "Green Building & Sustainable Civil Infrastructure Conclave",
@@ -370,8 +615,8 @@ export const INITIAL_SEED = {
       club_id: "I4-01",
       club_name: "Green Building Club",
       date: "2026-09-02",
-      awardType: "Certificate of Participation",
-      certificate_type: "Certificate of Participation",
+      awardType: "Certificate of Participation & Technical Completion",
+      certificate_type: "Certificate of Participation & Technical Completion",
       issued_date: "2026-09-02",
       issueDate: "2026-09-02",
       institution: "Pragati University / Pragati Engineering College (Autonomous)",
@@ -379,7 +624,128 @@ export const INITIAL_SEED = {
       recipientEmail: "aarav.sharma@pragati.ac.in",
       authorized_signature: "Mr L Praveen Kumar & Dr. K. Satyanarayana (Principal, Pragati University / PEC)",
       qr_hash: "8f4a3c19e872d9b62a15c304f5b89a27d14e5903bcaef421975e810a43bc92fe",
-      qrHash: "8f4a3c19e872d9b62a15c304f5b89a27d14e5903bcaef421975e810a43bc92fe"
+      qrHash: "8f4a3c19e872d9b62a15c304f5b89a27d14e5903bcaef421975e810a43bc92fe",
+      verificationHash: "8f4a3c19e872d9b62a15c304f5b89a27d14e5903bcaef421975e810a43bc92fe"
+    },
+    {
+      id: "PEC-AIML-2026-000125",
+      certificateId: "PEC-AIML-2026-000125",
+      student_id: "std-102",
+      studentId: "std-102",
+      student_name: "Priya Patel",
+      studentName: "Priya Patel",
+      recipientName: "Priya Patel",
+      roll_no: "22CS142",
+      rollNo: "22CS142",
+      recipientRoll: "22CS142",
+      department: "CSE(AIML)",
+      event_id: "evt-101",
+      event_name: "Turing AI & Deep Learning National Symposium 2026",
+      eventName: "Turing AI & Deep Learning National Symposium 2026",
+      club_id: "I4-08",
+      club_name: "AI&ML Turing Club",
+      date: "2026-09-10",
+      awardType: "Certificate of Merit & Technical Excellence",
+      certificate_type: "Certificate of Merit & Technical Excellence",
+      issued_date: "2026-09-10",
+      issueDate: "2026-09-10",
+      institution: "Pragati University / Pragati Engineering College (Autonomous)",
+      issued_by: "Pragati University Central Council of Technical Societies (CCTSC)",
+      recipientEmail: "priya.patel@pragati.ac.in",
+      authorized_signature: "Mrs. L. Yamuna & Dr. K. Satyanarayana",
+      qr_hash: "a49f7b12d38e65c01b442e987cfa610283e54b1d8e6a2c91834f826bc1209ade",
+      qrHash: "a49f7b12d38e65c01b442e987cfa610283e54b1d8e6a2c91834f826bc1209ade",
+      verificationHash: "a49f7b12d38e65c01b442e987cfa610283e54b1d8e6a2c91834f826bc1209ade"
+    },
+    {
+      id: "PEC-ROB-2026-000188",
+      certificateId: "PEC-ROB-2026-000188",
+      student_id: "std-101",
+      studentId: "std-101",
+      student_name: "Aarav Sharma",
+      studentName: "Aarav Sharma",
+      recipientName: "Aarav Sharma",
+      roll_no: "22CS101",
+      rollNo: "22CS101",
+      recipientRoll: "22CS101",
+      department: "CSE",
+      event_id: "evt-102",
+      event_name: "Autonomous Robotics & Embedded ROS Workshop",
+      eventName: "Autonomous Robotics & Embedded ROS Workshop",
+      club_id: "I4-03",
+      club_name: "Robotics Club",
+      date: "2026-09-12",
+      awardType: "Certificate of Participation",
+      certificate_type: "Certificate of Participation",
+      issued_date: "2026-09-12",
+      issueDate: "2026-09-12",
+      institution: "Pragati University / Pragati Engineering College (Autonomous)",
+      issued_by: "Pragati University Central Council of Technical Societies (CCTSC)",
+      recipientEmail: "aarav.sharma@pragati.ac.in",
+      authorized_signature: "Mr. V.V.N. Sarath & Dr. K. Satyanarayana",
+      qr_hash: "7e2b10ca4589d36184a2098e72c841b5903bcaef421975e810a43bc92fe98341",
+      qrHash: "7e2b10ca4589d36184a2098e72c841b5903bcaef421975e810a43bc92fe98341",
+      verificationHash: "7e2b10ca4589d36184a2098e72c841b5903bcaef421975e810a43bc92fe98341"
+    },
+    {
+      id: "PEC-CYB-2026-000219",
+      certificateId: "PEC-CYB-2026-000219",
+      student_id: "std-103",
+      studentId: "std-103",
+      student_name: "Sneha Reddy",
+      studentName: "Sneha Reddy",
+      recipientName: "Sneha Reddy",
+      roll_no: "23CS205",
+      rollNo: "23CS205",
+      recipientRoll: "23CS205",
+      department: "CSE(CS)",
+      event_id: "evt-104",
+      event_name: "Cyber Defense CTF: Penetration Testing League",
+      eventName: "Cyber Defense CTF: Penetration Testing League",
+      club_id: "I4-06",
+      club_name: "Cyber Security Club",
+      date: "2026-09-14",
+      awardType: "Winner & Grand Prix Hackathon Finalist",
+      certificate_type: "Winner & Grand Prix Hackathon Finalist",
+      issued_date: "2026-09-14",
+      issueDate: "2026-09-14",
+      institution: "Pragati University / Pragati Engineering College (Autonomous)",
+      issued_by: "Pragati University Central Council of Technical Societies (CCTSC)",
+      recipientEmail: "sneha.reddy@pragati.ac.in",
+      authorized_signature: "Mrs. K Sireesha & Dr. K. Satyanarayana",
+      qr_hash: "c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef01234",
+      qrHash: "c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef01234",
+      verificationHash: "c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef01234"
+    },
+    {
+      id: "PEC-DEV-2026-000305",
+      certificateId: "PEC-DEV-2026-000305",
+      student_id: "std-104",
+      studentId: "std-104",
+      student_name: "Sai Kumar",
+      studentName: "Sai Kumar",
+      recipientName: "Sai Kumar",
+      roll_no: "22IT045",
+      rollNo: "22IT045",
+      recipientRoll: "22IT045",
+      department: "IT",
+      event_id: "evt-103",
+      event_name: "Cloud Native Kubernetes & Microservices Masterclass",
+      eventName: "Cloud Native Kubernetes & Microservices Masterclass",
+      club_id: "I4-07",
+      club_name: "Cloud Computing Club",
+      date: "2026-09-08",
+      awardType: "Certificate of Participation",
+      certificate_type: "Certificate of Participation",
+      issued_date: "2026-09-08",
+      issueDate: "2026-09-08",
+      institution: "Pragati University / Pragati Engineering College (Autonomous)",
+      issued_by: "Pragati University Central Council of Technical Societies (CCTSC)",
+      recipientEmail: "sai.kumar@pragati.ac.in",
+      authorized_signature: "Mr. K Siva Shankar & Dr. K. Satyanarayana",
+      qr_hash: "9b8a7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b",
+      qrHash: "9b8a7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b",
+      verificationHash: "9b8a7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b"
     }
   ],
 
@@ -512,10 +878,12 @@ export const INITIAL_SEED = {
       problem_statement: "Early detection of agricultural crop fires and thermal hazards before uncontrolled spreading.",
       solution: "Lightweight computer vision model running at 30 FPS on onboard edge compute with LoRa telemetry downlink.",
       technologies: ["PyTorch", "TensorRT", "Python", "ROS2", "LoRaWAN"],
+      techStack: ["PyTorch", "TensorRT", "Python", "ROS2", "LoRaWAN"],
       team_members: ["Aarav Sharma", "Priya Patel"],
       teamMembers: ["Aarav Sharma", "Priya Patel"],
       teamLeader: "Aarav Sharma",
       mentor: "Mrs. L. Yamuna",
+      facultyMentor: "Mrs. L. Yamuna",
       github_link: "https://github.com/pragati-eng/aeroshield",
       github: "https://github.com/pragati-eng/aeroshield",
       demo_link: "https://aeroshield.pragati.ac.in",
@@ -526,6 +894,11 @@ export const INITIAL_SEED = {
       domain: "Artificial Intelligence & ML",
       department: "CSE",
       year: "2025-2026",
+      upvotes: 48,
+      comments: [
+        { author: "Priya Patel", text: "Great flight stability during the live campus demonstration!" },
+        { author: "Dr. K. Satyanarayana", text: "Commendable interdisciplinary work combining aeronautics and computer vision." }
+      ],
       featured: true,
       facultyReview: {
         rating: 5,
@@ -533,6 +906,186 @@ export const INITIAL_SEED = {
         remarks: "Exemplary real-time vision pipeline and clean telemetry architecture.",
         reviewer: "Mrs. L. Yamuna",
         reviewedAt: "2026-09-11"
+      }
+    },
+    {
+      id: "proj-002",
+      title: "AgriBot: Autonomous Rover for Precision Crop Health & Soil NPK Analysis",
+      description: "Field rover equipped with multi-spectral cameras and spectroscopic sensors to analyze soil nitrogen, phosphorus, and potassium levels in real-time.",
+      problem_statement: "High cost of soil laboratory testing leading to delayed fertilizer balancing for local farmers in East Godavari district.",
+      solution: "Solar-powered tracked rover with localized computer vision disease classification and edge NPK telemetry mapped to GPS coordinates.",
+      technologies: ["Embedded C++", "ROS 2", "YOLOv8", "Raspberry Pi 5", "LoRa"],
+      techStack: ["Embedded C++", "ROS 2", "YOLOv8", "Raspberry Pi 5", "LoRa"],
+      team_members: ["Kavya Patel", "Sai Kumar", "Rohan Verma"],
+      teamMembers: ["Kavya Patel", "Sai Kumar", "Rohan Verma"],
+      teamLeader: "Kavya Patel",
+      mentor: "Mr. V.V.N. Sarath",
+      facultyMentor: "Mr. V.V.N. Sarath",
+      github_link: "https://github.com/pragati-eng/agribot-rover",
+      github: "https://github.com/pragati-eng/agribot-rover",
+      demo_link: "https://agribot.pragati.ac.in",
+      demo: "https://agribot.pragati.ac.in",
+      images: ["https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"],
+      status: "Approved",
+      club_id: "I4-03",
+      domain: "Robotics & Automation",
+      department: "ECE / CSE",
+      year: "2025-2026",
+      upvotes: 39,
+      comments: [
+        { author: "Sneha Reddy", text: "The field accuracy on ground testing was impressive." }
+      ],
+      featured: true,
+      facultyReview: {
+        rating: 5,
+        status: "Approved",
+        remarks: "Robust mechanical chassis design and high sensor calibration accuracy.",
+        reviewer: "Mr. V.V.N. Sarath",
+        reviewedAt: "2026-09-12"
+      }
+    },
+    {
+      id: "proj-003",
+      title: "MediChain: Decentralized Zero-Knowledge EHR Records Ledger",
+      description: "Privacy-preserving electronic health records storage utilizing zk-SNARKs and IPFS decentralized encryption with patient-governed access delegation.",
+      problem_statement: "Inter-hospital medical record interoperability without compromising patient confidentiality under HIPAA and Indian DPDP Act standards.",
+      solution: "Smart contracts on Polygon zkEVM with client-side zero-knowledge encryption key derivation for instant provider verification.",
+      technologies: ["Solidity", "Rust", "Circom", "Next.js", "IPFS", "Ethers.js"],
+      techStack: ["Solidity", "Rust", "Circom", "Next.js", "IPFS", "Ethers.js"],
+      team_members: ["Aarav Sharma", "Sneha Reddy", "Aditya Joshi"],
+      teamMembers: ["Aarav Sharma", "Sneha Reddy", "Aditya Joshi"],
+      teamLeader: "Aarav Sharma",
+      mentor: "Dr. K. Satyanarayana",
+      facultyMentor: "Dr. K. Satyanarayana",
+      github_link: "https://github.com/pragati-eng/medichain-zk",
+      github: "https://github.com/pragati-eng/medichain-zk",
+      demo_link: "https://medichain.pragati.ac.in",
+      demo: "https://medichain.pragati.ac.in",
+      images: ["https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80"],
+      status: "Approved",
+      club_id: "I4-08",
+      domain: "Web3 & Blockchain",
+      department: "CSE",
+      year: "2025-2026",
+      upvotes: 56,
+      comments: [
+        { author: "K. Devanand", text: "Zero knowledge proof verification benchmarks look super fast!" }
+      ],
+      featured: true,
+      facultyReview: {
+        rating: 5,
+        status: "Approved",
+        remarks: "Excellent cryptographic rigor and patient privacy protocol implementation.",
+        reviewer: "Dr. K. Satyanarayana",
+        reviewedAt: "2026-09-14"
+      }
+    },
+    {
+      id: "proj-004",
+      title: "QuantumGuard: Automated CTF Penetration Testing & Binary Analysis Engine",
+      description: "Interactive security assessment platform featuring live sandboxed containers, automated vulnerability scanning, and dynamic symbol tracing.",
+      problem_statement: "Lack of isolated, reproducible offensive security practice labs for cybersecurity club students preparing for national competitions.",
+      solution: "Docker-in-Docker sandboxing engine with real-time audit logging and automated exploit evaluation harnesses.",
+      technologies: ["Python", "Ghidra API", "Docker", "FastAPI", "WebSockets", "TailwindCSS"],
+      techStack: ["Python", "Ghidra API", "Docker", "FastAPI", "WebSockets", "TailwindCSS"],
+      team_members: ["Sneha Reddy", "Varun Teja"],
+      teamMembers: ["Sneha Reddy", "Varun Teja"],
+      teamLeader: "Sneha Reddy",
+      mentor: "Mrs. K Sireesha",
+      facultyMentor: "Mrs. K Sireesha",
+      github_link: "https://github.com/pragati-eng/quantumguard-ctf",
+      github: "https://github.com/pragati-eng/quantumguard-ctf",
+      demo_link: "https://ctf.pragati.ac.in",
+      demo: "https://ctf.pragati.ac.in",
+      images: ["https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&auto=format&fit=crop&q=80"],
+      status: "Approved",
+      club_id: "I4-06",
+      domain: "Cyber Security & Networks",
+      department: "CSE(CS)",
+      year: "2025-2026",
+      upvotes: 62,
+      comments: [
+        { author: "Aarav Sharma", text: "Solved the reverse engineering challenge track—the sandbox is seamless!" }
+      ],
+      featured: true,
+      facultyReview: {
+        rating: 5,
+        status: "Approved",
+        remarks: "High industrial utility. Safe sandboxing containment confirmed.",
+        reviewer: "Mrs. K Sireesha",
+        reviewedAt: "2026-09-14"
+      }
+    },
+    {
+      id: "proj-005",
+      title: "SolarGrid: Smart Micro-Grid Load Balancer with IoT Smart Metering",
+      description: "Campus renewable energy management network monitoring solar generation panels, battery storage, and dynamic building power distribution.",
+      problem_statement: "Peak load fluctuations causing reliance on diesel generator backups across college laboratory blocks.",
+      solution: "Predictive load-shifting algorithm powered by weather forecasting APIs and MQTT energy sensor nodes across campus substations.",
+      technologies: ["ESP32", "MQTT", "Node-RED", "InfluxDB", "Grafana", "Python"],
+      techStack: ["ESP32", "MQTT", "Node-RED", "InfluxDB", "Grafana", "Python"],
+      team_members: ["Sai Kumar", "T. Rajesh", "P. Ananya"],
+      teamMembers: ["Sai Kumar", "T. Rajesh", "P. Ananya"],
+      teamLeader: "Sai Kumar",
+      mentor: "Mr L Praveen Kumar",
+      facultyMentor: "Mr L Praveen Kumar",
+      github_link: "https://github.com/pragati-eng/solargrid-iot",
+      github: "https://github.com/pragati-eng/solargrid-iot",
+      demo_link: "https://solargrid.pragati.ac.in",
+      demo: "https://solargrid.pragati.ac.in",
+      images: ["https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80"],
+      status: "Approved",
+      club_id: "I4-01",
+      domain: "IoT & Sustainable Infrastructure",
+      department: "EEE / Civil",
+      year: "2025-2026",
+      upvotes: 44,
+      comments: [
+        { author: "Mr L Praveen Kumar", text: "Successfully deployed in Block 3 with 14% energy savings logged." }
+      ],
+      featured: true,
+      facultyReview: {
+        rating: 5,
+        status: "Approved",
+        remarks: "Significant tangible energy reduction impact on campus infrastructure.",
+        reviewer: "Mr L Praveen Kumar",
+        reviewedAt: "2026-09-05"
+      }
+    },
+    {
+      id: "proj-006",
+      title: "DecentraVote: Quantum-Resistant Student Council Polling Protocol",
+      description: "Verifiable, anonymous electronic voting framework with lattice-based cryptography and instant verifiable tally generation.",
+      problem_statement: "Manual ballot counting errors and verification latency during annual student executive elections.",
+      solution: "Threshold cryptographic scheme ensuring anonymity while providing mathematical mathematical proof of tally integrity.",
+      technologies: ["Go", "Kyber/Dilithium", "WebAssembly", "TypeScript", "TailwindCSS"],
+      techStack: ["Go", "Kyber/Dilithium", "WebAssembly", "TypeScript", "TailwindCSS"],
+      team_members: ["Aditya Joshi", "Aarav Sharma", "Kavya Patel"],
+      teamMembers: ["Aditya Joshi", "Aarav Sharma", "Kavya Patel"],
+      teamLeader: "Aditya Joshi",
+      mentor: "Mrs. L. Yamuna",
+      facultyMentor: "Mrs. L. Yamuna",
+      github_link: "https://github.com/pragati-eng/decentravote",
+      github: "https://github.com/pragati-eng/decentravote",
+      demo_link: "https://vote.pragati.ac.in",
+      demo: "https://vote.pragati.ac.in",
+      images: ["https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?w=800&auto=format&fit=crop&q=80"],
+      status: "Approved",
+      club_id: "I4-08",
+      domain: "Cryptography & Security",
+      department: "CSE",
+      year: "2025-2026",
+      upvotes: 51,
+      comments: [
+        { author: "Sneha Reddy", text: "Tested with 500 simultaneous voters with zero collisions." }
+      ],
+      featured: true,
+      facultyReview: {
+        rating: 5,
+        status: "Approved",
+        remarks: "Novel cryptographic architecture with high voter privacy benchmarks.",
+        reviewer: "Mrs. L. Yamuna",
+        reviewedAt: "2026-09-15"
       }
     }
   ],
@@ -727,14 +1280,54 @@ export function getDB() {
       saveDB(data);
     }
 
+    // Auto-migration: Ensure events across all categories exist
+    if (!Array.isArray(data.events) || data.events.length < 10) {
+      data.events = JSON.parse(JSON.stringify(INITIAL_SEED.events));
+      saveDB(data);
+    }
+
     // Ensure all relational arrays exist
     if (!Array.isArray(data.club_memberships)) data.club_memberships = INITIAL_SEED.club_memberships;
     if (!Array.isArray(data.event_registrations)) data.event_registrations = INITIAL_SEED.event_registrations;
     if (!Array.isArray(data.attendance)) data.attendance = INITIAL_SEED.attendance;
     if (!Array.isArray(data.feedback)) data.feedback = INITIAL_SEED.feedback;
-    if (!Array.isArray(data.resources)) data.resources = INITIAL_SEED.resources;
-    if (!Array.isArray(data.activity_reports)) data.activity_reports = INITIAL_SEED.activity_reports;
+    if (!Array.isArray(data.resources) || data.resources.length === 0) data.resources = INITIAL_SEED.resources;
+    if (!Array.isArray(data.activity_reports) || data.activity_reports.length === 0) data.activity_reports = INITIAL_SEED.activity_reports;
     if (!Array.isArray(data.audit_logs)) data.audit_logs = INITIAL_SEED.audit_logs;
+    if (!Array.isArray(data.projects) || data.projects.length < 3) data.projects = INITIAL_SEED.projects;
+    if (!Array.isArray(data.certificates) || data.certificates.length < 3) {
+      data.certificates = INITIAL_SEED.certificates;
+      saveDB(data);
+    }
+
+    // Ensure all certificate records have consistent dual naming fields
+    if (Array.isArray(data.certificates)) {
+      data.certificates.forEach(c => {
+        const name = c.recipientName || c.student_name || c.studentName || 'Aarav Sharma';
+        const roll = c.recipientRoll || c.roll_no || c.rollNo || '22CS101';
+        const event = c.eventName || c.event_name || c.title || 'Technical Workshop';
+        const certType = c.awardType || c.certificate_type || c.category || 'Accredited Certificate';
+        const hash = c.qrHash || c.qr_hash || c.verificationHash || `sha256:0x${Math.random().toString(16).slice(2, 12)}`;
+        const issue = c.issueDate || c.issued_date || c.date || '2026-09-02';
+
+        c.recipientName = name;
+        c.student_name = name;
+        c.studentName = name;
+        c.recipientRoll = roll;
+        c.roll_no = roll;
+        c.rollNo = roll;
+        c.eventName = event;
+        c.event_name = event;
+        c.awardType = certType;
+        c.certificate_type = certType;
+        c.qrHash = hash;
+        c.qr_hash = hash;
+        c.verificationHash = hash;
+        c.issueDate = issue;
+        c.issued_date = issue;
+      });
+    }
+
     data.auditLogs = data.audit_logs;
     data.auditLog = data.audit_logs;
 
@@ -807,16 +1400,27 @@ export function initDB() {
   return getDB();
 }
 
-// REST API Dispatch Helpers for Real Database Mutations
+// REST API Dispatch Helpers for Real Database Mutations with RBAC Auth Context
 export async function apiRequest(endpoint, method = "GET", body = null) {
   try {
     const opts = {
       method,
       headers: { "Content-Type": "application/json" }
     };
+    const activeUserId = typeof localStorage !== 'undefined' ? localStorage.getItem("campustech_active_user_id") : null;
+    if (activeUserId) {
+      opts.headers['x-user-id'] = activeUserId;
+      opts.headers['Authorization'] = `Bearer ${activeUserId}`;
+    }
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(endpoint, opts);
     const data = await res.json();
+    if (data && typeof data === 'object') {
+      data._httpStatus = res.status;
+      if (!res.ok && data.success === undefined) {
+        data.success = false;
+      }
+    }
     return data;
   } catch (err) {
     console.warn(`API call to ${endpoint} failed, falling back to local handler:`, err);

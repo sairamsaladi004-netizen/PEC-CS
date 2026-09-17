@@ -7,18 +7,15 @@
   <meta name="description" content="Pragati Engineering College Student Club Management System: unified digital platform for 35 official technical societies, Industry 4.0 clubs, event management, and accredited credentials.">
   <meta property="og:title" content="CampusTech - PEC-CS">
   <meta property="og:description" content="Pragati Engineering College Student Club Management System: unified digital platform for 35 official technical societies, Industry 4.0 clubs, event management, and accredited credentials.">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- D3.js CDN -->
-  <script src="https://d3js.org/d3.v7.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
           fontFamily: {
             sans: ['Inter', 'sans-serif'],
-            serif: ['Playfair Display', 'serif'],
             mono: ['JetBrains Mono', 'monospace'],
           },
           colors: {
@@ -47,7 +44,14 @@
 <body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-600 selection:text-white">
   
   <!-- SPA Mount Point -->
-  <div id="app"></div>
+  <div id="app">
+    <div class="min-h-screen flex items-center justify-center p-8 bg-slate-900 text-white">
+      <div class="flex items-center space-x-3">
+        <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <span class="text-sm font-semibold tracking-wide">Initializing CampusTech Ecosystem...</span>
+      </div>
+    </div>
+  </div>
   <!-- Toast Container -->
   <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-3 pointer-events-none max-w-sm w-full"></div>
   <!-- Application Bootstrap -->

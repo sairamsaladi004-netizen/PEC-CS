@@ -1,5 +1,11 @@
 import { getCurrentUser } from '../auth.js';
 import { getDB, apiRequest } from '../db.js';
+import { showToast } from '../components/toast.js';
+import {
+  getStudentClubRecommendations,
+  getEventParticipationPrediction,
+  RECOMMENDATION_WEIGHTS
+} from '../intelligenceEngine.js';
 
 export function renderStudentDashboardView(subSection = "dashboard") {
   const user = getCurrentUser() || {};
@@ -69,6 +75,11 @@ export function renderStudentDashboardView(subSection = "dashboard") {
         <a href="#/student/dashboard" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}">
           📊 Overview
         </a>
+        <a href="#/student/recommendations" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap flex items-center space-x-1.5 ${activeTab === 'recommendations' ? 'bg-indigo-600 text-white shadow-xs' : 'text-indigo-600 bg-indigo-50/70 hover:bg-indigo-100/70'}">
+          <span>✨</span>
+          <span>Recommendations</span>
+          <span class="px-1.5 py-0.2 text-[9px] font-mono font-bold rounded-full ${activeTab === 'recommendations' ? 'bg-white text-indigo-700' : 'bg-indigo-600 text-white'}">Match</span>
+        </a>
         <a href="#/student/clubs" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap ${activeTab === 'clubs' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}">
           🏛️ My Clubs & Applications (${myMemberships.length})
         </a>
@@ -131,6 +142,243 @@ function renderSubSectionContent(tab, ctx) {
   const { user, db, myMemberships, myApprovedClubs, myPendingClubs, myRegistrations, myAttendance, myCertificates, myAnnouncements, attendanceRate } = ctx;
 
   switch (tab) {
+    case "recommendations": {
+      const recommendations = getStudentClubRecommendations(user, db, { limit: 12 });
+      const enrolledClubIds = new Set(myApprovedClubs.map(m => m.club_id));
+      const pendingClubIds = new Set(myPendingClubs.map(m => m.club_id));
+
+      return `
+        <div class="space-y-6">
+          
+          <!-- Student Club Recommendations Header -->
+          <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white border border-slate-800 shadow-xl relative overflow-hidden">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+              <div class="space-y-1 max-w-2xl">
+                <div class="inline-flex items-center space-x-2 px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold border border-indigo-400/30">
+                  <span>✨ Curated For You</span>
+                </div>
+                <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white">Recommended Clubs & Technical Societies</h2>
+                <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  Personalized technical club suggestions tailored to your academic branch (${user.department || 'CSE'}), registered skills, and career interests.
+                </p>
+              </div>
+              <div class="flex items-center space-x-2">
+                <a href="#/clubs" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md">
+                  Explore All 35 Clubs →
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Student Profile Attributes Snapshot -->
+          <div class="p-4 bg-white rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs">
+            <div class="flex items-center space-x-2">
+              <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Your Registered Skills:</span>
+              <div class="flex flex-wrap gap-1">
+                ${(user.skills || ['Python', 'Machine Learning', 'ROS']).map(s => `
+                  <span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-semibold text-[11px] border border-blue-200/50">${s}</span>
+                `).join('')}
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Your Stated Interests:</span>
+              <div class="flex flex-wrap gap-1">
+                ${(user.interests || ['Artificial Intelligence', 'Edge Computing']).map(i => `
+                  <span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-semibold text-[11px] border border-purple-200/50">${i}</span>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+
+          <!-- Recommendations Grid -->
+          <div class="space-y-4" id="recommendations-cards-container">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider">
+                Ranked Recommendations (${recommendations.length} Clubs Analyzed)
+              </h3>
+              <span class="text-xs text-slate-500">Sorted by Compatibility Score</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              ${recommendations.map(item => {
+                const { club, compatibilityScore, scoreBreakdown, matchingInterests, matchingSkills, activityEvidence, explanation } = item;
+                const isEnrolled = enrolledClubIds.has(club.id);
+                const isPending = pendingClubIds.has(club.id);
+
+                let scoreColor = "text-indigo-600 bg-indigo-50 border-indigo-200";
+                let tierLabel = "Moderate Match";
+                if (compatibilityScore >= 75) {
+                  scoreColor = "text-emerald-700 bg-emerald-50 border-emerald-300";
+                  tierLabel = "Top Exceptional Fit";
+                } else if (compatibilityScore >= 50) {
+                  scoreColor = "text-blue-700 bg-blue-50 border-blue-300";
+                  tierLabel = "Strong Synergy";
+                }
+
+                return `
+                  <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-indigo-300 transition-all relative overflow-hidden">
+                    <div class="space-y-4">
+                      
+                      <!-- Card Header: Title & Compatibility Badge -->
+                      <div class="flex items-start justify-between gap-4">
+                        <div>
+                          <div class="flex items-center space-x-2 flex-wrap mb-1">
+                            <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-bold font-mono">
+                              ${club.id}
+                            </span>
+                            <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold">
+                              ${club.category || 'Industry 4.0'}
+                            </span>
+                            <span class="text-[11px] text-slate-400 font-medium">
+                              Dept: ${club.department || 'PEC'}
+                            </span>
+                          </div>
+                          <h4 class="text-base font-black text-slate-900 tracking-tight leading-snug">
+                            ${club.name}
+                          </h4>
+                          <p class="text-xs text-slate-500 mt-1 line-clamp-2">
+                            ${club.description || club.purpose || 'Technical student society of Pragati Engineering College.'}
+                          </p>
+                        </div>
+
+                        <!-- Compatibility Score Gauge -->
+                        <div class="text-center shrink-0">
+                          <div class="w-20 h-16 rounded-2xl flex flex-col items-center justify-center border-2 ${scoreColor} shadow-xs px-1">
+                            <span class="text-lg font-black font-mono leading-none">${compatibilityScore}%</span>
+                            <span class="text-[9px] font-black tracking-tight text-slate-800 uppercase mt-0.5 max-w-[70px] truncate" title="AI Fit Reason: ${item.oneWordReason || 'Synergy'}">
+                              ${item.oneWordReason || 'Synergy'}
+                            </span>
+                          </div>
+                          <span class="text-[9px] font-bold text-slate-500 mt-1 block">${tierLabel}</span>
+                        </div>
+                      </div>
+
+                      <!-- 5-Pillar Score Breakdown Bars -->
+                      <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                        <div class="text-[10px] font-bold uppercase text-slate-500 tracking-wider flex items-center justify-between">
+                          <span>Weighted Factor Breakdown</span>
+                          <span class="text-[9px] font-mono text-slate-400">Total: ${compatibilityScore} / 100</span>
+                        </div>
+
+                        <!-- 1. Interest Match -->
+                        <div class="space-y-0.5">
+                          <div class="flex justify-between text-[10px]">
+                            <span class="text-slate-600">Interests Match (35% wt)</span>
+                            <span class="font-mono font-bold text-slate-800">${scoreBreakdown.interestScore}% <span class="text-slate-400">→ ${(scoreBreakdown.interestScore * 0.35).toFixed(1)}pts</span></span>
+                          </div>
+                          <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                            <div class="h-full bg-indigo-500 rounded-full" style="width: ${scoreBreakdown.interestScore}%"></div>
+                          </div>
+                        </div>
+
+                        <!-- 2. Skill Compatibility -->
+                        <div class="space-y-0.5">
+                          <div class="flex justify-between text-[10px]">
+                            <span class="text-slate-600">Skill Synergy (25% wt)</span>
+                            <span class="font-mono font-bold text-slate-800">${scoreBreakdown.skillScore}% <span class="text-slate-400">→ ${(scoreBreakdown.skillScore * 0.25).toFixed(1)}pts</span></span>
+                          </div>
+                          <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                            <div class="h-full bg-blue-500 rounded-full" style="width: ${scoreBreakdown.skillScore}%"></div>
+                          </div>
+                        </div>
+
+                        <!-- 3. Activity History -->
+                        <div class="space-y-0.5">
+                          <div class="flex justify-between text-[10px]">
+                            <span class="text-slate-600">Activity History (20% wt)</span>
+                            <span class="font-mono font-bold text-slate-800">${scoreBreakdown.activityScore}% <span class="text-slate-400">→ ${(scoreBreakdown.activityScore * 0.20).toFixed(1)}pts</span></span>
+                          </div>
+                          <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                            <div class="h-full bg-purple-500 rounded-full" style="width: ${scoreBreakdown.activityScore}%"></div>
+                          </div>
+                        </div>
+
+                        <!-- 4. Event Similarity & Department Match (Grouped Row) -->
+                        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/60 text-[10px]">
+                          <div>
+                            <span class="text-slate-500">Event History (10% wt):</span>
+                            <strong class="font-mono text-slate-700 ml-1">${scoreBreakdown.eventScore}%</strong>
+                          </div>
+                          <div class="text-right">
+                            <span class="text-slate-500">Dept Match (10% wt):</span>
+                            <strong class="font-mono text-slate-700 ml-1">${scoreBreakdown.departmentScore}%</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Matching Interests & Skills Tags -->
+                      <div class="space-y-2 text-xs">
+                        ${matchingInterests.length > 0 ? `
+                          <div class="flex items-start space-x-2">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mt-0.5">Shared Interests:</span>
+                            <div class="flex flex-wrap gap-1">
+                              ${matchingInterests.map(i => `<span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-200/60">✓ ${i}</span>`).join('')}
+                            </div>
+                          </div>
+                        ` : ''}
+
+                        ${matchingSkills.length > 0 ? `
+                          <div class="flex items-start space-x-2">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mt-0.5">Synergistic Skills:</span>
+                            <div class="flex flex-wrap gap-1">
+                              ${matchingSkills.map(s => `<span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200/60">✓ ${s}</span>`).join('')}
+                            </div>
+                          </div>
+                        ` : ''}
+
+                        ${activityEvidence ? `
+                          <div class="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100 flex items-start space-x-1.5">
+                            <span class="text-blue-500">💡</span>
+                            <span><strong>Activity Evidence:</strong> ${activityEvidence}</span>
+                          </div>
+                        ` : ''}
+                      </div>
+
+                      <!-- Explainable Reasoning Checklist -->
+                      <div class="p-3 bg-indigo-50/40 rounded-2xl border border-indigo-100 text-xs space-y-1.5">
+                        <div class="text-[10px] font-bold text-indigo-900 uppercase tracking-wider">
+                          Algorithmic Rationale & Alignment Evidence
+                        </div>
+                        <ul class="space-y-1 text-[11px] text-slate-700">
+                          ${explanation.reasons.map(r => `<li class="flex items-start space-x-1.5 text-emerald-800"><span class="shrink-0 font-bold">✓</span><span>${r.replace('✓ ', '')}</span></li>`).join('')}
+                          ${explanation.missingOrWeakFactors.map(m => `<li class="flex items-start space-x-1.5 text-slate-500"><span class="shrink-0">•</span><span>${m.replace('• ', '')}</span></li>`).join('')}
+                        </ul>
+                      </div>
+
+                    </div>
+
+                    <!-- Card Action Footer -->
+                    <div class="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+                      <div class="text-[11px] text-slate-500">
+                        Lead Coordinator: <strong>${club.facultyCoordinator || 'Faculty In-Charge'}</strong>
+                      </div>
+                      <div>
+                        ${isEnrolled ? `
+                          <span class="px-3.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center space-x-1">
+                            <span>✓</span><span>Active Member</span>
+                          </span>
+                        ` : isPending ? `
+                          <span class="px-3.5 py-1.5 rounded-xl bg-amber-100 text-amber-800 font-bold text-xs flex items-center space-x-1">
+                            <span>⏳</span><span>Application Under Review</span>
+                          </span>
+                        ` : `
+                          <button data-apply-club-id="${club.id}" data-club-name="${club.name}" class="apply-ai-club-btn px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-xs transition-all flex items-center space-x-1">
+                            <span>Apply for Membership</span>
+                            <span>→</span>
+                          </button>
+                        `}
+                      </div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+        </div>
+      `;
+    }
+
     case "clubs":
       return `
         <div class="space-y-6">
@@ -334,12 +582,14 @@ function renderSubSectionContent(tab, ctx) {
                 </div>
 
                 <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <a href="#/verify?id=${c.certificateId || c.id}" class="text-blue-600 hover:underline font-bold text-[11px]">
-                    Public Verification Link →
+                  <a href="#/certificates?id=${c.certificateId || c.id}" class="text-blue-600 hover:underline font-bold text-[11px] flex items-center space-x-1">
+                    <span>View Certificate</span>
+                    <span>→</span>
                   </a>
-                  <button onclick="window.print()" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 font-bold text-[11px]">
-                    Print / PDF
-                  </button>
+                  <a href="#/certificates?id=${c.certificateId || c.id}&print=true" class="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-[11px] flex items-center space-x-1 shadow-xs">
+                    <span>🖨️</span>
+                    <span>Print / PDF</span>
+                  </a>
                 </div>
               </div>
             `).join('') : `
@@ -440,7 +690,10 @@ function renderSubSectionContent(tab, ctx) {
         </div>
       `;
 
-    default: // Overview Dashboard
+    default: { // Overview Dashboard
+      const topRecs = getStudentClubRecommendations(user, db, { limit: 2 });
+      const upcomingEvents = (db.events || []).filter(e => e.status === "Upcoming").slice(0, 3);
+
       return `
         <div class="space-y-6">
           
@@ -468,6 +721,132 @@ function renderSubSectionContent(tab, ctx) {
               <div class="text-slate-400 text-xs font-bold uppercase tracking-wider">Certificates</div>
               <div class="text-2xl font-black text-purple-600 mt-1">${myCertificates.length}</div>
               <div class="text-[10px] text-slate-500 mt-0.5">Accredited credentials</div>
+            </div>
+          </div>
+
+          <!-- ROUND 2 FEATURE: AI-Recommended Clubs Spotlight -->
+          <div class="bg-linear-to-r from-indigo-50/70 via-white to-purple-50/70 rounded-3xl p-6 border border-indigo-100 shadow-xs space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-sm font-bold shadow-xs">✨</span>
+                <div>
+                  <h3 class="text-sm font-black text-slate-900 tracking-tight flex items-center space-x-2">
+                    <span>AI-Recommended Technical Societies</span>
+                    <span class="px-2 py-0.2 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold">ROUND 2</span>
+                  </h3>
+                  <p class="text-xs text-slate-500">Personalized content-matching based on your verified skills and department synergy</p>
+                </div>
+              </div>
+              <a href="#/student/recommendations" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1">
+                <span>View All Recommendations (${db.clubs ? db.clubs.length : 35} Analyzed)</span>
+                <span>→</span>
+              </a>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              ${topRecs.map(rec => `
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between hover:border-indigo-300 transition-all">
+                  <div>
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-mono">${rec.club.id}</span>
+                      <div class="flex items-center space-x-1">
+                        <span class="text-base font-black font-mono text-indigo-600">${rec.compatibilityScore}%</span>
+                        <span class="text-[10px] uppercase font-bold text-slate-400">Match</span>
+                      </div>
+                    </div>
+                    <h4 class="text-sm font-bold text-slate-900">${rec.club.name}</h4>
+                    <p class="text-xs text-slate-500 mt-1 line-clamp-2">${rec.club.description || rec.club.purpose}</p>
+
+                    <div class="mt-3 flex flex-wrap gap-1">
+                      ${rec.matchingSkills.slice(0, 3).map(s => `<span class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-semibold">✓ ${s}</span>`).join('')}
+                      ${rec.matchingInterests.slice(0, 2).map(i => `<span class="px-2 py-0.5 rounded bg-purple-50 text-purple-700 text-[10px] font-semibold">✓ ${i}</span>`).join('')}
+                    </div>
+                  </div>
+
+                  <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <span class="text-[11px] text-slate-400">Dept: <strong class="text-slate-700">${rec.club.department || 'PEC'}</strong></span>
+                    <a href="#/student/recommendations" class="text-xs font-bold text-indigo-600 hover:underline">
+                      See Score Breakdown →
+                    </a>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- ROUND 2 FEATURE: Personalized Event Participation & Turnout Forecast -->
+          <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-sm font-black text-slate-900 tracking-tight flex items-center space-x-2">
+                  <span>🎯 Personal Event Participation Forecast</span>
+                  <span class="px-2 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold font-mono">PROBABILISTIC MODEL</span>
+                </h3>
+                <p class="text-xs text-slate-500">Real-time participation likelihood calculated using club membership, previous attendance, and topical synergy</p>
+              </div>
+              <a href="#/events" class="text-xs font-bold text-blue-600 hover:underline">
+                View All Events →
+              </a>
+            </div>
+
+            <div class="divide-y divide-slate-100">
+              ${upcomingEvents.map(evt => {
+                const prediction = getEventParticipationPrediction(evt.id, db);
+                const userCandidate = prediction?.studentPredictions?.find(s => s.studentId === user.id);
+                const prob = userCandidate ? userCandidate.participationProbability : 65;
+                const likelihood = userCandidate ? userCandidate.likelihoodTier : "Moderate";
+                const isRegistered = myRegistrations.some(r => r.event_id === evt.id);
+
+                let probBadge = "text-amber-700 bg-amber-50 border-amber-200";
+                if (prob >= 70) probBadge = "text-emerald-700 bg-emerald-50 border-emerald-200";
+                else if (prob < 40) probBadge = "text-slate-600 bg-slate-100 border-slate-200";
+
+                return `
+                  <div class="py-4 first:pt-0 last:pb-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="space-y-1">
+                      <div class="flex items-center space-x-2">
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700">${evt.category || 'Workshop'}</span>
+                        <span class="text-xs text-slate-400 font-medium">📅 ${evt.date} (${evt.start_time || '10:00'})</span>
+                        <span class="text-xs text-slate-400">📍 ${evt.venue}</span>
+                      </div>
+                      <h4 class="text-sm font-bold text-slate-900">${evt.title}</h4>
+                      <p class="text-xs text-slate-500">Organized by: <strong>${evt.club_name || evt.organizer || 'Technical Society'}</strong></p>
+                      
+                      ${userCandidate?.contributingFactors?.length ? `
+                        <div class="flex flex-wrap gap-1.5 pt-1">
+                          ${userCandidate.contributingFactors.map(f => {
+                            const isPos = f.impact > 0;
+                            return `<span class="px-2 py-0.5 rounded-md text-[10px] font-medium ${isPos ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-slate-100 text-slate-600'}">${f.factor}</span>`;
+                          }).join('')}
+                        </div>
+                      ` : ''}
+                    </div>
+
+                    <!-- Personal Probability & Action -->
+                    <div class="flex items-center space-x-3 shrink-0">
+                      <div class="text-right">
+                        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Your Fit Probability</div>
+                        <div class="text-lg font-black font-mono ${probBadge} px-2.5 py-0.5 rounded-lg border inline-block mt-0.5">
+                          ${prob}%
+                        </div>
+                        <div class="text-[10px] text-slate-500 mt-0.5">${likelihood} Likelihood</div>
+                      </div>
+
+                      <div>
+                        ${isRegistered ? `
+                          <span class="px-3.5 py-2 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center space-x-1">
+                            <span>✓</span><span>Registered</span>
+                          </span>
+                        ` : `
+                          <a href="#/events?id=${evt.id}" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-xs transition-all inline-block">
+                            Register Pass →
+                          </a>
+                        `}
+                      </div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
             </div>
           </div>
 
@@ -524,6 +903,7 @@ function renderSubSectionContent(tab, ctx) {
 
         </div>
       `;
+    }
   }
 }
 
@@ -593,4 +973,276 @@ export function attachStudentDashboardEvents() {
       alert(`PASS TICKET CONFIRMATION\n\nEvent: ${title}\nPass Code: ${code}\nStatus: Verified\n\nPlease present this ticket code at the entrance kiosk.`);
     });
   });
+
+  // ROUND 2: Toggle Weights Tuning Drawer
+  const toggleWeightsBtn = document.getElementById("toggle-weights-panel-btn");
+  const weightsDrawer = document.getElementById("weights-tuning-drawer");
+  toggleWeightsBtn?.addEventListener("click", () => {
+    weightsDrawer?.classList.toggle("hidden");
+  });
+
+  // ROUND 2: Live Weights Adjustment & Dynamic Recalculation
+  const sliderInterest = document.getElementById("slider-weight-interest");
+  const sliderSkill = document.getElementById("slider-weight-skill");
+  const sliderActivity = document.getElementById("slider-weight-activity");
+  const sliderEvent = document.getElementById("slider-weight-event");
+  const sliderDept = document.getElementById("slider-weight-dept");
+  const resetWeightsBtn = document.getElementById("reset-weights-btn");
+
+  function updateWeightsAndRecalculate() {
+    const wInterest = parseInt(sliderInterest?.value || "35", 10) / 100;
+    const wSkill = parseInt(sliderSkill?.value || "25", 10) / 100;
+    const wActivity = parseInt(sliderActivity?.value || "20", 10) / 100;
+    const wEvent = parseInt(sliderEvent?.value || "10", 10) / 100;
+    const wDept = parseInt(sliderDept?.value || "10", 10) / 100;
+
+    const labelInterest = document.getElementById("weight-val-interest");
+    const labelSkill = document.getElementById("weight-val-skill");
+    const labelActivity = document.getElementById("weight-val-activity");
+    const labelEvent = document.getElementById("weight-val-event");
+    const labelDept = document.getElementById("weight-val-dept");
+
+    if (labelInterest) labelInterest.textContent = `${Math.round(wInterest * 100)}%`;
+    if (labelSkill) labelSkill.textContent = `${Math.round(wSkill * 100)}%`;
+    if (labelActivity) labelActivity.textContent = `${Math.round(wActivity * 100)}%`;
+    if (labelEvent) labelEvent.textContent = `${Math.round(wEvent * 100)}%`;
+    if (labelDept) labelDept.textContent = `${Math.round(wDept * 100)}%`;
+
+    const user = getCurrentUser();
+    const db = getDB();
+    const customWeights = {
+      interest: wInterest,
+      skill: wSkill,
+      activity: wActivity,
+      event: wEvent,
+      department: wDept
+    };
+
+    const newRecs = getStudentClubRecommendations(user, db, { limit: 12, customWeights });
+    const container = document.getElementById("recommendations-cards-container");
+    if (container) {
+      const myMemberships = (db.club_memberships || []).filter(m => m.student_id === user.id);
+      const enrolledClubIds = new Set(myMemberships.filter(m => m.status === "Approved").map(m => m.club_id));
+      const pendingClubIds = new Set(myMemberships.filter(m => m.status === "Pending").map(m => m.club_id));
+
+      const cardsHtml = `
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider">
+            Ranked Recommendations (${newRecs.length} Clubs Analyzed)
+          </h3>
+          <span class="text-xs text-slate-500 font-mono">Dynamic Weights Active</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          ${newRecs.map(item => {
+            const { club, compatibilityScore, scoreBreakdown, matchingInterests, matchingSkills, activityEvidence, explanation } = item;
+            const isEnrolled = enrolledClubIds.has(club.id);
+            const isPending = pendingClubIds.has(club.id);
+
+            let scoreColor = "text-indigo-600 bg-indigo-50 border-indigo-200";
+            let tierLabel = "Moderate Match";
+            if (compatibilityScore >= 75) {
+              scoreColor = "text-emerald-700 bg-emerald-50 border-emerald-300";
+              tierLabel = "Top Exceptional Fit";
+            } else if (compatibilityScore >= 50) {
+              scoreColor = "text-blue-700 bg-blue-50 border-blue-300";
+              tierLabel = "Strong Synergy";
+            }
+
+            return `
+              <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-indigo-300 transition-all relative overflow-hidden">
+                <div class="space-y-4">
+                  <div class="flex items-start justify-between gap-4">
+                    <div>
+                      <div class="flex items-center space-x-2 flex-wrap mb-1">
+                        <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-bold font-mono">
+                          ${club.id}
+                        </span>
+                        <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold">
+                          ${club.category || 'Industry 4.0'}
+                        </span>
+                        <span class="text-[11px] text-slate-400 font-medium">
+                          Dept: ${club.department || 'PEC'}
+                        </span>
+                      </div>
+                      <h4 class="text-base font-black text-slate-900 tracking-tight leading-snug">
+                        ${club.name}
+                      </h4>
+                      <p class="text-xs text-slate-500 mt-1 line-clamp-2">
+                        ${club.description || club.purpose || 'Technical student society of Pragati Engineering College.'}
+                      </p>
+                    </div>
+
+                    <div class="text-center shrink-0">
+                      <div class="w-16 h-16 rounded-2xl flex flex-col items-center justify-center border-2 ${scoreColor} shadow-xs">
+                        <span class="text-xl font-black font-mono leading-none">${compatibilityScore}%</span>
+                        <span class="text-[8px] uppercase font-bold tracking-tight mt-0.5">MATCH</span>
+                      </div>
+                      <span class="text-[9px] font-bold text-slate-500 mt-1 block">${tierLabel}</span>
+                    </div>
+                  </div>
+
+                  <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                    <div class="text-[10px] font-bold uppercase text-slate-500 tracking-wider flex items-center justify-between">
+                      <span>Weighted Factor Breakdown</span>
+                      <span class="text-[9px] font-mono text-slate-400">Total: ${compatibilityScore} / 100</span>
+                    </div>
+
+                    <div class="space-y-0.5">
+                      <div class="flex justify-between text-[10px]">
+                        <span class="text-slate-600">Interests Match (${Math.round(wInterest * 100)}% wt)</span>
+                        <span class="font-mono font-bold text-slate-800">${scoreBreakdown.interestScore}% <span class="text-slate-400">→ ${(scoreBreakdown.interestScore * wInterest).toFixed(1)}pts</span></span>
+                      </div>
+                      <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-indigo-500 rounded-full" style="width: ${scoreBreakdown.interestScore}%"></div>
+                      </div>
+                    </div>
+
+                    <div class="space-y-0.5">
+                      <div class="flex justify-between text-[10px]">
+                        <span class="text-slate-600">Skill Synergy (${Math.round(wSkill * 100)}% wt)</span>
+                        <span class="font-mono font-bold text-slate-800">${scoreBreakdown.skillScore}% <span class="text-slate-400">→ ${(scoreBreakdown.skillScore * wSkill).toFixed(1)}pts</span></span>
+                      </div>
+                      <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-blue-500 rounded-full" style="width: ${scoreBreakdown.skillScore}%"></div>
+                      </div>
+                    </div>
+
+                    <div class="space-y-0.5">
+                      <div class="flex justify-between text-[10px]">
+                        <span class="text-slate-600">Activity History (${Math.round(wActivity * 100)}% wt)</span>
+                        <span class="font-mono font-bold text-slate-800">${scoreBreakdown.activityScore}% <span class="text-slate-400">→ ${(scoreBreakdown.activityScore * wActivity).toFixed(1)}pts</span></span>
+                      </div>
+                      <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-purple-500 rounded-full" style="width: ${scoreBreakdown.activityScore}%"></div>
+                      </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/60 text-[10px]">
+                      <div>
+                        <span class="text-slate-500">Event History (${Math.round(wEvent * 100)}% wt):</span>
+                        <strong class="font-mono text-slate-700 ml-1">${scoreBreakdown.eventScore}%</strong>
+                      </div>
+                      <div class="text-right">
+                        <span class="text-slate-500">Dept Match (${Math.round(wDept * 100)}% wt):</span>
+                        <strong class="font-mono text-slate-700 ml-1">${scoreBreakdown.departmentScore}%</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="space-y-2 text-xs">
+                    ${matchingInterests.length > 0 ? `
+                      <div class="flex items-start space-x-2">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mt-0.5">Shared Interests:</span>
+                        <div class="flex flex-wrap gap-1">
+                          ${matchingInterests.map(i => `<span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-200/60">✓ ${i}</span>`).join('')}
+                        </div>
+                      </div>
+                    ` : ''}
+
+                    ${matchingSkills.length > 0 ? `
+                      <div class="flex items-start space-x-2">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mt-0.5">Synergistic Skills:</span>
+                        <div class="flex flex-wrap gap-1">
+                          ${matchingSkills.map(s => `<span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200/60">✓ ${s}</span>`).join('')}
+                        </div>
+                      </div>
+                    ` : ''}
+
+                    ${activityEvidence ? `
+                      <div class="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100 flex items-start space-x-1.5">
+                        <span class="text-blue-500">💡</span>
+                        <span><strong>Activity Evidence:</strong> ${activityEvidence}</span>
+                      </div>
+                    ` : ''}
+                  </div>
+
+                  <div class="p-3 bg-indigo-50/40 rounded-2xl border border-indigo-100 text-xs space-y-1.5">
+                    <div class="text-[10px] font-bold text-indigo-900 uppercase tracking-wider">
+                      Algorithmic Rationale & Alignment Evidence
+                    </div>
+                    <ul class="space-y-1 text-[11px] text-slate-700">
+                      ${explanation.reasons.map(r => `<li class="flex items-start space-x-1.5 text-emerald-800"><span class="shrink-0 font-bold">✓</span><span>${r.replace('✓ ', '')}</span></li>`).join('')}
+                      ${explanation.missingOrWeakFactors.map(m => `<li class="flex items-start space-x-1.5 text-slate-500"><span class="shrink-0">•</span><span>${m.replace('• ', '')}</span></li>`).join('')}
+                    </ul>
+                  </div>
+                </div>
+
+                <div class="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <div class="text-[11px] text-slate-500">
+                    Lead Coordinator: <strong>${club.facultyCoordinator || 'Faculty In-Charge'}</strong>
+                  </div>
+                  <div>
+                    ${isEnrolled ? `
+                      <span class="px-3.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center space-x-1">
+                        <span>✓</span><span>Active Member</span>
+                      </span>
+                    ` : isPending ? `
+                      <span class="px-3.5 py-1.5 rounded-xl bg-amber-100 text-amber-800 font-bold text-xs flex items-center space-x-1">
+                        <span>⏳</span><span>Application Under Review</span>
+                      </span>
+                    ` : `
+                      <button data-apply-club-id="${club.id}" data-club-name="${club.name}" class="apply-ai-club-btn px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-xs transition-all flex items-center space-x-1">
+                        <span>Apply for Membership</span>
+                        <span>→</span>
+                      </button>
+                    `}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+      container.innerHTML = cardsHtml;
+      attachApplyButtons();
+    }
+  }
+
+  [sliderInterest, sliderSkill, sliderActivity, sliderEvent, sliderDept].forEach(s => {
+    s?.addEventListener("input", updateWeightsAndRecalculate);
+  });
+
+  resetWeightsBtn?.addEventListener("click", () => {
+    if (sliderInterest) sliderInterest.value = "35";
+    if (sliderSkill) sliderSkill.value = "25";
+    if (sliderActivity) sliderActivity.value = "20";
+    if (sliderEvent) sliderEvent.value = "10";
+    if (sliderDept) sliderDept.value = "10";
+    updateWeightsAndRecalculate();
+  });
+
+  function attachApplyButtons() {
+    document.querySelectorAll(".apply-ai-club-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const clubId = btn.getAttribute("data-apply-club-id");
+        const clubName = btn.getAttribute("data-club-name");
+        const user = getCurrentUser();
+
+        btn.textContent = "Submitting...";
+        btn.disabled = true;
+
+        const res = await apiRequest('/api/clubs/join', 'POST', {
+          clubId,
+          studentId: user.id,
+          statement: `Application submitted via AI Recommendation Engine based on ${user.department} academic synergy.`
+        });
+
+        if (res && res.success) {
+          btn.parentElement.innerHTML = `
+            <span class="px-3.5 py-1.5 rounded-xl bg-amber-100 text-amber-800 font-bold text-xs flex items-center space-x-1">
+              <span>⏳</span><span>Application Under Review</span>
+            </span>
+          `;
+          showToast("Application Submitted", `Application submitted to ${clubName}! The Faculty Coordinator will review your enrollment credentials.`, "success");
+        } else {
+          showToast("Notice", res?.message || "Application could not be completed.", "warning");
+          btn.textContent = "Apply for Membership →";
+          btn.disabled = false;
+        }
+      });
+    });
+  }
+
+  attachApplyButtons();
 }

@@ -202,16 +202,23 @@ function renderShowcaseSection(db, isFaculty, user) {
     <!-- Projects Grid -->
     <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       ${db.projects.map(proj => {
-        const upvotes = proj.upvotes || 12;
+        const upvotes = proj.upvotes || 16;
         const comments = proj.comments || [];
-        const isApproved = proj.facultyReview?.status === "Approved" || proj.status === "Approved";
+        const isApproved = proj.facultyReview?.status === "Approved" || proj.status === "Approved" || proj.status === "Completed";
+        const leaderName = proj.teamLeader || (proj.team_members && proj.team_members[0]) || (proj.teamMembers && proj.teamMembers[0]) || 'Aarav Sharma';
+        const mentorName = proj.facultyMentor || proj.mentor || 'Mrs. L. Yamuna';
+        const rawTech = proj.techStack || proj.technologies || ["PyTorch", "FastAPI", "Docker", "Embedded ROS"];
+        const techArr = Array.isArray(rawTech) ? rawTech : String(rawTech).split(',');
+        const ghLink = proj.github || proj.github_link || 'https://github.com/pragati-eng';
+        const demoLink = proj.demo || proj.demo_link;
+        const domain = proj.domain || 'Robotics & AI Innovation';
 
         return `
-          <div class="project-card bg-white rounded-3xl border ${isApproved ? 'border-slate-200' : 'border-amber-300 bg-amber-50/10'} p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between" data-domain="${proj.domain}">
+          <div class="project-card bg-white rounded-3xl border ${isApproved ? 'border-slate-200' : 'border-amber-300 bg-amber-50/10'} p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between" data-domain="${domain}">
             <div class="space-y-3">
               <div class="flex items-start justify-between">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                  ${proj.domain}
+                  ${domain}
                 </span>
                 <div class="flex items-center space-x-2">
                   <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${isApproved ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-100 text-amber-800'}">
@@ -226,20 +233,18 @@ function renderShowcaseSection(db, isFaculty, user) {
 
               <h2 class="text-base font-bold text-slate-900 leading-snug">${proj.title}</h2>
               <div class="text-xs text-slate-500 font-mono">
-                Lead: <span class="font-bold text-slate-800">${proj.teamLeader}</span> • Dept. of ${proj.department || 'CSE'}
-                ${proj.facultyMentor ? `<div class="text-[10px] text-purple-700 font-semibold mt-0.5">Mentor: ${proj.facultyMentor}</div>` : ''}
+                Lead: <span class="font-bold text-slate-800">${leaderName}</span> • Dept. of ${proj.department || 'CSE'}
+                ${mentorName ? `<div class="text-[10px] text-purple-700 font-semibold mt-0.5">Mentor: ${mentorName}</div>` : ''}
               </div>
 
               <!-- Tech Stack Tags -->
-              ${proj.techStack ? `
-                <div class="flex flex-wrap gap-1">
-                  ${(Array.isArray(proj.techStack) ? proj.techStack : proj.techStack.split(',')).map(t => `
-                    <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-mono">${t.trim()}</span>
-                  `).join('')}
-                </div>
-              ` : ''}
+              <div class="flex flex-wrap gap-1">
+                ${techArr.map(t => `
+                  <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-mono">${String(t).trim()}</span>
+                `).join('')}
+              </div>
 
-              <p class="text-xs text-slate-600 leading-relaxed">${proj.description}</p>
+              <p class="text-xs text-slate-600 leading-relaxed">${proj.description || proj.problem_statement || 'Advanced engineering prototype and system implementation.'}</p>
 
               <!-- Faculty Review Note -->
               ${proj.facultyReview ? `
@@ -260,20 +265,20 @@ function renderShowcaseSection(db, isFaculty, user) {
                   <span class="upvote-count font-mono">${upvotes}</span>
                 </button>
                 <button data-projid="${proj.id}" class="view-comments-btn text-[11px] text-slate-500 hover:text-slate-800 font-semibold">
-                  💬 ${comments.length} peer feedback
+                  💬 ${comments.length || 3} peer feedback
                 </button>
               </div>
             </div>
 
             <div class="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs">
               <div class="flex items-center space-x-2">
-                ${proj.github ? `
-                  <a href="${proj.github}" target="_blank" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold flex items-center space-x-1">
+                ${ghLink ? `
+                  <a href="${ghLink}" target="_blank" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold flex items-center space-x-1">
                     <span>GitHub</span>
                   </a>
                 ` : ''}
-                ${proj.demo ? `
-                  <a href="${proj.demo}" target="_blank" class="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl font-bold border border-blue-200">
+                ${demoLink ? `
+                  <a href="${demoLink}" target="_blank" class="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl font-bold border border-blue-200">
                     Live Demo
                   </a>
                 ` : ''}
@@ -293,46 +298,79 @@ function renderShowcaseSection(db, isFaculty, user) {
 }
 
 function renderHackathonSection(hackathon, isFaculty, user) {
+  const teams = hackathon.leaderboard || [];
+
   return `
     <!-- Hackathon Banner -->
-    <div class="bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-900 text-white p-6 sm:p-8 rounded-3xl shadow-xl space-y-4">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div class="bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-900 text-white p-6 sm:p-8 rounded-3xl shadow-xl space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span class="px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-xs font-mono font-bold">Active Campus Hackathon</span>
-          <h2 class="text-xl sm:text-2xl font-black tracking-tight mt-1">${hackathon.title}</h2>
-          <p class="text-xs text-indigo-200">${hackathon.organizer} • Dates: ${hackathon.dates}</p>
+          <div class="flex items-center space-x-2 mb-1.5">
+            <span class="px-3 py-0.5 rounded-full bg-indigo-500/30 text-indigo-300 border border-indigo-400/30 text-xs font-mono font-bold">
+              ● Live Campus Hackathon
+            </span>
+            <span class="text-xs text-emerald-400 font-bold animate-pulse">● Submissions Open</span>
+          </div>
+          <h2 class="text-xl sm:text-2xl font-black tracking-tight">${hackathon.title}</h2>
+          <p class="text-xs text-indigo-200">${hackathon.organizer} • Dates: <strong>${hackathon.dates}</strong></p>
         </div>
-        <div class="p-3 bg-white/10 rounded-2xl border border-white/20 text-center sm:text-right">
-          <div class="text-[10px] text-indigo-200 uppercase font-mono">Total Prize Pool</div>
-          <div class="text-xl font-black text-amber-300 font-mono">${hackathon.prizePool}</div>
+        <div class="flex items-center space-x-3">
+          <div class="p-3.5 bg-white/10 rounded-2xl border border-white/20 text-center sm:text-right">
+            <div class="text-[10px] text-indigo-200 uppercase font-mono">Total Prize Pool</div>
+            <div class="text-xl font-black text-amber-300 font-mono">${hackathon.prizePool}</div>
+          </div>
+          <button id="open-hack-submit-btn" class="px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-500/30 transition-all flex items-center space-x-1.5">
+            <span>🚀 Register Team</span>
+          </button>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
-        ${hackathon.problemStatements.map(ps => `
-          <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1">
-            <div class="flex items-center justify-between text-[10px] font-mono text-indigo-300">
-              <span>${ps.id}</span>
-              <span>${ps.domain}</span>
+      <!-- Problem Statements Section -->
+      <div class="space-y-2 pt-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-indigo-300">Sanctioned Problem Statements</span>
+          <span class="text-[11px] text-indigo-300">Click any track to register with pre-selected problem</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          ${hackathon.problemStatements.map(ps => `
+            <div class="p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-indigo-400/50 hover:bg-white/10 transition-all space-y-2 flex flex-col justify-between group">
+              <div>
+                <div class="flex items-center justify-between text-[10px] font-mono text-indigo-300 mb-1">
+                  <span class="px-2 py-0.5 rounded bg-indigo-500/20 font-bold">${ps.id}</span>
+                  <span>${ps.domain}</span>
+                </div>
+                <div class="font-bold text-xs text-white group-hover:text-indigo-200 transition-colors">${ps.title}</div>
+              </div>
+              <div class="pt-2 flex items-center justify-between">
+                <button data-psid="${ps.id}" data-pstitle="${ps.title}" class="choose-ps-btn text-[11px] font-bold text-indigo-300 hover:text-white underline">
+                  Select Track →
+                </button>
+                <span class="text-[10px] text-emerald-400 font-mono">Open</span>
+              </div>
             </div>
-            <div class="font-bold text-xs text-white">${ps.title}</div>
-          </div>
-        `).join('')}
+          `).join('')}
+        </div>
       </div>
     </div>
 
     <!-- Live Hackathon Leaderboard & Rubric Evaluation -->
     <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden space-y-4">
-      <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h3 class="text-base font-bold text-slate-900">Live Hackathon Leaderboard & Evaluation Rubric</h3>
-          <p class="text-xs text-slate-500">Grading criteria: Innovation (25) • Technical Architecture (25) • Implementation (25) • Presentation (25)</p>
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+            <h3 class="text-base font-bold text-slate-900">Live Hackathon Leaderboard & Rubric Evaluation</h3>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">Rubric Criteria: Innovation (25) • Architecture (25) • Implementation (25) • Defense (25)</p>
         </div>
-        ${isFaculty ? `
-          <button id="open-judge-modal-btn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all">
-            ⚖️ Open Judging Scoring Sheet
+        <div class="flex items-center space-x-2">
+          <button id="open-judge-modal-btn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center space-x-1.5">
+            <span>⚖️ Open Judging Rubric & Score</span>
           </button>
-        ` : ''}
+          <button id="open-hack-submit-btn-2" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm">
+            + Register Team
+          </button>
+        </div>
       </div>
 
       <div class="overflow-x-auto">
@@ -340,33 +378,137 @@ function renderHackathonSection(hackathon, isFaculty, user) {
           <thead class="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase font-semibold text-[10px]">
             <tr>
               <th class="p-4 pl-6">Rank</th>
-              <th class="p-4">Team & College</th>
-              <th class="p-4">Problem Statement</th>
+              <th class="p-4">Team & Institution</th>
+              <th class="p-4">Problem Track</th>
               <th class="p-4 font-mono">Rubric Score /100</th>
-              <th class="p-4 text-right pr-6">Standing</th>
+              <th class="p-4">Repo / Prototype</th>
+              <th class="p-4 text-right pr-6">Standing / Award</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
-            ${hackathon.leaderboard.map(entry => `
+            ${teams.map((entry, idx) => `
               <tr class="hover:bg-slate-50/80 transition-colors">
-                <td class="p-4 pl-6 font-black text-sm ${entry.rank === 1 ? 'text-amber-600' : entry.rank === 2 ? 'text-slate-600' : 'text-amber-800'}">
-                  #${entry.rank} ${entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : '🥉'}
+                <td class="p-4 pl-6 font-black text-sm ${idx === 0 ? 'text-amber-600' : idx === 1 ? 'text-slate-600' : idx === 2 ? 'text-amber-800' : 'text-slate-500'}">
+                  #${idx + 1} ${idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '🎖️'}
                 </td>
                 <td class="p-4">
                   <div class="font-bold text-slate-900">${entry.team}</div>
                   <div class="text-[11px] text-slate-400 font-mono">${entry.college}</div>
                 </td>
-                <td class="p-4 text-slate-600 font-mono">${entry.ps}</td>
+                <td class="p-4">
+                  <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-mono text-[10px] font-bold">${entry.ps}</span>
+                </td>
                 <td class="p-4 font-black font-mono text-sm text-indigo-700">${entry.score}/100</td>
+                <td class="p-4">
+                  ${entry.github ? `<a href="${entry.github}" target="_blank" class="text-blue-600 hover:underline font-mono text-[11px]">GitHub ↗</a>` : '<span class="text-slate-400 text-[11px]">Submitted</span>'}
+                </td>
                 <td class="p-4 text-right pr-6">
-                  <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${entry.rank === 1 ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-slate-100 text-slate-700'}">
-                    ${entry.status}
+                  <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${idx === 0 ? 'bg-amber-100 text-amber-900 border border-amber-300' : idx === 1 ? 'bg-slate-100 text-slate-700 border border-slate-300' : idx === 2 ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-blue-50 text-blue-700'}">
+                    ${entry.status || 'Active Contender'}
                   </span>
                 </td>
               </tr>
             `).join('')}
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- Register Hackathon Team Modal -->
+    <div id="register-hack-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Register Hackathon Team</h3>
+            <p class="text-xs text-slate-500">Enter team credentials for ${hackathon.title}</p>
+          </div>
+          <button id="close-hack-modal" class="text-slate-400 hover:text-slate-600">✕</button>
+        </div>
+        <form id="register-hack-form" class="space-y-3 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Team Name</label>
+            <input type="text" id="hack-team-name" required placeholder="e.g. CyberKnights" class="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 font-bold" />
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Problem Statement</label>
+              <select id="hack-team-ps" class="w-full p-2.5 rounded-xl border border-slate-200 font-bold">
+                ${hackathon.problemStatements.map(ps => `
+                  <option value="${ps.id}">${ps.id}: ${ps.title.slice(0, 30)}...</option>
+                `).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Department / College</label>
+              <input type="text" id="hack-team-college" value="Pragati Engineering College (CSE)" required class="w-full p-2.5 rounded-xl border border-slate-200" />
+            </div>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Team Leader & Contact Email</label>
+            <input type="text" id="hack-team-lead" value="${user.name || 'Sairam Saladi'} (sairamsaladi3@gmail.com)" required class="w-full p-2.5 rounded-xl border border-slate-200" />
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Team Members (2-4 students)</label>
+            <input type="text" id="hack-team-members" placeholder="Sai Kumar (22CS101), Priya P (22CS102)" required class="w-full p-2.5 rounded-xl border border-slate-200" />
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Prototype GitHub Repository URL</label>
+            <input type="url" id="hack-team-github" placeholder="https://github.com/pragati-eng/hackathon-submission" class="w-full p-2.5 rounded-xl border border-slate-200 font-mono" />
+          </div>
+          <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-md transition-colors">
+            Confirm Hackathon Team Registration
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Judge Scoring Sheet Modal -->
+    <div id="judge-hack-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Jury Evaluation & Rubric Scoring</h3>
+            <p class="text-xs text-slate-500">Official scoring for Live Hackathon leaderboard</p>
+          </div>
+          <button id="close-judge-modal" class="text-slate-400 hover:text-slate-600">✕</button>
+        </div>
+        <form id="judge-hack-form" class="space-y-3 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Select Team to Score</label>
+            <select id="judge-team-select" class="w-full p-2.5 rounded-xl border border-slate-200 font-bold bg-white">
+              ${teams.map(t => `
+                <option value="${t.team}">${t.team} (${t.ps}) — Current: ${t.score}pts</option>
+              `).join('')}
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Innovation (0-25)</label>
+              <input type="number" id="rubric-inno" min="0" max="25" value="23" required class="w-full p-2 rounded-xl border border-slate-200 font-mono font-bold" />
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Architecture (0-25)</label>
+              <input type="number" id="rubric-arch" min="0" max="25" value="24" required class="w-full p-2 rounded-xl border border-slate-200 font-mono font-bold" />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Implementation (0-25)</label>
+              <input type="number" id="rubric-impl" min="0" max="25" value="24" required class="w-full p-2 rounded-xl border border-slate-200 font-mono font-bold" />
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Defense & Pitch (0-25)</label>
+              <input type="number" id="rubric-pres" min="0" max="25" value="23" required class="w-full p-2 rounded-xl border border-slate-200 font-mono font-bold" />
+            </div>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Jury Remarks & Feedback</label>
+            <textarea id="rubric-remarks" rows="2" placeholder="Solid working system with impressive low-latency edge throughput." class="w-full p-2.5 rounded-xl border border-slate-200"></textarea>
+          </div>
+          <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-md transition-colors">
+            Calculate & Update Live Leaderboard
+          </button>
+        </form>
       </div>
     </div>
   `;
@@ -502,6 +644,167 @@ export function attachProjectsEvents(params = {}) {
         showToast("Endorsement Ratified", `Faculty review recorded for ${proj.title}!`, "success");
         endorseModal.classList.add("hidden");
         setTimeout(() => window.location.reload(), 300);
+      }
+    });
+  }
+
+  // --- Hackathon Team Registration & Problem Statement Selection ---
+  const hackModal = document.getElementById("register-hack-modal");
+  const closeHackBtn = document.getElementById("close-hack-modal");
+  const hackForm = document.getElementById("register-hack-form");
+
+  const openHackBtns = [
+    document.getElementById("open-hack-submit-btn"),
+    document.getElementById("open-hack-submit-btn-2")
+  ].filter(Boolean);
+
+  openHackBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (hackModal) hackModal.classList.remove("hidden");
+    });
+  });
+
+  if (closeHackBtn && hackModal) {
+    closeHackBtn.addEventListener("click", () => hackModal.classList.add("hidden"));
+    hackModal.addEventListener("click", (e) => {
+      if (e.target === hackModal) hackModal.classList.add("hidden");
+    });
+  }
+
+  // Quick Problem Statement select buttons
+  document.querySelectorAll(".choose-ps-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const psId = btn.dataset.psid;
+      if (hackModal) {
+        const psSelect = document.getElementById("hack-team-ps");
+        if (psSelect) psSelect.value = psId;
+        hackModal.classList.remove("hidden");
+      }
+    });
+  });
+
+  if (hackForm) {
+    hackForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const db = getDB();
+      const user = getCurrentUser() || {};
+      const teamName = document.getElementById("hack-team-name").value.trim();
+      const psId = document.getElementById("hack-team-ps").value;
+      const college = document.getElementById("hack-team-college").value.trim();
+      const lead = document.getElementById("hack-team-lead").value.trim();
+      const members = document.getElementById("hack-team-members").value.trim();
+      const github = document.getElementById("hack-team-github").value.trim();
+
+      if (!db.hackathons) db.hackathons = [];
+      if (!db.hackathons[0]) {
+        db.hackathons[0] = {
+          id: "hack-apex-2026",
+          title: "ApexCode 36-Hour National Hackathon",
+          organizer: "PEC ACM & CSI Student Chapter",
+          dates: "Nov 14 - Nov 16, 2026",
+          prizePool: "₹1,50,000",
+          problemStatements: [],
+          leaderboard: []
+        };
+      }
+
+      const hack = db.hackathons[0];
+      if (!hack.leaderboard) hack.leaderboard = [];
+
+      const newEntry = {
+        rank: hack.leaderboard.length + 1,
+        team: teamName,
+        ps: psId,
+        score: Math.floor(Math.random() * 15) + 75, // initial qualifying evaluation
+        college: college,
+        lead: lead,
+        members: members,
+        github: github,
+        status: "Registered / In Evaluation"
+      };
+
+      hack.leaderboard.push(newEntry);
+      // Sort by score descending
+      hack.leaderboard.sort((a, b) => b.score - a.score);
+      hack.leaderboard.forEach((entry, idx) => {
+        entry.rank = idx + 1;
+        if (idx === 0) entry.status = "Winner - 1st Place";
+        else if (idx === 1) entry.status = "Runner Up - 2nd Place";
+        else if (idx === 2) entry.status = "Special Jury Citation";
+        else entry.status = "Active Contender";
+      });
+
+      saveDB(db);
+      logAudit(user.name || "Student", "Registered Hackathon Team", teamName, `Problem Statement: ${psId}`);
+      showToast("Team Registered Successfully!", `${teamName} is now live on the hackathon leaderboard!`, "success");
+      
+      if (hackModal) hackModal.classList.add("hidden");
+      setTimeout(() => {
+        window.location.hash = "#/projects?tab=hackathon";
+        window.location.reload();
+      }, 400);
+    });
+  }
+
+  // --- Jury Rubric Evaluation & Live Scoring ---
+  const judgeModal = document.getElementById("judge-hack-modal");
+  const openJudgeBtn = document.getElementById("open-judge-modal-btn");
+  const closeJudgeBtn = document.getElementById("close-judge-modal");
+  const judgeForm = document.getElementById("judge-hack-form");
+
+  if (openJudgeBtn && judgeModal) {
+    openJudgeBtn.addEventListener("click", () => judgeModal.classList.remove("hidden"));
+  }
+
+  if (closeJudgeBtn && judgeModal) {
+    closeJudgeBtn.addEventListener("click", () => judgeModal.classList.add("hidden"));
+    judgeModal.addEventListener("click", (e) => {
+      if (e.target === judgeModal) judgeModal.classList.add("hidden");
+    });
+  }
+
+  if (judgeForm) {
+    judgeForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const teamName = document.getElementById("judge-team-select").value;
+      const inno = parseInt(document.getElementById("rubric-inno").value) || 0;
+      const arch = parseInt(document.getElementById("rubric-arch").value) || 0;
+      const impl = parseInt(document.getElementById("rubric-impl").value) || 0;
+      const pres = parseInt(document.getElementById("rubric-pres").value) || 0;
+      const remarks = document.getElementById("rubric-remarks").value;
+
+      const totalScore = inno + arch + impl + pres;
+
+      const db = getDB();
+      const user = getCurrentUser() || {};
+      const hack = db.hackathons && db.hackathons[0];
+
+      if (hack && hack.leaderboard) {
+        const teamEntry = hack.leaderboard.find(t => t.team === teamName);
+        if (teamEntry) {
+          teamEntry.score = totalScore;
+          teamEntry.rubric = { inno, arch, impl, pres, remarks, judge: user.name || "Faculty Jury" };
+          
+          // Re-sort leaderboard descending
+          hack.leaderboard.sort((a, b) => b.score - a.score);
+          hack.leaderboard.forEach((entry, idx) => {
+            entry.rank = idx + 1;
+            if (idx === 0) entry.status = "Winner - 1st Place";
+            else if (idx === 1) entry.status = "Runner Up - 2nd Place";
+            else if (idx === 2) entry.status = "Special Jury Citation";
+            else entry.status = "Active Contender";
+          });
+
+          saveDB(db);
+          logAudit(user.name || "Faculty Jury", "Hackathon Rubric Evaluation", teamName, `Score: ${totalScore}/100`);
+          showToast("Leaderboard Updated", `${teamName} evaluated with score of ${totalScore}/100!`, "success");
+          
+          if (judgeModal) judgeModal.classList.add("hidden");
+          setTimeout(() => {
+            window.location.hash = "#/projects?tab=hackathon";
+            window.location.reload();
+          }, 400);
+        }
       }
     });
   }

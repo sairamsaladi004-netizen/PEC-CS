@@ -20,17 +20,13 @@ import { renderAnalyticsView, attachAnalyticsEvents } from './views/analytics.js
 import { renderReportsView, attachReportsEvents } from './views/reports.js';
 import { renderVerificationView, attachVerificationEvents } from './views/verification.js';
 import { renderAdminView, attachAdminEvents } from './views/admin.js';
-import { renderClubDashboardView, attachClubDashboardEvents } from './views/clubDashboard.js';
+import { renderClubAdminDashboardView, attachClubAdminDashboardEvents } from './views/clubAdminDashboard.js';
 import { renderAboutView, attachAboutEvents } from './views/about.js';
-import { renderQuizzesView, attachQuizzesEvents } from './views/quizzes.js';
-import { renderPracticeView, attachPracticeEvents } from './views/practice.js';
-import { renderStudyCirclesView, attachStudyCirclesEvents } from './views/studyCircles.js';
 
 // New Role-Specific Comprehensive Portals
 import { renderLoginView, attachLoginEvents } from './views/login.js';
 import { renderStudentDashboardView, attachStudentDashboardEvents } from './views/studentDashboard.js';
 import { renderCoordinatorPortalView, attachCoordinatorPortalEvents } from './views/coordinatorPortal.js';
-import { renderDepartmentPortalView, attachDepartmentPortalEvents } from './views/departmentPortal.js';
 import { renderAdminPortalView, attachAdminPortalEvents } from './views/adminPortal.js';
 import { renderGuestDashboardView, attachGuestDashboardEvents } from './views/guestDashboard.js';
 
@@ -92,20 +88,12 @@ export function handleRoute() {
   // 3. Coordinator Portal Routes
   if (route.startsWith("#/coordinator")) {
     const sub = route.replace("#/coordinator/", "").replace("#/coordinator", "");
-    mountPoint.innerHTML = renderCoordinatorPortalView(sub || "dashboard", params);
+    mountPoint.innerHTML = renderCoordinatorPortalView(sub || "dashboard");
     attachCoordinatorPortalEvents();
     return;
   }
 
-  // 4. Department Admin Portal Routes
-  if (route.startsWith("#/department")) {
-    const sub = route.replace("#/department/", "").replace("#/department", "");
-    mountPoint.innerHTML = renderDepartmentPortalView(sub || "dashboard", params);
-    attachDepartmentPortalEvents();
-    return;
-  }
-
-  // 5. Super Admin Portal Routes
+  // 4. Super Admin Portal Routes
   if (route.startsWith("#/admin")) {
     const sub = route.replace("#/admin/", "").replace("#/admin", "");
     mountPoint.innerHTML = renderAdminPortalView(sub || "dashboard");
@@ -127,6 +115,7 @@ export function handleRoute() {
       break;
 
     case "#/events":
+    case "#/event-dashboard":
       mountPoint.innerHTML = renderEventsView(params);
       attachEventsEvents(params);
       break;
@@ -196,8 +185,8 @@ export function handleRoute() {
 
     case "#/club-dashboard":
     case "#/club-analytics":
-      mountPoint.innerHTML = renderClubDashboardView(params);
-      attachClubDashboardEvents(params);
+      mountPoint.innerHTML = renderClubAdminDashboardView(params);
+      attachClubAdminDashboardEvents(params);
       break;
 
     case "#/guest":
@@ -220,21 +209,6 @@ export function handleRoute() {
     case "#/about":
       mountPoint.innerHTML = renderAboutView();
       attachAboutEvents();
-      break;
-
-    case "#/quizzes":
-      mountPoint.innerHTML = renderQuizzesView(params);
-      attachQuizzesEvents();
-      break;
-
-    case "#/practice":
-      mountPoint.innerHTML = renderPracticeView(params);
-      attachPracticeEvents();
-      break;
-
-    case "#/study-circles":
-      mountPoint.innerHTML = renderStudyCirclesView(params);
-      attachStudyCirclesEvents();
       break;
 
     default:
