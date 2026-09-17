@@ -16,6 +16,23 @@ import {
   requireClubScope,
   recordAuditAction
 } from './authMiddleware.js';
+import {
+  recommendClubsForStudent,
+  predictEventParticipation,
+  detectInactiveMembers,
+  calculateClubEngagementScore,
+  recommendEventTiming,
+  generateEventIdeas,
+  getCoordinatorIntelligenceOverview,
+  calculateClubComparison,
+  calculateEngagementTrends,
+  generateActionableInsights,
+  recalculateIntelligenceSnapshot,
+  RECOMMENDATION_WEIGHTS,
+  CLUB_ENGAGEMENT_WEIGHTS,
+  INACTIVITY_CONFIG,
+  MODEL_VERSIONS
+} from './intelligenceEngine.js';
 
 export const apiRouter = express.Router();
 
@@ -1662,4 +1679,561 @@ apiRouter.get('/dashboard/guest', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// =========================================================================
+// ROUND 2: INTELLIGENT ENGAGEMENT & EVENT INTELLIGENCE API ENDPOINTS
+// =========================================================================
+
+// 1. AI Student-Club Recommendations
+apiRouter.get('/intelligence/recommendations/student/:studentId', (req, res) => {
+  const db = getDB();
+  const studentId = req.params.studentId;
+  const student = (db.users || []).find(u => u.id === studentId);
+
+  if (!student) {
+    return res.status(404).json({
+      success: false,
+      message: "Student record not found"
+    });
+  }
+
+  const limit = parseInt(req.query.limit || '10', 10);
+  const recommendations = recommendClubsForStudent(student, db, { limit });
+
+  res.json({
+    success: true,
+    studentId,
+    studentName: student.name,
+    weights: RECOMMENDATION_WEIGHTS,
+    formula: "Compatibility Score = 0.35 × InterestSimilarity + 0.25 × SkillSimilarity + 0.20 × ActivitySimilarity + 0.10 × EventSimilarity + 0.10 × DepartmentMatch",
+    recommendations,
+    timestamp: new Date().toISOString()
+  });
+});
+
+apiRouter.get('/intelligence/recommendations', (req, res) => {
+  const db = getDB();
+  const targetId = req.query.studentId || (req.user ? req.user.id : "std-101");
+  const student = (db.users || []).find(u => u.id === targetId) || (db.users && db.users[0]);
+
+  if (!student) {
+    return res.status(404).json({
+      success: false,
+      message: "No student profile available for recommendation engine"
+    });
+  }
+
+  const limit = parseInt(req.query.limit || '10', 10);
+  const recommendations = recommendClubsForStudent(student, db, { limit });
+
+  res.json({
+    success: true,
+    studentId: student.id,
+    studentName: student.name,
+    weights: RECOMMENDATION_WEIGHTS,
+    formula: "Compatibility Score = 0.35 × InterestSimilarity + 0.25 × SkillSimilarity + 0.20 × ActivitySimilarity + 0.10 × EventSimilarity + 0.10 × DepartmentMatch",
+    recommendations,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 2. Event Participation Prediction Engine
+apiRouter.get('/intelligence/events/:eventId/predictions', (req, res) => {
+  const db = getDB();
+  const eventId = req.params.eventId;
+  const prediction = predictEventParticipation(eventId, db);
+
+  if (!prediction) {
+    return res.status(404).json({
+      success: false,
+      message: "Event not found"
+    });
+  }
+
+  res.json({
+    success: true,
+    data: prediction,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 3. Inactive Member Detection
+apiRouter.get('/intelligence/clubs/:clubId/inactive-members', (req, res) => {
+  const db = getDB();
+  const clubId = req.params.clubId === 'all' ? null : req.params.clubId;
+  const thresholdDays = parseInt(req.query.threshold || '30', 10);
+
+  const inactiveMembers = detectInactiveMembers(clubId, db, { thresholdDays });
+
+  res.json({
+    success: true,
+    clubId: clubId || "all",
+    thresholdDays,
+    totalInactiveCount: inactiveMembers.length,
+    highRiskCount: inactiveMembers.filter(m => m.riskTier === "High Risk").length,
+    mediumRiskCount: inactiveMembers.filter(m => m.riskTier === "Medium Risk").length,
+    inactiveMembers,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 4. Member Re-engagement Action Trigger (creates real notification & audit record)
+apiRouter.post('/intelligence/reengage', requireAuth, (req, res) => {
+  const db = getDB();
+  const { studentId, clubId, customMessage, eventId } = req.body;
+
+  if (!studentId) {
+    return res.status(400).json({
+      success: false,
+      message: "Target student ID is required"
+    });
+  }
+
+  const student = (db.users || []).find(u => u.id === studentId);
+  if (!student) {
+    return res.status(404).json({
+      success: false,
+      message: "Student not found"
+    });
+  }
+
+  const club = (db.clubs || []).find(c => c.id === clubId);
+  const clubName = club ? club.name : (clubId || "Technical Society");
+
+  const notif = {
+    id: "notif-reengage-" + Date.now(),
+    user_id: studentId,
+    title: `Special Invitation from ${clubName}`,
+    message: customMessage || `Hello ${student.name.split(' ')[0]}, your technical club has exciting upcoming initiatives tailored to your engineering interests. We'd love to see you active again!`,
+    category: "Re-engagement",
+    link: eventId ? `#/events?id=${eventId}` : `#/student/clubs`,
+    created_at: new Date().toISOString(),
+    read: false
+  };
+
+  if (!Array.isArray(db.notifications)) db.notifications = [];
+  db.notifications.unshift(notif);
+  saveDB(db);
+
+  logAudit(
+    req.user ? req.user.name : "Faculty Coordinator",
+    "INTELLIGENCE_REENGAGE_MEMBER",
+    student.rollNo || studentId,
+    `Dispatched targeted re-engagement notification for ${clubName}`
+  );
+
+  res.json({
+    success: true,
+    message: `Personalized re-engagement notice delivered to ${student.name}`,
+    notification: notif
+  });
+});
+
+// 4b. Intervention trigger endpoint (batch and individual)
+apiRouter.post('/intelligence/interventions/trigger', requireAuth, (req, res) => {
+  const db = getDB();
+  const { clubId, studentId, action, notes } = req.body || {};
+  const club = (db.clubs || []).find(c => c.id === clubId);
+  const clubName = club ? club.name : (clubId || "Technical Society");
+
+  if (!Array.isArray(db.notifications)) db.notifications = [];
+
+  if (studentId) {
+    const student = (db.users || []).find(u => u.id === studentId);
+    if (!student) return res.status(404).json({ success: false, message: "Student record not found." });
+
+    const notif = {
+      id: "notif-reengage-" + Date.now(),
+      user_id: studentId,
+      title: `Society Re-engagement: ${clubName}`,
+      message: notes || `Hello ${student.name.split(' ')[0]}, your faculty coordinator invites you to re-engage with technical projects and upcoming workshops!`,
+      category: "Re-engagement",
+      link: `#/student/clubs`,
+      created_at: new Date().toISOString(),
+      read: false
+    };
+    db.notifications.unshift(notif);
+    saveDB(db);
+
+    recordAuditAction(
+      req,
+      "INTERVENTION_TRIGGERED",
+      "inactive_members",
+      studentId,
+      `Individual re-engagement nudge dispatched to ${student.name} (${student.rollNo})`
+    );
+
+    return res.json({
+      success: true,
+      message: `Re-engagement notification successfully dispatched to ${student.name}.`,
+      interventionsCreated: 1
+    });
+  }
+
+  // Batch intervention: nudge all inactive members of the club
+  const inactiveList = detectInactiveMembers(clubId, db);
+  let count = 0;
+  inactiveList.forEach(item => {
+    const sId = item.studentId || (item.member && item.member.studentId);
+    if (sId) {
+      db.notifications.unshift({
+        id: "notif-batch-" + Date.now() + "-" + count,
+        user_id: sId,
+        title: `Society Re-engagement: ${clubName}`,
+        message: `Your technical club has announced upcoming workshops and project tracks tailored to your skills. Check them out today!`,
+        category: "Re-engagement",
+        link: `#/student/clubs`,
+        created_at: new Date().toISOString(),
+        read: false
+      });
+      count++;
+    }
+  });
+
+  saveDB(db);
+  recordAuditAction(
+    req,
+    "BATCH_INTERVENTION_TRIGGERED",
+    "inactive_members",
+    clubId,
+    `Batch re-engagement dispatched to ${count} at-risk members for ${clubName}`
+  );
+
+  res.json({
+    success: true,
+    message: `Batch re-engagement nudges dispatched to ${count} members.`,
+    interventionsCreated: count
+  });
+});
+
+// 5. Explainable 0-100 Club Engagement Scores
+apiRouter.get('/intelligence/clubs/:clubId/engagement-score', (req, res) => {
+  const db = getDB();
+  const clubId = req.params.clubId;
+  const scorecard = calculateClubEngagementScore(clubId, db);
+
+  if (!scorecard) {
+    return res.status(404).json({
+      success: false,
+      message: "Club not found"
+    });
+  }
+
+  res.json({
+    success: true,
+    scorecard,
+    weights: CLUB_ENGAGEMENT_WEIGHTS,
+    timestamp: new Date().toISOString()
+  });
+});
+
+apiRouter.get('/intelligence/clubs/engagement-scores', (req, res) => {
+  const db = getDB();
+  const clubs = db.clubs || [];
+  const scorecards = clubs.map(c => calculateClubEngagementScore(c.id, db)).filter(Boolean);
+
+  scorecards.sort((a, b) => b.totalScore - a.totalScore);
+
+  res.json({
+    success: true,
+    weights: CLUB_ENGAGEMENT_WEIGHTS,
+    totalClubsEvaluated: scorecards.length,
+    averageEngagementScore: Math.round(scorecards.reduce((s, c) => s + c.totalScore, 0) / Math.max(1, scorecards.length)),
+    scorecards,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 6. Historical Event Day/Time Optimizer
+apiRouter.get('/intelligence/events/timing-recommendations', (req, res) => {
+  const db = getDB();
+  const clubId = req.query.clubId || null;
+  const timing = recommendEventTiming(clubId, db);
+
+  res.json({
+    success: true,
+    timingOptimization: timing,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 7. Domain-Specific Event & Activity Ideas Generator
+apiRouter.get('/intelligence/clubs/:clubId/event-ideas', (req, res) => {
+  const db = getDB();
+  const clubId = req.params.clubId;
+  const ideas = generateEventIdeas(clubId, db);
+
+  res.json({
+    success: true,
+    clubId,
+    totalIdeas: ideas.length,
+    eventIdeas: ideas,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 8. Advanced Coordinator Intelligence Overview
+const handleCoordinatorOverview = (req, res) => {
+  const db = getDB();
+  const user = req.user || {};
+  const normRole = normalizeRole(user.role);
+
+  let assignedClubIds = [];
+  if (req.query.clubId) {
+    assignedClubIds = [req.query.clubId];
+  } else if (normRole === ROLES.SUPER_ADMIN) {
+    assignedClubIds = (db.clubs || []).map(c => c.id);
+  } else if (user.assignedClubs && user.assignedClubs.length > 0) {
+    assignedClubIds = user.assignedClubs;
+  } else if (user.clubId) {
+    assignedClubIds = [user.clubId];
+  } else {
+    assignedClubIds = ["I4-08", "I4-07", "I4-06"];
+  }
+
+  const overview = getCoordinatorIntelligenceOverview(assignedClubIds, db);
+
+  res.json({
+    success: true,
+    overview,
+    timestamp: new Date().toISOString()
+  });
+};
+
+apiRouter.get('/intelligence/coordinator-overview', handleCoordinatorOverview);
+apiRouter.get('/intelligence/coordinator/overview', handleCoordinatorOverview);
+
+// Standard Aliases as specified in Round 2 Master Requirements:
+
+// Recommendations: GET /api/recommendations/clubs/:studentId and /api/recommendations/clubs
+apiRouter.get('/recommendations/clubs/:studentId', (req, res) => {
+  const db = getDB();
+  const student = (db.users || []).find(u => u.id === req.params.studentId);
+  if (!student) return res.status(404).json({ success: false, message: "Student record not found" });
+  const limit = parseInt(req.query.limit || '12', 10);
+  const recommendations = recommendClubsForStudent(student, db, { limit });
+  res.json({
+    success: true,
+    studentId: student.id,
+    studentName: student.name,
+    weights: RECOMMENDATION_WEIGHTS,
+    formula: "Compatibility Score = 0.35*Interest + 0.25*Skill + 0.20*Activity + 0.10*Event + 0.10*Department",
+    recommendations,
+    timestamp: new Date().toISOString()
+  });
+});
+
+apiRouter.get('/recommendations/clubs', (req, res) => {
+  const db = getDB();
+  const targetId = req.query.studentId || (req.user ? req.user.id : "std-101");
+  const student = (db.users || []).find(u => u.id === targetId) || (db.users && db.users[0]);
+  if (!student) return res.status(404).json({ success: false, message: "Student record not found" });
+  const limit = parseInt(req.query.limit || '12', 10);
+  const recommendations = recommendClubsForStudent(student, db, { limit });
+  res.json({
+    success: true,
+    studentId: student.id,
+    studentName: student.name,
+    weights: RECOMMENDATION_WEIGHTS,
+    formula: "Compatibility Score = 0.35*Interest + 0.25*Skill + 0.20*Activity + 0.10*Event + 0.10*Department",
+    recommendations,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Predictions: GET /api/predictions/events/:eventId and /api/events/:eventId/intelligence
+const handleEventPrediction = (req, res) => {
+  const db = getDB();
+  const eventId = req.params.eventId;
+  const prediction = predictEventParticipation(eventId, db);
+  if (!prediction) {
+    return res.status(404).json({ success: false, message: "Event record not found or no participants to evaluate" });
+  }
+  const event = (db.events || []).find(e => e.id === eventId);
+  const clubId = event ? (event.club_id || event.clubId) : null;
+  const timing = recommendEventTiming(clubId, db);
+  const ideas = clubId ? generateEventIdeas(clubId, db) : [];
+
+  res.json({
+    success: true,
+    eventId,
+    prediction,
+    eventIntelligence: {
+      predictedParticipation: prediction,
+      suggestedTiming: timing,
+      recommendedActivityIdeas: ideas
+    },
+    timestamp: new Date().toISOString()
+  });
+};
+
+apiRouter.get('/predictions/events/:eventId', handleEventPrediction);
+apiRouter.get('/events/:eventId/intelligence', handleEventPrediction);
+
+// Inactive members: GET /api/students/inactive
+apiRouter.get('/students/inactive', (req, res) => {
+  const db = getDB();
+  const clubId = req.query.clubId || null;
+  const threshold = parseInt(req.query.threshold || '60', 10);
+  const inactiveMembers = detectInactiveMembers(clubId, db, { thresholdDays: threshold });
+  res.json({
+    success: true,
+    clubId: clubId || 'all',
+    totalInactive: inactiveMembers.length,
+    thresholdDays: threshold,
+    inactiveMembers,
+    config: INACTIVITY_CONFIG,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Club engagement: GET /api/clubs/:clubId/engagement
+apiRouter.get('/clubs/:clubId/engagement', (req, res) => {
+  const db = getDB();
+  const clubId = req.params.clubId;
+  const scorecard = calculateClubEngagementScore(clubId, db);
+  if (!scorecard) return res.status(404).json({ success: false, message: "Club not found" });
+  const trends = calculateEngagementTrends(clubId, db);
+  const insights = generateActionableInsights(clubId, db);
+  res.json({
+    success: true,
+    clubId,
+    engagementScore: scorecard,
+    trends,
+    insights,
+    weights: CLUB_ENGAGEMENT_WEIGHTS,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Feature 7: Advanced Analytics: GET /api/analytics/clubs
+apiRouter.get('/analytics/clubs', (req, res) => {
+  const db = getDB();
+  const comparison = calculateClubComparison(db);
+  res.json({
+    success: true,
+    totalClubs: comparison.length,
+    clubs: comparison,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Feature 8: Trend Analysis: GET /api/analytics/trends
+apiRouter.get('/analytics/trends', (req, res) => {
+  const db = getDB();
+  const clubId = req.query.clubId || "I4-08";
+  const trends = calculateEngagementTrends(clubId, db);
+  res.json({
+    success: true,
+    clubId,
+    trends,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Feature 9: Actionable Insights: GET /api/analytics/insights
+apiRouter.get('/analytics/insights', (req, res) => {
+  const db = getDB();
+  const clubId = req.query.clubId || null;
+  const insights = generateActionableInsights(clubId, db);
+  res.json({
+    success: true,
+    clubId: clubId || 'all',
+    totalInsights: insights.length,
+    insights,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Recalculate snapshot: POST /api/intelligence/recalculate
+apiRouter.post('/intelligence/recalculate', (req, res) => {
+  const db = getDB();
+  const result = recalculateIntelligenceSnapshot(db);
+  recordAuditAction(
+    req,
+    "INTELLIGENCE_RECALCULATED",
+    "intelligence",
+    "snapshot",
+    `Recalculated scores for ${result.clubsEvaluated} clubs and ${result.inactiveDetected} inactive members`
+  );
+  res.json({
+    success: true,
+    message: "Intelligence snapshot recalculation completed successfully.",
+    result
+  });
+});
+
+// Intelligence Configuration: GET & POST /api/intelligence/config
+apiRouter.get('/intelligence/config', (req, res) => {
+  const db = getDB();
+  if (!db.intelligence_config) {
+    db.intelligence_config = [
+      { id: "cfg-1", key: "inactive_event_days", value: INACTIVITY_CONFIG.inactive_event_days, description: "Days without event attendance before flag" },
+      { id: "cfg-2", key: "inactive_activity_days", value: INACTIVITY_CONFIG.inactive_activity_days, description: "Days without general activity before flag" },
+      { id: "cfg-3", key: "inactive_project_days", value: INACTIVITY_CONFIG.inactive_project_days, description: "Days without project participation before flag" },
+      { id: "cfg-4", key: "recommendation_weights", value: RECOMMENDATION_WEIGHTS, description: "Student-club recommendation weights" },
+      { id: "cfg-5", key: "club_engagement_weights", value: CLUB_ENGAGEMENT_WEIGHTS, description: "Club engagement score pillar weights" }
+    ];
+    saveDB(db);
+  }
+  res.json({
+    success: true,
+    config: db.intelligence_config,
+    defaults: {
+      inactivity: INACTIVITY_CONFIG,
+      recommendationWeights: RECOMMENDATION_WEIGHTS,
+      clubEngagementWeights: CLUB_ENGAGEMENT_WEIGHTS,
+      modelVersions: MODEL_VERSIONS
+    }
+  });
+});
+
+apiRouter.post('/intelligence/config', requireAuth, (req, res) => {
+  const normRole = normalizeRole(req.user.role);
+  if (normRole !== ROLES.SUPER_ADMIN && normRole !== ROLES.FACULTY_COORDINATOR) {
+    return res.status(403).json({ success: false, message: "Only coordinators or admins can modify intelligence parameters." });
+  }
+
+  const { inactive_event_days, inactive_activity_days, inactive_project_days } = req.body || {};
+  const db = getDB();
+  if (!Array.isArray(db.intelligence_config)) db.intelligence_config = [];
+
+  if (inactive_event_days !== undefined) {
+    INACTIVITY_CONFIG.inactive_event_days = Number(inactive_event_days);
+    const existing = db.intelligence_config.find(c => c.key === "inactive_event_days");
+    if (existing) existing.value = Number(inactive_event_days);
+    else db.intelligence_config.push({ id: "cfg-" + Date.now(), key: "inactive_event_days", value: Number(inactive_event_days) });
+  }
+
+  if (inactive_activity_days !== undefined) {
+    INACTIVITY_CONFIG.inactive_activity_days = Number(inactive_activity_days);
+    const existing = db.intelligence_config.find(c => c.key === "inactive_activity_days");
+    if (existing) existing.value = Number(inactive_activity_days);
+    else db.intelligence_config.push({ id: "cfg-" + (Date.now() + 1), key: "inactive_activity_days", value: Number(inactive_activity_days) });
+  }
+
+  if (inactive_project_days !== undefined) {
+    INACTIVITY_CONFIG.inactive_project_days = Number(inactive_project_days);
+    const existing = db.intelligence_config.find(c => c.key === "inactive_project_days");
+    if (existing) existing.value = Number(inactive_project_days);
+    else db.intelligence_config.push({ id: "cfg-" + (Date.now() + 2), key: "inactive_project_days", value: Number(inactive_project_days) });
+  }
+
+  recordAuditAction(
+    req,
+    "INTELLIGENCE_CONFIG_UPDATED",
+    "intelligence_config",
+    "global",
+    "Updated algorithmic dormancy and scoring thresholds"
+  );
+  saveDB(db);
+
+  res.json({
+    success: true,
+    message: "Intelligence configuration updated successfully.",
+    config: db.intelligence_config,
+    currentThresholds: INACTIVITY_CONFIG
+  });
+});
+
 

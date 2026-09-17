@@ -90,6 +90,10 @@ export const PERMISSIONS = {
   ANALYTICS_VIEW: "analytics.view",
   AUDIT_LOGS_VIEW: "audit_logs.view",
 
+  // Intelligence & Engagement (Round 2)
+  INTELLIGENCE_VIEW: "intelligence.view",
+  INTELLIGENCE_ACTION: "intelligence.action",
+
   // Settings
   SETTINGS_MANAGE: "settings.manage"
 };
@@ -132,7 +136,9 @@ export const ROLE_PERMISSIONS = {
     PERMISSIONS.REPORTS_VIEW,
     PERMISSIONS.REPORTS_EXPORT,
     PERMISSIONS.ANALYTICS_VIEW,
-    PERMISSIONS.AUDIT_LOGS_VIEW // Scoped to assigned clubs
+    PERMISSIONS.AUDIT_LOGS_VIEW, // Scoped to assigned clubs
+    PERMISSIONS.INTELLIGENCE_VIEW,
+    PERMISSIONS.INTELLIGENCE_ACTION
   ],
 
   [ROLES.CLUB_ADMIN]: [
@@ -157,7 +163,9 @@ export const ROLE_PERMISSIONS = {
     PERMISSIONS.ANNOUNCEMENTS_CREATE,
     PERMISSIONS.REPORTS_VIEW, // Basic club reports
     PERMISSIONS.ANALYTICS_VIEW, // Own club analytics
-    PERMISSIONS.AUDIT_LOGS_VIEW // Limited to own club
+    PERMISSIONS.AUDIT_LOGS_VIEW, // Limited to own club
+    PERMISSIONS.INTELLIGENCE_VIEW,
+    PERMISSIONS.INTELLIGENCE_ACTION
   ],
 
   [ROLES.STUDENT]: [
@@ -169,7 +177,8 @@ export const ROLE_PERMISSIONS = {
     PERMISSIONS.PROJECTS_CREATE, // Propose/submit student project
     PERMISSIONS.RESOURCES_VIEW,
     PERMISSIONS.ANNOUNCEMENTS_VIEW,
-    PERMISSIONS.REPORTS_VIEW // View own performance/achievements
+    PERMISSIONS.REPORTS_VIEW, // View own performance/achievements
+    PERMISSIONS.INTELLIGENCE_VIEW
   ],
 
   [ROLES.GUEST]: [

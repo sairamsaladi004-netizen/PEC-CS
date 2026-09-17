@@ -1,7 +1,8 @@
-import { getDB, saveDB, logAudit } from '../db.js';
+import { getDB, saveDB, logAudit, apiRequest } from '../db.js';
 import { getCurrentUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 import { APP_CONFIG } from '../config.js';
+import { getClubCompatibilityBreakdown } from '../intelligenceEngine.js';
 
 export function renderClubsView(params = {}) {
   const db = getDB();
@@ -445,6 +446,15 @@ export function renderClubsView(params = {}) {
                   </div>
 
                   <div class="absolute top-3 right-3 flex items-center space-x-1.5">
+                    ${user.role === 'Student' ? (() => {
+                      const compat = getClubCompatibilityBreakdown(user.id, club.id, db);
+                      return `
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-900/90 text-purple-200 backdrop-blur-sm border border-purple-500/50 flex items-center space-x-1">
+                          <span>🤖</span>
+                          <span>${compat.compatibilityScore}%</span>
+                        </span>
+                      `;
+                    })() : ''}
                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-900/90 text-white backdrop-blur-sm border border-slate-700">
                       Dept: ${club.department}
                     </span>

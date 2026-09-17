@@ -489,6 +489,54 @@ const INITIAL_BACKEND_SEED = {
       status: "Completed",
       club_id: "I4-08",
       year: "2025-2026"
+    },
+    {
+      id: "proj-002",
+      title: "RoboTrack: Autonomous Warehouse AGV with SLAM & Obstacle Avoidance",
+      description: "Automated guided vehicle with 2D LiDAR SLAM, ROS2 navigation stack, and differential drive odometry.",
+      problem_statement: "Automated intra-facility transport of electronics bins with dynamic obstacle replanning.",
+      solution: "Embedded Teensy 4.1 microcontroller running RTOS communicating over micro-ROS with Jetson Orin.",
+      technologies: ["ROS2", "C++", "Python", "LiDAR", "Gazebo"],
+      team_members: ["Sneha Reddy", "Vikram Aditya"],
+      mentor: "Mr. S. Rajesh",
+      github_link: "https://github.com/pragati-eng/robotrack-agv",
+      demo_link: "https://robotrack.pragati.ac.in",
+      images: ["https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&auto=format&fit=crop&q=80"],
+      status: "Completed",
+      club_id: "I4-03",
+      year: "2025-2026"
+    },
+    {
+      id: "proj-003",
+      title: "SentinelCore: Zero-Trust Network Traffic Anomaly & Intrusion Guardian",
+      description: "Deep packet inspection engine parsing NetFlow logs in real-time to alert on unauthorized privilege escalation.",
+      problem_statement: "Preventing lateral movement and data exfiltration inside campus server clusters.",
+      solution: "eBPF kernel probe capturing packet flow headers with isolation sandbox rules.",
+      technologies: ["eBPF", "Go", "Snort", "Wireshark", "Docker"],
+      team_members: ["Rohan Varma", "Kavya Madhavan"],
+      mentor: "Mrs. N. Swathi",
+      github_link: "https://github.com/pragati-eng/sentinel-core",
+      demo_link: "https://sentinel.pragati.ac.in",
+      images: ["https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&auto=format&fit=crop&q=80"],
+      status: "Completed",
+      club_id: "I4-06",
+      year: "2025-2026"
+    },
+    {
+      id: "proj-004",
+      title: "CloudMatrix: Multi-Region Microservices Mesh with Automated Canary Rollouts",
+      description: "Kubernetes operator orchestrating blue-green traffic switching based on Prometheus error budget burn rate.",
+      problem_statement: "Minimizing downtime during production microservice upgrades across hybrid cloud nodes.",
+      solution: "Custom Envoy proxy filter and CRD controller built in Golang with OpenTelemetry tracing.",
+      technologies: ["Kubernetes", "Golang", "Envoy", "Prometheus", "Helm"],
+      team_members: ["Aarav Sharma", "Ananya Deshmukh"],
+      mentor: "Mr. K Siva Shankar",
+      github_link: "https://github.com/pragati-eng/cloud-matrix-mesh",
+      demo_link: "https://matrix.pragati.ac.in",
+      images: ["https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80"],
+      status: "Completed",
+      club_id: "I4-07",
+      year: "2025-2026"
     }
   ],
 
@@ -568,6 +616,28 @@ export function getDB() {
           if (guestSeed) cachedDB.users.push(guestSeed);
         }
       }
+
+      // Ensure projects array has complete seed
+      if (!Array.isArray(cachedDB.projects) || cachedDB.projects.length < 4) {
+        cachedDB.projects = INITIAL_BACKEND_SEED.projects;
+      }
+
+      // Ensure Round 2 intelligence collections are initialized
+      if (!Array.isArray(cachedDB.student_engagement)) cachedDB.student_engagement = [];
+      if (!Array.isArray(cachedDB.club_engagement_scores)) cachedDB.club_engagement_scores = [];
+      if (!Array.isArray(cachedDB.recommendations)) cachedDB.recommendations = [];
+      if (!Array.isArray(cachedDB.engagement_predictions)) cachedDB.engagement_predictions = [];
+      if (!Array.isArray(cachedDB.inactive_members)) cachedDB.inactive_members = [];
+      if (!Array.isArray(cachedDB.event_intelligence)) cachedDB.event_intelligence = [];
+      if (!Array.isArray(cachedDB.analytics_snapshots)) cachedDB.analytics_snapshots = [];
+      if (!Array.isArray(cachedDB.intelligence_config)) {
+        cachedDB.intelligence_config = [
+          { id: "cfg-1", key: "inactive_event_days", value: 60, description: "Days without event attendance before flag" },
+          { id: "cfg-2", key: "inactive_activity_days", value: 45, description: "Days without general activity before flag" },
+          { id: "cfg-3", key: "inactive_project_days", value: 90, description: "Days without project participation before flag" }
+        ];
+      }
+
       return cachedDB;
     }
   } catch (err) {

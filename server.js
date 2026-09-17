@@ -13,16 +13,16 @@ const HOST = '0.0.0.0';
 // Body parser
 app.use(express.json());
 
-// Serve static assets from project root
-app.use(express.static(__dirname));
-
-// Mount REST API
+// Mount REST API before static assets so /api/* routes are never intercepted
 app.use('/api', apiRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', app: 'PEC CampusTech - Pragati University Club Management System' });
 });
+
+// Serve static assets from project root
+app.use(express.static(__dirname));
 
 // SPA fallback for Express 5
 app.get('*all', (req, res) => {
