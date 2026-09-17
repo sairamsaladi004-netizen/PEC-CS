@@ -55,6 +55,23 @@ export function handleRoute() {
   const appContainer = document.getElementById("app");
   if (!appContainer) return;
 
+  const user = getCurrentUser();
+  const isLoggedIn = user && !user.isGuest && user.id !== "guest-001";
+
+  // Helper to redirect to correct portal based on role
+  const redirectUserToPortal = (u) => {
+    const role = (u.role || "").toLowerCase();
+    if (role.includes("super admin") || role.includes("director")) {
+      window.location.hash = "#/admin/dashboard";
+    } else if (role.includes("faculty") || role.includes("coordinator")) {
+      window.location.hash = "#/coordinator/dashboard";
+    } else if (role.includes("club admin") || role.includes("leader")) {
+      window.location.hash = "#/club-dashboard";
+    } else {
+      window.location.hash = "#/student/dashboard";
+    }
+  };
+
   // Render Core Layout Shell
   appContainer.innerHTML = `
     <div class="min-h-screen flex flex-col bg-slate-50 text-slate-800">
@@ -80,6 +97,10 @@ export function handleRoute() {
 
   // 1. Dedicated Login Route
   if (route === "#/login") {
+    if (isLoggedIn) {
+      redirectUserToPortal(user);
+      return;
+    }
     mountPoint.innerHTML = renderLoginView();
     attachLoginEvents();
     return;
@@ -87,6 +108,10 @@ export function handleRoute() {
 
   // 2. Student Portal Routes
   if (route.startsWith("#/student")) {
+    if (!isLoggedIn) {
+      window.location.hash = "#/login";
+      return;
+    }
     const sub = route.replace("#/student/", "").replace("#/student", "");
     mountPoint.innerHTML = renderStudentDashboardView(sub || "dashboard");
     attachStudentDashboardEvents();
@@ -95,6 +120,10 @@ export function handleRoute() {
 
   // 3. Coordinator Portal Routes
   if (route.startsWith("#/coordinator")) {
+    if (!isLoggedIn) {
+      window.location.hash = "#/login";
+      return;
+    }
     const sub = route.replace("#/coordinator/", "").replace("#/coordinator", "");
     mountPoint.innerHTML = renderCoordinatorPortalView(sub || "dashboard");
     attachCoordinatorPortalEvents();
@@ -103,6 +132,10 @@ export function handleRoute() {
 
   // 4. Super Admin Portal Routes
   if (route.startsWith("#/admin")) {
+    if (!isLoggedIn) {
+      window.location.hash = "#/login";
+      return;
+    }
     const sub = route.replace("#/admin/", "").replace("#/admin", "");
     mountPoint.innerHTML = renderAdminPortalView(sub || "dashboard");
     attachAdminPortalEvents();

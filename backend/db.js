@@ -871,24 +871,29 @@ export async function fetchFullDatabaseFromSupabase() {
     const clubs = (clubsRes.data && clubsRes.data.length > 0) ? clubsRes.data.map(normalizeClubRow) : OFFICIAL_PEC_CLUBS;
     const users = (usersRes.data && usersRes.data.length > 0) ? usersRes.data.map(normalizeUserRow) : (cachedDB?.users || INITIAL_BACKEND_SEED.users);
 
+    let needsPersist = false;
+    if (!clubsRes.data || clubsRes.data.length === 0) needsPersist = true;
+    if (!usersRes.data || usersRes.data.length === 0) needsPersist = true;
+    if (!membershipsRes.data || membershipsRes.data.length === 0) needsPersist = true;
+
     const fullDB = {
-      departments: departmentsRes.data || INITIAL_BACKEND_SEED.departments,
+      departments: (departmentsRes.data && departmentsRes.data.length > 0) ? departmentsRes.data : INITIAL_BACKEND_SEED.departments,
       users,
       clubs,
-      club_memberships: membershipsRes.data || [],
-      club_roles: rolesRes.data || [],
-      events: (eventsRes.data || []).map(normalizeEventRow),
-      event_registrations: registrationsRes.data || [],
-      attendance: attendanceRes.data || [],
-      certificates: (certificatesRes.data || []).map(normalizeCertRow),
-      announcements: announcementsRes.data || [],
-      notifications: notificationsRes.data || [],
-      resources: resourcesRes.data || [],
-      projects: projectsRes.data || INITIAL_BACKEND_SEED.projects,
-      activity_reports: reportsRes.data || [],
-      feedback: feedbackRes.data || [],
-      audit_logs: auditLogsRes.data || [],
-      intelligence_config: intelligenceConfigRes.data || [
+      club_memberships: (membershipsRes.data && membershipsRes.data.length > 0) ? membershipsRes.data : INITIAL_BACKEND_SEED.club_memberships,
+      club_roles: (rolesRes.data && rolesRes.data.length > 0) ? rolesRes.data : INITIAL_BACKEND_SEED.club_roles,
+      events: (eventsRes.data && eventsRes.data.length > 0) ? eventsRes.data.map(normalizeEventRow) : INITIAL_BACKEND_SEED.events,
+      event_registrations: (registrationsRes.data && registrationsRes.data.length > 0) ? registrationsRes.data : INITIAL_BACKEND_SEED.event_registrations,
+      attendance: (attendanceRes.data && attendanceRes.data.length > 0) ? attendanceRes.data : INITIAL_BACKEND_SEED.attendance,
+      certificates: (certificatesRes.data && certificatesRes.data.length > 0) ? certificatesRes.data.map(normalizeCertRow) : INITIAL_BACKEND_SEED.certificates,
+      announcements: (announcementsRes.data && announcementsRes.data.length > 0) ? announcementsRes.data : INITIAL_BACKEND_SEED.announcements,
+      notifications: (notificationsRes.data && notificationsRes.data.length > 0) ? notificationsRes.data : INITIAL_BACKEND_SEED.notifications,
+      resources: (resourcesRes.data && resourcesRes.data.length > 0) ? resourcesRes.data : INITIAL_BACKEND_SEED.resources,
+      projects: (projectsRes.data && projectsRes.data.length > 0) ? projectsRes.data : INITIAL_BACKEND_SEED.projects,
+      activity_reports: (reportsRes.data && reportsRes.data.length > 0) ? reportsRes.data : INITIAL_BACKEND_SEED.activity_reports,
+      feedback: (feedbackRes.data && feedbackRes.data.length > 0) ? feedbackRes.data : INITIAL_BACKEND_SEED.feedback,
+      audit_logs: (auditLogsRes.data && auditLogsRes.data.length > 0) ? auditLogsRes.data : INITIAL_BACKEND_SEED.audit_logs,
+      intelligence_config: intelligenceConfigRes.data && intelligenceConfigRes.data.length > 0 ? intelligenceConfigRes.data : [
         { id: "cfg-1", key: "inactive_event_days", value: 60, description: "Days without event attendance before flag" },
         { id: "cfg-2", key: "inactive_activity_days", value: 45, description: "Days without general activity before flag" },
         { id: "cfg-3", key: "inactive_project_days", value: 90, description: "Days without project participation before flag" }
@@ -899,6 +904,14 @@ export async function fetchFullDatabaseFromSupabase() {
     cachedDB = fullDB;
     isInitialFetchDone = true;
     console.log(`[Backend Supabase] Successfully synchronized live database from Supabase PostgreSQL (${clubs.length} clubs, ${users.length} users)`);
+    
+    if (needsPersist) {
+      console.log("[Backend Supabase] Seeding initial mock data into empty Supabase tables...");
+      persistChangesToSupabase(fullDB).catch(err => {
+        console.error("[Backend Supabase] Failed to seed Supabase:", err.message);
+      });
+    }
+
     return fullDB;
   } catch (err) {
     console.error("[Backend Supabase] Error during fetchFullDatabaseFromSupabase:", err);

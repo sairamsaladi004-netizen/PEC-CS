@@ -1,7 +1,7 @@
 // Role-Based Access Control (RBAC) System for Pragati University PEC CampusTech
 
 export const ROLES = {
-  SUPER_ADMIN: "Super Admin",
+  SUPER_ADMIN: "Director(Academics)",
   FACULTY_COORDINATOR: "Faculty Coordinator",
   CLUB_ADMIN: "Club Admin",
   STUDENT: "Student",
@@ -12,7 +12,7 @@ export const ROLES = {
 export function normalizeRole(role) {
   if (!role) return ROLES.GUEST;
   const r = role.trim();
-  if (r === "Super Admin" || r === "SUPER_ADMIN") return ROLES.SUPER_ADMIN;
+  if (r === "Super Admin" || r === "SUPER_ADMIN" || r === "Director(Academics)" || r === "Director (Academics)" || r === "Director") return ROLES.SUPER_ADMIN;
   if (r === "Faculty Coordinator" || r === "Club Coordinator" || r === "FACULTY_COORD") return ROLES.FACULTY_COORDINATOR;
   if (r === "Club Admin" || r === "Club Student Leader" || r === "Club Lead" || r === "CLUB_ADMIN") return ROLES.CLUB_ADMIN;
   if (r === "Student" || r === "Club Member" || r === "STUDENT") return ROLES.STUDENT;

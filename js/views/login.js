@@ -1,4 +1,4 @@
-import { getCurrentUser, loginUser, registerStudent, resetPassword, verifyEmailWithOTP, getAllDemoAccounts } from '../auth.js';
+import { getCurrentUser, loginUser, registerStudent, resetPassword, verifyEmailWithOTP, getAllDemoAccounts, switchUser } from '../auth.js';
 
 export function renderLoginView() {
   const user = getCurrentUser();

@@ -13,7 +13,7 @@ export function renderAdminPortalView(subSection = "dashboard") {
     return renderAccessDenied({
       requiredRole: ROLES.SUPER_ADMIN,
       attemptedRoute: `#/admin/${subSection || 'dashboard'}`,
-      message: `Access denied. The Executive Admin Console is restricted to <strong>Super Admin</strong> (Central College Administration). Your active role is <strong>${currentRole}</strong>.`
+      message: `Access denied. The Executive Admin Console is restricted to <strong>Director(Academics)</strong> (Central College Administration). Your active role is <strong>${currentRole}</strong>.`
     });
   }
 
@@ -67,7 +67,7 @@ export function renderAdminPortalView(subSection = "dashboard") {
         </div>
       </div>
 
-      <!-- Navigation Tabs for Super Admin Portal -->
+      <!-- Navigation Tabs for Director(Academics) Portal -->
       <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 border-b border-slate-200 text-xs font-bold">
         <a href="#/admin/dashboard" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}">
           📊 Executive Console
@@ -171,7 +171,7 @@ export function renderAdminPortalView(subSection = "dashboard") {
               <option value="Student">Student</option>
               <option value="Club Student Leader">Club Student Leader (President / VP)</option>
               <option value="Club Coordinator">Club Coordinator (Faculty)</option>
-              <option value="Super Admin">Super Admin (Principal / Council)</option>
+              <option value="Director(Academics)">Director(Academics) (Principal / Council)</option>
             </select>
           </div>
 
@@ -234,7 +234,7 @@ function renderAdminTabContent(tab, ctx) {
                     let roleBadge = "bg-blue-100 text-blue-800";
                     if (u.role === "Club Coordinator") roleBadge = "bg-purple-100 text-purple-800";
                     if (u.role === "Club Student Leader") roleBadge = "bg-emerald-100 text-emerald-800";
-                    if (u.role === "Super Admin") roleBadge = "bg-rose-100 text-rose-800";
+                    if (u.role === "Super Admin" || u.role === "Director(Academics)") roleBadge = "bg-rose-100 text-rose-800";
 
                     return `
                       <tr class="hover:bg-slate-50/60">
@@ -684,7 +684,7 @@ export function attachAdminPortalEvents() {
     annAlert.textContent = "Publishing circular to all student devices...";
 
     const res = await apiRequest('/api/announcements/create', 'POST', {
-      title, content, target_audience: target, priority, author: `${user.name} (Super Admin)`
+      title, content, target_audience: target, priority, author: `${user.name} (Director(Academics))`
     });
 
     if (res && res.success) {
