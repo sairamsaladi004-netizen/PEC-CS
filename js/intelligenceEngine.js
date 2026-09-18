@@ -1013,7 +1013,7 @@ export function computeLocalInsights(clubId, db) {
   if (!db) db = getDB();
   const events = (db.events || []).filter(e => !clubId || e.club_id === clubId || e.clubId === clubId);
   const projects = (db.projects || []).filter(p => !clubId || p.club_id === clubId);
-  const inactiveMembers = detectInactiveMembers(clubId, 30, db);
+  const inactiveMembers = getInactiveMembers(clubId, 30, db);
   const timingOpt = computeLocalTimingOptimization(clubId, db);
 
   const insights = [];
