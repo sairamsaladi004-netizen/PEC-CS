@@ -21,11 +21,44 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', app: 'PEC CampusTech - Pragati University Club Management System' });
 });
 
+// Mount dedicated static routes for /js and /css with strict MIME types
+app.use('/js', express.static(path.join(__dirname, 'js'), {
+  setHeaders: (res, filePath) => {
+    res.setHeader('Content-Type', 'text/javascript; charset=UTF-8');
+  }
+}));
+
+app.use('/css', express.static(path.join(__dirname, 'css'), {
+  setHeaders: (res, filePath) => {
+    res.setHeader('Content-Type', 'text/css; charset=UTF-8');
+  }
+}));
+
+// Route interceptor: If a nested route (e.g. /club-dashboard/js/app.js) requests /js/ or /css/, resolve from root
+app.use((req, res, next) => {
+  const jsIndex = req.path.indexOf('/js/');
+  if (jsIndex > 0) {
+    const subpath = req.path.substring(jsIndex + 4);
+    res.setHeader('Content-Type', 'text/javascript; charset=UTF-8');
+    return res.sendFile(path.join(__dirname, 'js', subpath));
+  }
+  const cssIndex = req.path.indexOf('/css/');
+  if (cssIndex > 0) {
+    const subpath = req.path.substring(cssIndex + 5);
+    res.setHeader('Content-Type', 'text/css; charset=UTF-8');
+    return res.sendFile(path.join(__dirname, 'css', subpath));
+  }
+  next();
+});
+
 // Serve static assets from project root with proper MIME types
 app.use(express.static(__dirname, {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.js') || filePath.endsWith('.mjs')) {
       res.setHeader('Content-Type', 'text/javascript; charset=UTF-8');
+    }
+    if (filePath.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css; charset=UTF-8');
     }
   }
 }));

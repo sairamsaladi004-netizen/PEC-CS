@@ -1358,6 +1358,8 @@ function initAIIntelligence(clubId) {
 
 // Chart.js initialization
 function initClubCharts() {
+  if (typeof window === 'undefined' || !window.Chart) return;
+
   // Chart 1: Participation Trends
   const ctxParticipation = document.getElementById('chart-participation-trend');
   if (ctxParticipation) {
@@ -1494,6 +1496,7 @@ function renderActivityHeatmap() {
   const containerId = '#d3-activity-heatmap';
   const container = document.querySelector(containerId);
   if (!container || !window.d3) return;
+  const d3 = window.d3;
 
   // Clear previous SVG
   d3.select(containerId).selectAll('*').remove();

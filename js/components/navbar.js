@@ -1,6 +1,15 @@
 import { getCurrentUser, switchUser, getAllDemoAccounts } from '../auth.js';
 import { ROLES, normalizeRole } from '../rbac.js';
 import { getNotificationsForUser, getUnreadCount } from '../notifications.js';
+import { 
+  isGmailConnected, 
+  getConnectedGmailEmail, 
+  connectGmailOAuth, 
+  disconnectGmail, 
+  dispatchDirectEmail, 
+  promptGmailSendConfirmation 
+} from '../services/gmailNotifier.js';
+import { showToast } from './toast.js';
 
 export function renderNavbar() {
   const user = getCurrentUser() || {};
@@ -8,6 +17,8 @@ export function renderNavbar() {
   const unreadCount = getUnreadCount();
   const accounts = getAllDemoAccounts();
   const currentHash = window.location.hash || "#/";
+  const gmailConnected = isGmailConnected();
+  const connectedEmail = getConnectedGmailEmail();
 
   // Badge styling per role
   const roleBadgeStyles = {
@@ -82,6 +93,15 @@ export function renderNavbar() {
                 </div>
               </div>
             </div>
+
+            <!-- Gmail Mail Hub Trigger -->
+            <button id="nav-gmail-hub-btn" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 relative border border-slate-700/60 transition-colors flex items-center space-x-1.5" title="${gmailConnected ? `Gmail Connected: ${connectedEmail}` : 'Connect Gmail to send real notifications'}">
+              <span class="text-sm">✉️</span>
+              <span class="w-2 h-2 rounded-full ${gmailConnected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}"></span>
+              <span class="hidden xl:inline text-xs font-semibold ${gmailConnected ? 'text-emerald-300' : 'text-slate-400'}">
+                ${gmailConnected ? 'Mail Live' : 'Gmail'}
+              </span>
+            </button>
 
             <!-- Role Persona Switcher (Compact Dropdown) -->
             <div class="hidden md:flex items-center space-x-1 bg-slate-800 p-1 rounded-xl border border-slate-700/60 max-w-[150px] lg:max-w-xs">
@@ -366,4 +386,223 @@ export function attachNavbarEvents() {
       }
     });
   }
+
+  // Gmail Mail Hub modal trigger
+  const gmailHubBtn = document.getElementById("nav-gmail-hub-btn");
+  if (gmailHubBtn) {
+    gmailHubBtn.addEventListener("click", () => {
+      openNavbarGmailHubModal();
+    });
+  }
 }
+
+function openNavbarGmailHubModal() {
+  const existing = document.getElementById("navbar-gmail-hub-modal");
+  if (existing) existing.remove();
+
+  const connected = isGmailConnected();
+  const email = getConnectedGmailEmail();
+
+  const modal = document.createElement("div");
+  modal.id = "navbar-gmail-hub-modal";
+  modal.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[90] flex items-center justify-center p-4 animate-in fade-in duration-200";
+
+  modal.innerHTML = `
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl space-y-5 border border-slate-200 max-h-[90vh] overflow-y-auto">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 text-lg font-bold">
+            ✉️
+          </div>
+          <div>
+            <h3 class="text-base font-black text-slate-900">Gmail Notification Dispatcher</h3>
+            <p class="text-xs text-slate-500">Real email broadcasts via Google Workspace API</p>
+          </div>
+        </div>
+        <button id="close-gmail-hub-btn" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-1">✕</button>
+      </div>
+
+      <!-- Live Connection Status Card -->
+      <div class="p-4 rounded-2xl border ${connected ? 'bg-emerald-50/80 border-emerald-200' : 'bg-slate-50 border-slate-200'} space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full ${connected ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}"></span>
+            <span class="text-xs font-bold ${connected ? 'text-emerald-900' : 'text-slate-700'}">
+              ${connected ? 'Gmail Workspace Connected' : 'Gmail Not Authorized'}
+            </span>
+          </div>
+          ${connected ? `
+            <button id="hub-disconnect-gmail-btn" class="text-[11px] text-rose-600 hover:text-rose-800 font-bold underline">
+              Disconnect
+            </button>
+          ` : ''}
+        </div>
+
+        ${connected ? `
+          <div class="text-xs text-slate-600 space-y-1">
+            <div class="flex justify-between">
+              <span class="text-slate-500">Authorized Account:</span>
+              <span class="font-mono text-emerald-800 font-bold">${email}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">Dispatch Permissions:</span>
+              <span class="font-mono text-slate-700 text-[10px]">gmail.send (Direct API)</span>
+            </div>
+          </div>
+        ` : `
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Authorize your Google account to enable sending real email notifications for event registration tickets, accredited certificates, and official circular broadcasts.
+          </p>
+          <button id="hub-connect-gmail-btn" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-md transition-all flex items-center justify-center space-x-2">
+            <svg class="w-4 h-4" viewBox="0 0 48 48">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+            </svg>
+            <span>Authorize Google Workspace Account</span>
+          </button>
+        `}
+      </div>
+
+      <!-- Quick Test / Direct Real Email Dispatch Form -->
+      <form id="hub-quick-email-form" class="space-y-3.5 pt-1">
+        <div class="flex items-center justify-between">
+          <label class="block text-xs font-black text-slate-800">🚀 Send Real Test Notification</label>
+          <span class="text-[10px] text-blue-600 font-bold">Instant Delivery</span>
+        </div>
+
+        <div class="space-y-2.5 text-xs">
+          <div>
+            <label class="block text-slate-600 font-semibold mb-1">Recipient Email</label>
+            <input type="email" id="hub-to-email" required value="sairamsaladi004@gmail.com" placeholder="student@pragati.ac.in" class="w-full p-2.5 rounded-xl border border-slate-200 text-slate-900 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+          </div>
+
+          <div>
+            <label class="block text-slate-600 font-semibold mb-1">Subject</label>
+            <input type="text" id="hub-subject" required value="[PEC CampusTech] Live Email Notification System Operational" class="w-full p-2.5 rounded-xl border border-slate-200 text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+          </div>
+
+          <div>
+            <label class="block text-slate-600 font-semibold mb-1">Email Message Content</label>
+            <textarea id="hub-message" rows="3" required class="w-full p-2.5 rounded-xl border border-slate-200 text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none leading-relaxed">Greetings from Pragati Engineering College CampusTech! Real-time email notifications for technical events, official circulars, and accredited certificates are now live via Google Workspace Gmail API integration.</textarea>
+          </div>
+        </div>
+
+        <button type="submit" id="hub-send-email-btn" class="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl text-xs shadow-md shadow-blue-500/20 transition-all flex items-center justify-center space-x-2">
+          <span>📨 Send Real Email via Gmail</span>
+        </button>
+      </form>
+
+      <!-- Quick Shortcuts -->
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+        <a href="#/announcements" class="text-blue-600 hover:text-blue-700 font-bold flex items-center space-x-1">
+          <span>📢 Notice Circulars Hub →</span>
+        </a>
+        <a href="#/certificates" class="text-purple-600 hover:text-purple-700 font-bold flex items-center space-x-1">
+          <span>🎓 Certificates Ledger →</span>
+        </a>
+      </div>
+
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Close handlers
+  const closeBtn = document.getElementById("close-gmail-hub-btn");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => modal.remove());
+  }
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.remove();
+  });
+
+  // Connect button handler
+  const connectBtn = document.getElementById("hub-connect-gmail-btn");
+  if (connectBtn) {
+    connectBtn.addEventListener("click", async () => {
+      try {
+        connectBtn.disabled = true;
+        connectBtn.textContent = "Connecting to Google...";
+        await connectGmailOAuth();
+        modal.remove();
+        openNavbarGmailHubModal();
+      } catch (err) {
+        connectBtn.disabled = false;
+        connectBtn.textContent = "Authorize Google Workspace Account";
+      }
+    });
+  }
+
+  // Disconnect button handler
+  const disconnectBtn = document.getElementById("hub-disconnect-gmail-btn");
+  if (disconnectBtn) {
+    disconnectBtn.addEventListener("click", () => {
+      disconnectGmail();
+      modal.remove();
+      openNavbarGmailHubModal();
+    });
+  }
+
+  // Send form handler
+  const form = document.getElementById("hub-quick-email-form");
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const toEmail = document.getElementById("hub-to-email").value.trim();
+      const subject = document.getElementById("hub-subject").value.trim();
+      const message = document.getElementById("hub-message").value.trim();
+
+      if (!toEmail || !subject || !message) {
+        showToast("Missing Fields", "Please complete all email fields.", "warning");
+        return;
+      }
+
+      // If not connected, connect first
+      if (!isGmailConnected()) {
+        showToast("Authorization Required", "Please authorize your Google account first.", "info");
+        try {
+          await connectGmailOAuth();
+        } catch {
+          return;
+        }
+      }
+
+      // Workspace safety confirmation dialog
+      promptGmailSendConfirmation({
+        title: "Confirm Real Gmail Send",
+        subject: subject,
+        recipient: toEmail,
+        detailsHtml: `
+          <div class="flex justify-between items-start text-slate-600 pt-1 border-t border-slate-200">
+            <span class="font-bold text-slate-900">Message Preview:</span>
+            <span class="text-slate-700 italic max-w-[200px] truncate text-[11px]">${message}</span>
+          </div>
+        `,
+        onConfirm: async () => {
+          try {
+            const sendBtn = document.getElementById("hub-send-email-btn");
+            if (sendBtn) {
+              sendBtn.disabled = true;
+              sendBtn.textContent = "Dispatching via Gmail API...";
+            }
+            const res = await dispatchDirectEmail({
+              toEmail,
+              subject,
+              message,
+              recipientName: toEmail.split("@")[0]
+            });
+            showToast("Real Email Sent!", `Message delivered to ${toEmail} (ID: ${res.messageId.slice(0, 10)}...)`, "success");
+            modal.remove();
+          } catch (err) {
+            showToast("Send Failed", err.message, "error");
+          }
+        }
+      });
+    });
+  }
+}
+

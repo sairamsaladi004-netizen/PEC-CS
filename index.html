@@ -7,6 +7,7 @@
   <meta name="description" content="Pragati Engineering College Student Club Management System: unified digital platform for 35 official technical societies, Industry 4.0 clubs, event management, and accredited credentials.">
   <meta property="og:title" content="CampusTech - PEC-CS">
   <meta property="og:description" content="Pragati Engineering College Student Club Management System: unified digital platform for 35 official technical societies, Industry 4.0 clubs, event management, and accredited credentials.">
+  <base href="/" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -44,17 +45,41 @@
   <!-- Google Identity Services for Gmail OAuth & Workspace Integration -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <!-- Custom CSS for Card Holographics & Certificate Borders -->
-  <link rel="stylesheet" href="./css/custom.css" />
+  <link rel="stylesheet" href="/css/custom.css" />
   <!-- Dedicated Print Stylesheet for Landscape Digital Certificates -->
-  <link rel="stylesheet" href="./css/print.css" media="print" />
+  <link rel="stylesheet" href="/css/print.css" media="print" />
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-600 selection:text-white">
   
-  <!-- SPA Mount Point -->
-  <div id="app"></div>
+  <!-- SPA Mount Point with Immediate Loading Presentation Shell -->
+  <div id="app">
+    <div class="min-h-screen flex items-center justify-center bg-slate-900 text-white font-sans p-6">
+      <div class="text-center space-y-4 max-w-md">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-blue-500/30 animate-pulse">
+          P
+        </div>
+        <div class="space-y-1">
+          <h1 class="text-lg font-black tracking-tight">Pragati Engineering College</h1>
+          <p class="text-xs text-blue-400 font-mono">PEC CampusTech • 35 Technical Societies</p>
+        </div>
+        <div class="w-48 h-1 bg-slate-800 rounded-full mx-auto overflow-hidden">
+          <div class="w-2/3 h-full bg-blue-500 rounded-full animate-pulse"></div>
+        </div>
+        <p class="text-[11px] text-slate-400">Loading society management platform...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Error Logger & Fallback -->
+  <script>
+    window.addEventListener('error', function(e) {
+      console.error("Global window error captured:", e.error || e.message);
+    });
+  </script>
+
   <!-- Toast Container -->
   <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-3 pointer-events-none max-w-sm w-full"></div>
   <!-- Application Bootstrap -->
-  <script type="module" src="./js/app.js"></script>
+  <script type="module" src="/js/app.js"></script>
 </body>
 </html>

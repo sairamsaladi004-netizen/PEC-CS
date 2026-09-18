@@ -21,7 +21,8 @@ export function calculateClubEngagementScore(clubId) {
   // 2. Events Conducted (30%)
   const events = (db.events || []).filter(e => e.club_id === clubId || e.clubId === clubId);
   const now = new Date();
-  const recentEvents = events.filter(e => new Date(e.date) <= now && new Date(e.date) >= new Date(now.setMonth(now.getMonth() - 6)));
+  const sixMonthsAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
+  const recentEvents = events.filter(e => new Date(e.date) <= now && new Date(e.date) >= sixMonthsAgo);
   // Normalize against a baseline of 4 events per semester (6 months)
   const eventsScore = Math.min(100, (recentEvents.length / 4) * 100);
 

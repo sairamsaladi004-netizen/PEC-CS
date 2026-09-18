@@ -8,6 +8,12 @@ import {
   normalizeCertificateData, 
   CERTIFICATE_THEMES 
 } from '../components/certificateTemplate.js';
+import { 
+  isGmailConnected, 
+  connectGmailOAuth, 
+  dispatchCertificateEmail, 
+  promptGmailSendConfirmation 
+} from '../services/gmailNotifier.js';
 
 export function renderCertificatesView(params = {}) {
   const db = getDB();
@@ -452,13 +458,54 @@ export function attachCertificatesEvents(params = {}) {
   window.removeEventListener("keydown", handleKeyDown);
   window.addEventListener("keydown", handleKeyDown);
 
-  // Email Certificate Simulation
+  // Real Email Certificate Dispatcher via Gmail API
   const emailBtn = document.getElementById("email-cert-btn");
   if (emailBtn) {
-    emailBtn.addEventListener("click", () => {
-      const email = emailBtn.dataset.email || "participant@pragati.ac.in";
-      const cid = emailBtn.dataset.certid || "CERT-PEC-2026";
-      showToast("Email Dispatched", `Accredited PDF Certificate ${cid} has been dispatched to ${email}!`, "success");
+    emailBtn.addEventListener("click", async () => {
+      const email = emailBtn.dataset.email || currentCert?.recipientEmail || "sairamsaladi004@gmail.com";
+      const cid = emailBtn.dataset.certid || currentCert?.id || "CERT-PEC-2026";
+      const targetCert = (db.certificates || []).find(c => c.id === cid) || currentCert;
+
+      if (!isGmailConnected()) {
+        showToast("Gmail Authorization", "Please authorize your Google account to send real certificate emails.", "info");
+        try {
+          await connectGmailOAuth();
+        } catch {
+          return;
+        }
+      }
+
+      promptGmailSendConfirmation({
+        title: "Send Accredited Certificate",
+        subject: `[Accredited Credential] Certificate Issued for ${targetCert.eventName || 'PEC Symposium'}`,
+        recipient: email,
+        detailsHtml: `
+          <div class="flex justify-between items-center text-slate-600">
+            <span class="font-bold text-slate-900">Certificate ID:</span>
+            <span class="font-mono text-purple-700 font-bold">${targetCert.id}</span>
+          </div>
+          <div class="flex justify-between items-center text-slate-600">
+            <span class="font-bold text-slate-900">Candidate:</span>
+            <span class="font-bold text-slate-800">${targetCert.recipientName || 'Student'}</span>
+          </div>
+        `,
+        onConfirm: async () => {
+          try {
+            emailBtn.disabled = true;
+            emailBtn.innerText = "Dispatching...";
+            const res = await dispatchCertificateEmail({
+              certificate: targetCert,
+              recipientEmail: email
+            });
+            showToast("Certificate Dispatched!", `Official credential email delivered to ${email} (ID: ${res.messageId.slice(0, 10)}...)`, "success");
+          } catch (err) {
+            showToast("Dispatch Failed", err.message, "error");
+          } finally {
+            emailBtn.disabled = false;
+            emailBtn.innerHTML = `<span>✉️ Email Credential</span>`;
+          }
+        }
+      });
     });
   }
 

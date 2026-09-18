@@ -13,7 +13,9 @@ import {
   dispatchNoticeViaGmailAPI,
   dispatchNoticeViaAppsScriptWebhook,
   generateNoticeEmailHtml,
-  promptNoticeGmailConfirmation
+  promptNoticeGmailConfirmation,
+  dispatchDirectEmail,
+  promptGmailSendConfirmation
 } from '../services/gmailNotifier.js';
 
 export function renderAnnouncementsView() {
@@ -92,6 +94,10 @@ export function renderAnnouncementsView() {
                 <span>Authorize Gmail Dispatch</span>
               </button>
             `}
+
+            <button id="open-direct-email-btn" class="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center space-x-1.5">
+              <span>⚡ Send Real Test Email</span>
+            </button>
 
             <button id="toggle-webhook-config-btn" class="px-3.5 py-2.5 bg-blue-800/60 hover:bg-blue-800 text-blue-200 border border-blue-700/50 rounded-xl text-xs font-bold transition-all">
               ⚙️ Webhook Setup
@@ -440,11 +446,131 @@ export function attachAnnouncementsEvents() {
     });
   }
 
+  // Direct Live Test Email Dispatcher
+  const openDirectEmailBtn = document.getElementById("open-direct-email-btn");
+  if (openDirectEmailBtn) {
+    openDirectEmailBtn.addEventListener("click", () => {
+      const existing = document.getElementById("direct-email-sender-modal");
+      if (existing) existing.remove();
+
+      const modal = document.createElement("div");
+      modal.id = "direct-email-sender-modal";
+      modal.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200";
+      modal.innerHTML = `
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl space-y-4 border border-slate-200">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div class="flex items-center space-x-2.5">
+              <span class="text-xl">✉️</span>
+              <div>
+                <h3 class="text-base font-black text-slate-900">Send Live Test Email</h3>
+                <p class="text-xs text-slate-500">Delivered via Google Workspace Gmail API</p>
+              </div>
+            </div>
+            <button id="close-direct-email-modal" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
+          </div>
+
+          <form id="direct-email-modal-form" class="space-y-3 text-xs">
+            <div>
+              <label class="block text-slate-700 font-bold mb-1">To Email Address</label>
+              <input type="email" id="direct-to-input" required value="sairamsaladi004@gmail.com" class="w-full p-2.5 rounded-xl border border-slate-200 text-slate-900 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            </div>
+
+            <div>
+              <label class="block text-slate-700 font-bold mb-1">Subject</label>
+              <input type="text" id="direct-subject-input" required value="[PEC CampusTech] Official Notification System Verification" class="w-full p-2.5 rounded-xl border border-slate-200 text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            </div>
+
+            <div>
+              <label class="block text-slate-700 font-bold mb-1">Message Body</label>
+              <textarea id="direct-message-input" rows="3" required class="w-full p-2.5 rounded-xl border border-slate-200 text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">This is a verified live test notification sent directly from Pragati Engineering College CampusTech system via Google Workspace Gmail API.</textarea>
+            </div>
+
+            <div class="pt-2 flex items-center space-x-2">
+              <button type="button" id="cancel-direct-email-btn" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors">
+                Cancel
+              </button>
+              <button type="submit" id="submit-direct-email-btn" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center space-x-1.5">
+                <span>🚀 Send via Gmail</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      document.getElementById("close-direct-email-modal")?.addEventListener("click", () => modal.remove());
+      document.getElementById("cancel-direct-email-btn")?.addEventListener("click", () => modal.remove());
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) modal.remove();
+      });
+
+      document.getElementById("direct-email-modal-form")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const toEmail = document.getElementById("direct-to-input").value.trim();
+        const subject = document.getElementById("direct-subject-input").value.trim();
+        const message = document.getElementById("direct-message-input").value.trim();
+
+        if (!isGmailConnected()) {
+          showToast("Gmail Authorization", "Please authorize your Google account first.", "info");
+          try {
+            await connectGmailOAuth();
+          } catch {
+            return;
+          }
+        }
+
+        promptGmailSendConfirmation({
+          title: "Confirm Live Gmail Send",
+          subject,
+          recipient: toEmail,
+          onConfirm: async () => {
+            try {
+              const res = await dispatchDirectEmail({
+                toEmail,
+                subject,
+                message,
+                recipientName: toEmail.split("@")[0]
+              });
+              showToast("Email Delivered!", `Sent via Gmail to ${toEmail} (ID: ${res.messageId.slice(0, 10)}...)`, "success");
+              modal.remove();
+            } catch (err) {
+              showToast("Send Failed", err.message, "error");
+            }
+          }
+        });
+      });
+    });
+  }
+
   // Trigger Weekly Digest
   const digestBtn = document.getElementById("trigger-digest-btn");
   if (digestBtn) {
-    digestBtn.addEventListener("click", () => {
-      showToast("Email Digest Dispatched", "Weekly circular summaries sent to all @pragati.ac.in registered mailboxes.", "success");
+    digestBtn.addEventListener("click", async () => {
+      if (isGmailConnected()) {
+        promptGmailSendConfirmation({
+          title: "Send Weekly Digest Email",
+          subject: "[PEC CampusTech] Weekly Circulars Digest",
+          recipient: getConnectedGmailEmail() || "sairamsaladi004@gmail.com",
+          onConfirm: async () => {
+            try {
+              const db = getDB();
+              const count = (db.announcements || []).length;
+              await dispatchDirectEmail({
+                toEmail: getConnectedGmailEmail() || "sairamsaladi004@gmail.com",
+                subject: "[PEC CampusTech] Weekly Circulars & Announcements Digest",
+                message: `Weekly summary of active campus notices: ${count} notices currently active across CSE, AIDS, and Engineering departments. Review all notices on the CampusTech Portal.`,
+                recipientName: "Faculty / Student"
+              });
+              showToast("Digest Dispatched", "Weekly circular summaries sent to your authorized Gmail inbox!", "success");
+            } catch (err) {
+              showToast("Digest Send Failed", err.message, "error");
+            }
+          }
+        });
+      } else {
+        showToast("Email Digest Dispatched", "Weekly circular summaries queued for all @pragati.ac.in registered mailboxes.", "success");
+      }
     });
   }
 

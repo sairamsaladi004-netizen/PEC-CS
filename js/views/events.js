@@ -2,6 +2,7 @@ import { getDB, saveDB, logAudit, apiRequest } from '../db.js';
 import { getCurrentUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 import { getStudentEventPrediction, getEventParticipationPrediction } from '../intelligenceEngine.js';
+import { isGmailConnected, dispatchRegistrationEmail } from '../services/gmailNotifier.js';
 
 export function renderEventsView() {
   const db = getDB();
@@ -474,6 +475,22 @@ export function attachEventsEvents() {
 
         saveDB(currentDb);
 
+        // Dispatch real admission pass email if Gmail is connected
+        if (isGmailConnected()) {
+          try {
+            await dispatchRegistrationEmail({
+              event: evt,
+              ticketId,
+              recipientEmail: user.email,
+              recipientName: user.name,
+              rollNo: user.rollNo
+            });
+            showToast("Admission Pass Emailed", `Official ticket emailed via Gmail to ${user.email}!`, "success");
+          } catch (mailErr) {
+            console.warn("Gmail ticket dispatch warning:", mailErr);
+          }
+        }
+
         // Also notify backend API
         await apiRequest('/api/events/register', 'POST', {
           eventId: evt.id,
@@ -482,7 +499,7 @@ export function attachEventsEvents() {
 
         logAudit(`${user.name} (${user.role})`, "Event Registration", evt.title, `Ticket #${ticketId}`);
         showToast("Registration Confirmed!", `Pass #${ticketId} created. You can scan this at the venue!`, "success");
-        setTimeout(() => window.location.reload(), 400);
+        setTimeout(() => window.location.reload(), 800);
       }
     });
   });
