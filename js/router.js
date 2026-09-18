@@ -1,4 +1,5 @@
 import { renderNavbar, attachNavbarEvents } from './components/navbar.js';
+import { renderFooter } from './components/footer.js';
 import { renderSearchModal } from './components/searchModal.js';
 import { renderAuthModal, attachAuthModalEvents } from './components/authModal.js';
 
@@ -36,16 +37,76 @@ import { renderAdminPortalView, attachAdminPortalEvents } from './views/adminPor
 import { renderGuestDashboardView, attachGuestDashboardEvents } from './views/guestDashboard.js';
 
 export function parseHash() {
-  const raw = window.location.hash || "#/";
-  const [route, queryStr] = raw.split("?");
-  const params = {};
-  if (queryStr) {
-    const searchParams = new URLSearchParams(queryStr);
-    for (const [key, value] of searchParams.entries()) {
-      params[key] = value;
-    }
+  let raw = window.location.hash || "";
+
+  // If hash is empty, check query parameters (e.g. ?appParams=%2Fclub-dashboard or ?route=...)
+  if (!raw || raw === "#" || raw === "#/") {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const appParams = urlParams.get("appParams") || urlParams.get("route") || urlParams.get("path");
+      if (appParams) {
+        let decoded = decodeURIComponent(appParams);
+        if (decoded.includes("%")) {
+          try { decoded = decodeURIComponent(decoded); } catch {}
+        }
+        raw = decoded;
+      } else if (window.location.pathname && window.location.pathname !== "/" && window.location.pathname !== "/index.html") {
+        raw = window.location.pathname;
+      }
+    } catch {}
   }
-  return { route: route || "#/", params };
+
+  // Normalize string
+  raw = (raw || "#/").trim();
+
+  // Handle URL encodings
+  try {
+    if (raw.includes("%252F") || raw.includes("%2F") || raw.includes("%20")) {
+      raw = decodeURIComponent(raw);
+      if (raw.includes("%2F")) raw = decodeURIComponent(raw);
+    }
+  } catch {}
+
+  // Strip leading slashes before # if present (e.g. /#/club-dashboard -> #/club-dashboard)
+  if (raw.startsWith("/#")) {
+    raw = raw.substring(1);
+  } else if (raw.startsWith("/") && !raw.startsWith("/#")) {
+    raw = "#" + raw;
+  }
+
+  if (!raw.startsWith("#")) {
+    raw = "#/" + raw.replace(/^\/+/, "");
+  }
+
+  const [routePart, queryStr] = raw.split("?");
+  const params = {};
+
+  // Extract query parameters
+  try {
+    const searchParams = new URLSearchParams(window.location.search);
+    for (const [key, value] of searchParams.entries()) {
+      if (key !== "appParams" && key !== "route") {
+        params[key] = value;
+      }
+    }
+  } catch {}
+
+  if (queryStr) {
+    try {
+      const hashParams = new URLSearchParams(queryStr);
+      for (const [key, value] of hashParams.entries()) {
+        params[key] = value;
+      }
+    } catch {}
+  }
+
+  // Normalize clean route
+  let cleanRoute = routePart.trim();
+  if (cleanRoute.length > 2 && cleanRoute.endsWith("/")) {
+    cleanRoute = cleanRoute.slice(0, -1);
+  }
+
+  return { route: cleanRoute || "#/", params };
 }
 
 export function handleRoute() {
@@ -54,20 +115,34 @@ export function handleRoute() {
   if (!appContainer) return;
 
   // Render Core Layout Shell
-  appContainer.innerHTML = `
-    <div class="min-h-screen flex flex-col bg-slate-50 text-slate-800">
-      ${renderNavbar()}
-      <main id="main-content" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div id="view-container"></div>
-      </main>
-      ${renderFooter()}
-      <div id="search-modal-container">${renderSearchModal()}</div>
-      <div id="auth-modal-container">${renderAuthModal()}</div>
-    </div>
-  `;
+  try {
+    appContainer.innerHTML = `
+      <div class="min-h-screen flex flex-col bg-slate-50 text-slate-800">
+        ${renderNavbar()}
+        <main id="main-content" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div id="view-container"></div>
+        </main>
+        ${renderFooter()}
+        <div id="search-modal-container">${renderSearchModal()}</div>
+        <div id="auth-modal-container">${renderAuthModal()}</div>
+      </div>
+    `;
 
-  attachNavbarEvents();
-  attachAuthModalEvents();
+    attachNavbarEvents();
+    attachAuthModalEvents();
+  } catch (layoutErr) {
+    console.error("Layout rendering error:", layoutErr);
+    appContainer.innerHTML = `
+      <div class="min-h-screen flex flex-col bg-slate-50 text-slate-800 p-6">
+        <div class="max-w-4xl mx-auto my-auto text-center space-y-4 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+          <div class="w-12 h-12 rounded-2xl bg-blue-600 text-white font-black text-xl mx-auto flex items-center justify-center">P</div>
+          <h1 class="text-xl font-black text-slate-900">CampusTech - Pragati Engineering College</h1>
+          <p class="text-xs text-slate-500">Recovering portal view...</p>
+          <a href="#/" class="inline-block px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl">Reload Portal Home</a>
+        </div>
+      </div>
+    `;
+  }
 
   const mountPoint = document.getElementById("view-container");
   if (!mountPoint) return;
@@ -75,16 +150,43 @@ export function handleRoute() {
   // Window scroll to top
   window.scrollTo({ top: 0, behavior: 'instant' });
 
+  // Safe router execution helper
+  const renderSafe = (renderFn, attachFn) => {
+    try {
+      mountPoint.innerHTML = renderFn();
+    } catch (err) {
+      console.error("View render error:", err);
+      mountPoint.innerHTML = `
+        <div class="p-8 text-center bg-white rounded-3xl border border-slate-200 shadow-xs max-w-xl mx-auto my-12 space-y-3">
+          <div class="text-3xl">⚠️</div>
+          <h2 class="text-base font-bold text-slate-900">Portal View Initialization</h2>
+          <p class="text-xs text-slate-500">Failed to render requested component. You can return to the central dashboard.</p>
+          <div class="pt-2 flex justify-center space-x-2">
+            <a href="#/" class="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl">Portal Home</a>
+            <a href="#/login" class="px-4 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl">Sign In</a>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    if (attachFn) {
+      try {
+        attachFn();
+      } catch (err) {
+        console.error("View attach events error:", err);
+      }
+    }
+  };
+
   // 1. Dedicated Login & OAuth Callback Routes
   if (route === "#/login") {
-    mountPoint.innerHTML = renderLoginView();
-    attachLoginEvents();
+    renderSafe(() => renderLoginView(), () => attachLoginEvents());
     return;
   }
 
   if (route.startsWith("#/auth/callback") || route.startsWith("#/callback") || window.location.hash.includes("access_token=")) {
-    mountPoint.innerHTML = renderAuthCallbackView();
-    attachAuthCallbackEvents();
+    renderSafe(() => renderAuthCallbackView(), () => attachAuthCallbackEvents());
     return;
   }
 
@@ -92,12 +194,10 @@ export function handleRoute() {
   if (route.startsWith("#/student")) {
     const sub = route.replace("#/student/", "").replace("#/student", "");
     if (sub === "membership-card" || sub === "smart-id" || sub === "qr-pass" || sub === "badges") {
-      mountPoint.innerHTML = renderMembershipCardView();
-      attachMembershipCardEvents();
+      renderSafe(() => renderMembershipCardView(), () => attachMembershipCardEvents());
       return;
     }
-    mountPoint.innerHTML = renderStudentDashboardView(sub || "dashboard");
-    attachStudentDashboardEvents();
+    renderSafe(() => renderStudentDashboardView(sub || "dashboard"), () => attachStudentDashboardEvents());
     return;
   }
 
@@ -120,24 +220,21 @@ export function handleRoute() {
       .replace("#/faculty-dashboard", "")
       .replace("#/faculty/", "")
       .replace("#/faculty", "");
-    mountPoint.innerHTML = renderCoordinatorPortalView(sub || "dashboard", params);
-    attachCoordinatorPortalEvents();
+    renderSafe(() => renderCoordinatorPortalView(sub || "dashboard", params), () => attachCoordinatorPortalEvents());
     return;
   }
 
   // 4. Department Admin Portal Routes
   if (route.startsWith("#/department")) {
     const sub = route.replace("#/department/", "").replace("#/department", "");
-    mountPoint.innerHTML = renderDepartmentPortalView(sub || "dashboard", params);
-    attachDepartmentPortalEvents();
+    renderSafe(() => renderDepartmentPortalView(sub || "dashboard", params), () => attachDepartmentPortalEvents());
     return;
   }
 
   // 5. Super Admin Portal Routes
   if (route.startsWith("#/admin")) {
     const sub = route.replace("#/admin/", "").replace("#/admin", "");
-    mountPoint.innerHTML = renderAdminPortalView(sub || "dashboard");
-    attachAdminPortalEvents();
+    renderSafe(() => renderAdminPortalView(sub || "dashboard"), () => attachAdminPortalEvents());
     return;
   }
 
@@ -145,34 +242,28 @@ export function handleRoute() {
   switch (route) {
     case "#/":
     case "":
-      mountPoint.innerHTML = renderHomeView();
-      attachHomeEvents();
+      renderSafe(() => renderHomeView(), () => attachHomeEvents());
       break;
 
     case "#/clubs":
-      mountPoint.innerHTML = renderClubsView(params);
-      attachClubsEvents(params);
+      renderSafe(() => renderClubsView(params), () => attachClubsEvents(params));
       break;
 
     case "#/events":
-      mountPoint.innerHTML = renderEventsView(params);
-      attachEventsEvents(params);
+      renderSafe(() => renderEventsView(params), () => attachEventsEvents(params));
       break;
 
     case "#/attendance":
-      mountPoint.innerHTML = renderAttendanceView(params);
-      attachAttendanceEvents(params);
+      renderSafe(() => renderAttendanceView(params), () => attachAttendanceEvents(params));
       break;
 
     case "#/poster":
     case "#/event-poster":
-      mountPoint.innerHTML = renderEventPosterView(params);
-      attachEventPosterEvents(params);
+      renderSafe(() => renderEventPosterView(params), () => attachEventPosterEvents(params));
       break;
 
     case "#/certificates":
-      mountPoint.innerHTML = renderCertificatesView(params);
-      attachCertificatesEvents(params);
+      renderSafe(() => renderCertificatesView(params), () => attachCertificatesEvents(params));
       break;
 
     case "#/membership-card":
@@ -180,93 +271,77 @@ export function handleRoute() {
     case "#/digital-id":
     case "#/qr-pass":
     case "#/badges":
-      mountPoint.innerHTML = renderMembershipCardView();
-      attachMembershipCardEvents();
+      renderSafe(() => renderMembershipCardView(), () => attachMembershipCardEvents());
       break;
 
     case "#/student-profile":
-      mountPoint.innerHTML = renderStudentProfileView();
-      attachStudentProfileEvents();
+      renderSafe(() => renderStudentProfileView(), () => attachStudentProfileEvents());
       break;
 
     case "#/projects":
     case "#/hackathon":
     case "#/hackathons":
-      mountPoint.innerHTML = renderProjectsView(params);
-      attachProjectsEvents(params);
+      renderSafe(() => renderProjectsView(params), () => attachProjectsEvents(params));
       break;
 
     case "#/lms":
-      mountPoint.innerHTML = renderLMSView();
-      attachLMSEvents();
+      renderSafe(() => renderLMSView(), () => attachLMSEvents());
       break;
 
     case "#/roadmaps":
-      mountPoint.innerHTML = renderRoadmapsView(params);
-      attachRoadmapsEvents();
+      renderSafe(() => renderRoadmapsView(params), () => attachRoadmapsEvents());
       break;
 
     case "#/tools":
-      mountPoint.innerHTML = renderToolsDirectoryView();
-      attachToolsDirectoryEvents();
+      renderSafe(() => renderToolsDirectoryView(), () => attachToolsDirectoryEvents());
       break;
 
     case "#/gallery":
-      mountPoint.innerHTML = renderGalleryView();
-      attachGalleryEvents();
+      renderSafe(() => renderGalleryView(), () => attachGalleryEvents());
       break;
 
     case "#/announcements":
-      mountPoint.innerHTML = renderAnnouncementsView();
-      attachAnnouncementsEvents();
+      renderSafe(() => renderAnnouncementsView(), () => attachAnnouncementsEvents());
       break;
 
     case "#/analytics":
-      mountPoint.innerHTML = renderAnalyticsView();
-      attachAnalyticsEvents();
+      renderSafe(() => renderAnalyticsView(), () => attachAnalyticsEvents());
       break;
 
     case "#/club-dashboard":
     case "#/club-analytics":
-      mountPoint.innerHTML = renderClubDashboardView(params);
-      attachClubDashboardEvents(params);
+    case "#/club-management":
+      renderSafe(() => renderClubDashboardView(params), () => attachClubDashboardEvents(params));
       break;
 
     case "#/guest":
     case "#/guest-dashboard":
-      mountPoint.innerHTML = renderGuestDashboardView(params);
-      attachGuestDashboardEvents();
+      renderSafe(() => renderGuestDashboardView(params), () => attachGuestDashboardEvents());
       break;
 
     case "#/reports":
-      mountPoint.innerHTML = renderReportsView();
-      attachReportsEvents();
+      renderSafe(() => renderReportsView(), () => attachReportsEvents());
       break;
 
     case "#/verify":
     case "#/verify-certificate":
-      mountPoint.innerHTML = renderVerificationView(params);
-      attachVerificationEvents();
+      renderSafe(() => renderVerificationView(params), () => attachVerificationEvents());
       break;
 
     case "#/about":
-      mountPoint.innerHTML = renderAboutView();
-      attachAboutEvents();
+      renderSafe(() => renderAboutView(), () => attachAboutEvents());
       break;
 
     case "#/quizzes":
-      mountPoint.innerHTML = renderQuizzesView(params);
-      attachQuizzesEvents();
+      renderSafe(() => renderQuizzesView(params), () => attachQuizzesEvents());
       break;
 
     case "#/practice":
-      mountPoint.innerHTML = renderPracticeView(params);
-      attachPracticeEvents();
+      renderSafe(() => renderPracticeView(params), () => attachPracticeEvents());
       break;
 
     case "#/study-circles":
-      mountPoint.innerHTML = renderStudyCirclesView(params);
-      attachStudyCirclesEvents();
+      renderSafe(() => renderStudyCirclesView(params), () => attachStudyCirclesEvents());
       break;
 
     default:
@@ -275,67 +350,16 @@ export function handleRoute() {
           <div class="text-4xl">🔍</div>
           <h1 class="text-xl font-bold text-slate-900">Page Not Found</h1>
           <p class="text-xs text-slate-500">The requested route '${route}' does not exist in the council portal.</p>
-          <a href="#/" class="inline-block px-5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md hover:bg-blue-500 transition-colors">
-            Return to Dashboard
-          </a>
+          <div class="pt-2 flex justify-center space-x-2">
+            <a href="#/" class="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md hover:bg-blue-500 transition-colors">
+              Return to Central Home
+            </a>
+            <a href="#/login" class="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold shadow-md hover:bg-slate-800 transition-colors">
+              Sign In
+            </a>
+          </div>
         </div>
       `;
       break;
   }
-}
-
-function renderFooter() {
-  return `
-    <footer class="no-print bg-white border-t border-slate-200 mt-auto text-xs text-slate-500">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          <div class="space-y-2 md:col-span-2">
-            <div class="flex items-center space-x-2">
-              <div class="w-6 h-6 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-xs">P</div>
-              <span class="font-black text-slate-900 tracking-tight text-sm">Pragati Engineering College</span>
-            </div>
-            <p class="text-slate-500 text-xs max-w-sm leading-relaxed">
-              Unified digital management ecosystem for 35 official technical societies, Industry 4.0 clubs, accredited hackathons, and cryptographic credentials at Pragati Engineering College (Autonomous), Surampalem.
-            </p>
-            <div class="text-[10px] text-slate-400 font-mono">
-              Accredited by NBA & NAAC 'A' Grade • Approved by AICTE • Career Guidance Cell
-            </div>
-          </div>
-
-          <div class="space-y-2">
-            <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Campus Portals</h4>
-            <ul class="space-y-1.5 text-xs">
-              <li><a href="#/login" class="hover:text-blue-600 transition-colors">🔐 Sign In / Register</a></li>
-              <li><a href="#/student/dashboard" class="hover:text-blue-600 transition-colors">Student Portal</a></li>
-              <li><a href="#/coordinator/dashboard" class="hover:text-blue-600 transition-colors">Faculty Coordinator Portal</a></li>
-              <li><a href="#/admin/dashboard" class="hover:text-blue-600 transition-colors">Admin Governance Console</a></li>
-              <li><a href="#/clubs" class="hover:text-blue-600 transition-colors">35 Official PEC Clubs</a></li>
-            </ul>
-          </div>
-
-          <div class="space-y-2">
-            <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Credential Verification</h4>
-            <ul class="space-y-1.5 text-xs">
-              <li><a href="#/verify" class="hover:text-blue-600 transition-colors">Verify Certificate Ledger</a></li>
-              <li><a href="#/attendance" class="hover:text-blue-600 transition-colors">Gate Attendance Kiosk</a></li>
-              <li><a href="#/membership-card" class="hover:text-blue-600 transition-colors">Digital ID Verification</a></li>
-              <li><a href="#/reports" class="hover:text-blue-600 transition-colors">Accreditation Audit Ledger</a></li>
-              <li><a href="#/about" class="hover:text-blue-600 transition-colors">About College & Council</a></li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-400">
-          <div>
-            © 2026 Pragati Engineering College (Autonomous), Surampalem, Andhra Pradesh. All rights reserved.
-          </div>
-          <div class="flex items-center space-x-4">
-            <a href="#/membership-card" class="hover:text-slate-600">Digital ID</a>
-            <a href="#/verify" class="hover:text-slate-600">Cryptographic Ledger</a>
-            <a href="#/admin/audit-logs" class="hover:text-slate-600">Council Audit Logs</a>
-          </div>
-        </div>
-      </div>
-    </footer>
-  `;
 }

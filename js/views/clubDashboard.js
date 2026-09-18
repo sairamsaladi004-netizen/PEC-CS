@@ -47,18 +47,10 @@ export function renderClubDashboardView(params = {}) {
     `;
   }
 
-  // RBAC SCOPE ENFORCEMENT
-  if (!isUserAuthorizedForClub(currentUser, club.id, club)) {
-    return renderAccessDenied({
-      requiredRole: ROLES.CLUB_ADMIN,
-      attemptedRoute: `#/club-dashboard?id=${club.id}`,
-      clubId: club.id,
-      message: `Access denied. As ${currentRole} (${currentUser.name}), your authorized scope does not grant management access to Club ${club.name} (${club.id}).`
-    });
-  }
-
-  // Retrieve fine-grained capabilities
+  // RBAC SCOPE EVALUATION
+  const isAuthorized = isUserAuthorizedForClub(currentUser, club.id, club);
   const auth = getUserClubAuthority(currentUser, club);
+  let isReadOnlyMode = !isAuthorized;
 
   // List of clubs this user has authorization to switch between
   let authorizedClubs = [];
@@ -74,7 +66,11 @@ export function renderClubDashboardView(params = {}) {
     const assigned = currentUser.assignedClubs || (currentUser.clubId ? [currentUser.clubId] : [club.id]);
     authorizedClubs = (db.clubs || []).filter(c => assigned.includes(c.id));
   } else {
-    authorizedClubs = [club];
+    authorizedClubs = db.clubs || [club];
+  }
+
+  if (authorizedClubs.length === 0) {
+    authorizedClubs = db.clubs || [club];
   }
 
   // Fetch relevant club entities

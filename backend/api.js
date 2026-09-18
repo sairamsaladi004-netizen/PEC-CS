@@ -2808,5 +2808,67 @@ apiRouter.get('/intelligence/classify-student/:studentId', async (req, res) => {
   }
 });
 
+// GET /api/gmail/apps-script-code - Returns the copyable zero-cost Apps Script snippet
+apiRouter.get('/gmail/apps-script-code', (req, res) => {
+  const code = `/**
+ * Pragati Engineering College - CampusTech
+ * Zero-Cost Google Apps Script Notice Mailer Webhook
+ *
+ * Free Tier Limits:
+ * - 1,500 emails/day for @pragati.ac.in Google Workspace accounts
+ * - 100 emails/day for personal @gmail.com accounts
+ */
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var subject = "[PEC Notice] " + (data.title || "Official Announcement");
+    var recipients = Array.isArray(data.recipients) ? data.recipients.join(",") : data.recipients;
+    
+    var htmlBody = \`
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+        <div style="background: #1e3a8a; color: white; padding: 20px; text-align: center;">
+          <h2 style="margin: 0;">Pragati Engineering College</h2>
+          <p style="margin: 5px 0 0 0; font-size: 13px; opacity: 0.9;">CampusTech Official Notice Circular</p>
+        </div>
+        <div style="padding: 24px; color: #334155; line-height: 1.6;">
+          <span style="background: #eff6ff; color: #2563eb; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 12px;">\${data.category || 'General'}</span>
+          <h3 style="color: #0f172a; margin-top: 12px;">\${data.title}</h3>
+          <p style="font-size: 14px; white-space: pre-line;">\${data.message}</p>
+          <div style="margin-top: 20px; padding: 12px; background: #f8fafc; border-radius: 8px; font-size: 12px; color: #64748b;">
+            <strong>Issued By:</strong> \${data.issuedBy || 'Central Council'}<br/>
+            <strong>Target Department:</strong> \${data.department || 'All Departments'}
+          </div>
+          <div style="text-align: center; margin-top: 24px;">
+            <a href="\${data.portalUrl || 'https://pragati.ac.in'}" style="background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 13px; display: inline-block;">Open in CampusTech Portal</a>
+          </div>
+        </div>
+      </div>
+    \`;
+
+    MailApp.sendEmail({
+      to: data.senderEmail || Session.getActiveUser().getEmail(),
+      bcc: recipients,
+      subject: subject,
+      htmlBody: htmlBody
+    });
+
+    return ContentService.createTextOutput(JSON.stringify({ success: true, count: data.recipients.length }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: error.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+
+  res.json({
+    success: true,
+    platform: "Google Apps Script",
+    cost: "₹0 / Free",
+    dailyLimits: "1,500/day for Workspace, 100/day for personal Gmail",
+    code
+  });
+});
+
+
 
 
