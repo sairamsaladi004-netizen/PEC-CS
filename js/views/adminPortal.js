@@ -4,7 +4,6 @@ import { ROLES, normalizeRole } from '../rbac.js';
 import { renderAccessDenied, attachAccessDeniedEvents } from '../components/accessDenied.js';
 import { renderDepartmentParticipationChart, renderSystemActivityStream } from '../components/d3Visualizers.js';
 import { PermissionGuard, renderSuperAdminGuard, renderApprovalsGuard, renderAnalyticsGuard } from '../components/permissionGuard.js';
-import { initOnboardingTour } from '../components/onboardingTour.js';
 
 export function renderAdminPortalView(subSection = "dashboard") {
   const user = getCurrentUser() || {};
@@ -949,7 +948,6 @@ function renderAdminTabContent(tab, ctx) {
 
 export function attachAdminPortalEvents() {
   const user = getCurrentUser();
-  initOnboardingTour(user.role);
   attachAccessDeniedEvents();
 
   // Initialize D3 Charts if containers are present
