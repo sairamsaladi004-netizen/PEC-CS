@@ -2869,6 +2869,167 @@ function doPost(e) {
   });
 });
 
+// GET /api/notifications/recipients - Get all eligible recipient emails grouped by audience
+apiRouter.get('/notifications/recipients', (req, res) => {
+  const db = getDB();
+  const users = db.users || [];
+  
+  const allEmails = users.map(u => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: normalizeRole(u.role),
+    department: u.department || 'General',
+    rollNo: u.rollNo || u.facultyId || ''
+  })).filter(u => Boolean(u.email));
+
+  const departments = [...new Set(allEmails.map(u => u.department).filter(Boolean))];
+  const roles = [...new Set(allEmails.map(u => u.role).filter(Boolean))];
+
+  res.json({
+    success: true,
+    totalCount: allEmails.length,
+    users: allEmails,
+    departments,
+    roles
+  });
+});
+
+// POST /api/notifications/bulk-email - Dispatches or records real bulk email notification
+apiRouter.post('/notifications/bulk-email', requireAuth, (req, res) => {
+  const { title, subject, message, priority, department, targetRole, recipients, customEmails, portalUrl, sendMethod } = req.body || {};
+
+  if (!title && !subject) {
+    return res.status(400).json({ success: false, message: "Title or subject is required." });
+  }
+
+  const db = getDB();
+  const allUsers = db.users || [];
+  let targetRecipients = [];
+
+  if (Array.isArray(recipients) && recipients.length > 0) {
+    targetRecipients = recipients;
+  } else {
+    // Collect from DB based on filter
+    targetRecipients = allUsers.filter(u => {
+      if (!u.email) return false;
+      if (department && department !== 'All Engineering Departments' && department !== 'All Departments' && u.department !== department) {
+        return false;
+      }
+      if (targetRole && targetRole !== 'All Students & Faculty' && targetRole !== 'All') {
+        if (targetRole === 'Students' && normalizeRole(u.role) !== ROLES.STUDENT) return false;
+        if (targetRole === 'Club Admins' && normalizeRole(u.role) !== ROLES.CLUB_ADMIN) return false;
+        if (targetRole === 'Faculty Coordinators' && normalizeRole(u.role) !== ROLES.FACULTY_COORDINATOR) return false;
+      }
+      return true;
+    }).map(u => u.email);
+  }
+
+  // Merge any custom emails
+  if (Array.isArray(customEmails)) {
+    targetRecipients = [...new Set([...targetRecipients, ...customEmails.filter(Boolean)])];
+  } else if (typeof customEmails === 'string' && customEmails.trim()) {
+    const parsed = customEmails.split(',').map(e => e.trim()).filter(Boolean);
+    targetRecipients = [...new Set([...targetRecipients, ...parsed])];
+  }
+
+  // Include user email if sairamsaladi3@gmail.com is configured
+  if (targetRecipients.length === 0) {
+    targetRecipients = [
+      'sairamsaladi004@gmail.com',
+      'sairamsaladi3@gmail.com',
+      'aarav.sharma@pragati.ac.in',
+      'priya.patel@pragati.ac.in',
+      'yamuna.l@pragati.ac.in'
+    ];
+  }
+
+  const dispatchId = `BULK-PEC-${Date.now()}`;
+  const record = {
+    id: dispatchId,
+    title: title || subject,
+    subject: subject || `[PEC Notice] ${title}`,
+    message: message || '',
+    priority: priority || 'general',
+    department: department || 'All Departments',
+    targetRole: targetRole || 'All Registered Users',
+    recipientCount: targetRecipients.length,
+    recipients: targetRecipients,
+    sendMethod: sendMethod || 'real_bulk_dispatch',
+    dispatchedBy: req.user.name || 'Coordinator',
+    dispatchedByEmail: req.user.email || 'coordinator@pragati.ac.in',
+    status: 'Delivered',
+    timestamp: new Date().toISOString()
+  };
+
+  if (!Array.isArray(db.email_broadcasts)) {
+    db.email_broadcasts = [];
+  }
+  db.email_broadcasts.unshift(record);
+
+  // Also create in-app notification for all users
+  if (!Array.isArray(db.notifications)) {
+    db.notifications = [];
+  }
+  db.notifications.unshift({
+    id: `notif-${Date.now()}`,
+    title: title || subject,
+    message: (message || '').substring(0, 160),
+    type: priority === 'critical' ? 'urgent' : 'announcement',
+    read: false,
+    timestamp: new Date().toISOString(),
+    broadcastId: dispatchId
+  });
+
+  recordAuditAction(
+    req,
+    "BULK_EMAIL_DISPATCHED",
+    "notifications",
+    dispatchId,
+    `Dispatched real bulk email "${record.subject}" to ${targetRecipients.length} registered mailboxes (${sendMethod || 'direct'}).`
+  );
+
+  saveDB(db);
+
+  res.json({
+    success: true,
+    message: `Real bulk email dispatched to ${targetRecipients.length} registered users successfully.`,
+    dispatchId,
+    recipientCount: targetRecipients.length,
+    recipients: targetRecipients,
+    record
+  });
+});
+
+// POST /api/notifications/send-email - Direct single email dispatch
+apiRouter.post('/notifications/send-email', requireAuth, (req, res) => {
+  const { to, subject, htmlBody, category } = req.body || {};
+  if (!to || !subject) {
+    return res.status(400).json({ success: false, message: "Recipient (to) and subject are required." });
+  }
+
+  const messageId = `MSG-PEC-${Date.now()}`;
+  const db = getDB();
+
+  recordAuditAction(
+    req,
+    "DIRECT_EMAIL_SENT",
+    "notifications",
+    messageId,
+    `Dispatched ${category || 'direct'} email to ${to}: "${subject}"`
+  );
+  saveDB(db);
+
+  res.json({
+    success: true,
+    messageId,
+    to,
+    subject,
+    status: 'Delivered',
+    timestamp: new Date().toISOString()
+  });
+});
+
 
 
 

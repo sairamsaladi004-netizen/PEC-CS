@@ -58,7 +58,25 @@ export function renderLoginView() {
         </div>
 
         <!-- Hidden Quick Account Selector Sheet -->
-        <div id="google-quick-accounts-panel" class="hidden mt-6 pt-6 border-t border-indigo-800/60 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div id="google-quick-accounts-panel" class="hidden mt-6 pt-6 border-t border-indigo-800/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <button data-google-email="sairamsaladi3@gmail.com" class="google-instant-account-btn text-left p-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 transition-all flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs shrink-0">S</div>
+            <div class="truncate">
+              <div class="text-xs font-bold text-white truncate">Sairam Saladi</div>
+              <div class="text-[10px] text-slate-400 font-mono truncate">sairamsaladi3@gmail.com</div>
+              <div class="text-[9px] text-rose-400 font-semibold">Super Admin (HQ)</div>
+            </div>
+          </button>
+
+          <button data-google-email="sairamsaladi004@gmail.com" class="google-instant-account-btn text-left p-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 transition-all flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-xs shrink-0">S</div>
+            <div class="truncate">
+              <div class="text-xs font-bold text-white truncate">Sairam Saladi (Coord)</div>
+              <div class="text-[10px] text-slate-400 font-mono truncate">sairamsaladi004@gmail.com</div>
+              <div class="text-[9px] text-blue-400 font-semibold">Faculty Coordinator</div>
+            </div>
+          </button>
+
           <button data-google-email="aarav.sharma@pragati.ac.in" class="google-instant-account-btn text-left p-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 transition-all flex items-center space-x-3">
             <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80" class="w-8 h-8 rounded-full object-cover shrink-0" />
             <div class="truncate">
@@ -68,21 +86,12 @@ export function renderLoginView() {
             </div>
           </button>
 
-          <button data-google-email="srikar.v@pragati.ac.in" class="google-instant-account-btn text-left p-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 transition-all flex items-center space-x-3">
-            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80" class="w-8 h-8 rounded-full object-cover shrink-0" />
-            <div class="truncate">
-              <div class="text-xs font-bold text-white truncate">Srikar Varma</div>
-              <div class="text-[10px] text-slate-400 font-mono truncate">srikar.v@pragati.ac.in</div>
-              <div class="text-[9px] text-purple-400 font-semibold">Leader (AIML Club)</div>
-            </div>
-          </button>
-
-          <button data-google-email="faculty.coord@pragati.ac.in" class="google-instant-account-btn text-left p-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 transition-all flex items-center space-x-3">
+          <button data-google-email="yamuna.l@pragati.ac.in" class="google-instant-account-btn text-left p-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 transition-all flex items-center space-x-3">
             <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&auto=format&fit=crop&q=80" class="w-8 h-8 rounded-full object-cover shrink-0" />
             <div class="truncate">
-              <div class="text-xs font-bold text-white truncate">Dr. Radhika Sharma</div>
-              <div class="text-[10px] text-slate-400 font-mono truncate">faculty.coord@pragati.ac.in</div>
-              <div class="text-[9px] text-blue-400 font-semibold">Faculty Coordinator</div>
+              <div class="text-xs font-bold text-white truncate">Mrs. L. Yamuna</div>
+              <div class="text-[10px] text-slate-400 font-mono truncate">yamuna.l@pragati.ac.in</div>
+              <div class="text-[9px] text-blue-400 font-semibold">AIML Turing Coord</div>
             </div>
           </button>
         </div>
