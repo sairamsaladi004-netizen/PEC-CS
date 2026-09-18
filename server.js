@@ -21,10 +21,24 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', app: 'PEC CampusTech - Pragati University Club Management System' });
 });
 
-// Serve static assets from project root
-app.use(express.static(__dirname));
+// Serve static assets from project root with proper MIME types
+app.use(express.static(__dirname, {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.js') || filePath.endsWith('.mjs')) {
+      res.setHeader('Content-Type', 'text/javascript; charset=UTF-8');
+    }
+  }
+}));
 
-// SPA fallback for Express 5
+// Guard: Static asset requests (.js, .css, .json, etc.) must NEVER fall through to HTML SPA fallback
+app.use((req, res, next) => {
+  if (/\.(js|mjs|css|json|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/i.test(req.path)) {
+    return res.status(404).type('text/plain').send(`Asset not found: ${req.path}`);
+  }
+  next();
+});
+
+// SPA fallback for HTML navigation routes
 app.get('*all', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });

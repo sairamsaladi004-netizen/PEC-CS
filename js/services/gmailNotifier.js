@@ -51,7 +51,7 @@ export function getConnectedGmailEmail() {
 /**
  * Initiates Google OAuth Client Token flow using Google Identity Services (GSI)
  */
-export async function connectGmailOAuth(): Promise<string> {
+export async function connectGmailOAuth() {
   return new Promise((resolve, reject) => {
     try {
       if (typeof window.google === 'undefined' || !window.google.accounts || !window.google.accounts.oauth2) {

@@ -204,6 +204,11 @@ export function hasRolePermission(role, permission) {
   return list.includes(permission);
 }
 
+export function hasPermission(user, permission) {
+  if (!user) return false;
+  return hasRolePermission(user.role, permission);
+}
+
 export function isDepartmentMatch(userDept, clubDept) {
   if (!userDept || !clubDept) return false;
   const u = userDept.toString().trim().toUpperCase();
