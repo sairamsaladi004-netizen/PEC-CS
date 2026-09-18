@@ -234,6 +234,11 @@ export function renderStudentDashboardView(subSection = "dashboard") {
         <a href="#/student/dashboard" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}">
           📊 Overview
         </a>
+        <a href="#/membership-card" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap flex items-center space-x-1.5 text-blue-600 bg-blue-50/80 hover:bg-blue-100 border border-blue-200/60">
+          <span>💳</span>
+          <span>Smart ID & QR Pass</span>
+          <span class="px-1.5 py-0.2 text-[9px] font-mono font-bold rounded-full bg-emerald-500 text-white animate-pulse">Live QR</span>
+        </a>
         <a href="#/student/recommendations" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap flex items-center space-x-1.5 ${activeTab === 'recommendations' ? 'bg-indigo-600 text-white shadow-xs' : 'text-indigo-600 bg-indigo-50/70 hover:bg-indigo-100/70'}">
           <span>✨</span>
           <span>Recommendations</span>
@@ -923,9 +928,36 @@ function renderSubSectionContent(tab, ctx) {
     default: { // Overview Dashboard
       const topRecs = getStudentClubRecommendations(user, db, { limit: 2 });
       const upcomingEvents = (db.events || []).filter(e => e.status === "Upcoming").slice(0, 3);
+      const studentRoll = user.rollNo || user.facultyId || "22A31A0501";
+      const studentMemId = user.membershipId || `PEC-MEM-2026-${(user.department || 'CSE').toUpperCase()}-${studentRoll.slice(-4) || '8492'}`;
 
       return `
         <div class="space-y-6">
+
+          <!-- Student Smart ID & Event Check-in QR Hero Strip -->
+          <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 text-white border border-indigo-500/30 shadow-xl relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-5">
+            <div class="space-y-1.5 z-10 text-center sm:text-left">
+              <div class="inline-flex items-center space-x-2 px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold border border-blue-400/30">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                <span>CCTSC Smart Membership AID • Live QR Ready</span>
+              </div>
+              <h3 class="text-xl font-black text-white tracking-tight">Your Digital Membership Badge & Event Check-in QR</h3>
+              <p class="text-xs text-slate-300 max-w-xl">
+                Cryptographically signed for instant contactless entry at all 35 Technical Societies, Hackathons, and Maker Labs.
+              </p>
+              <div class="text-[11px] font-mono text-slate-400 pt-1">
+                AID: <strong class="text-white">${studentMemId}</strong> • Roll: <strong class="text-blue-300">${studentRoll}</strong>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-3 shrink-0 z-10">
+              <a href="#/membership-card" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center space-x-1.5">
+                <span>💳</span>
+                <span>Open Smart Card & QR</span>
+                <span>→</span>
+              </a>
+            </div>
+          </div>
           
           <!-- Key Metrics Bento Row -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">

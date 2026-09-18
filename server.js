@@ -2,8 +2,6 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { apiRouter } from './backend/api.js';
-import { fetchFullDatabaseFromSupabase, isSupabaseConfigured } from './backend/db.js';
-import { initializeDatabase } from './scripts/init_database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,29 +9,6 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 const HOST = '0.0.0.0';
-
-// Security hardening
-app.disable('x-powered-by');
-
-// Security headers middleware
-app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  next();
-});
-
-// Initialize database schema and seed mock data if missing or empty
-initializeDatabase().catch(err => {
-  console.warn("[Server Startup] Database initialization notice:", err.message);
-});
-
-// Trigger initial Supabase synchronization if credentials present
-if (isSupabaseConfigured()) {
-  fetchFullDatabaseFromSupabase().catch(err => {
-    console.warn("[Server Startup] Supabase warm-up notice:", err.message);
-  });
-}
 
 // Body parser
 app.use(express.json());

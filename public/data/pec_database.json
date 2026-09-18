@@ -1,4 +1,175 @@
 {
+  "departments": [
+    {
+      "code": "CE",
+      "name": "Civil Engineering"
+    },
+    {
+      "code": "IT",
+      "name": "Information Technology"
+    },
+    {
+      "code": "ME",
+      "name": "Mechanical Engineering"
+    },
+    {
+      "code": "CSE",
+      "name": "Computer Science & Engineering"
+    },
+    {
+      "code": "CSE(CS)",
+      "name": "CSE - Cyber Security"
+    },
+    {
+      "code": "CSE(AIML)",
+      "name": "CSE - Artificial Intelligence & Machine Learning"
+    },
+    {
+      "code": "ECE",
+      "name": "Electronics & Communication Engineering"
+    },
+    {
+      "code": "EEE",
+      "name": "Electrical & Electronics Engineering"
+    },
+    {
+      "code": "CSE(DS)",
+      "name": "CSE - Data Science"
+    },
+    {
+      "code": "BSH",
+      "name": "Basic Sciences & Humanities"
+    },
+    {
+      "code": "CSE(AI)",
+      "name": "CSE - Artificial Intelligence"
+    }
+  ],
+  "users": [
+    {
+      "id": "std-101",
+      "name": "Aarav Sharma",
+      "rollNo": "22CS101",
+      "email": "aarav.sharma@pragati.ac.in",
+      "demoAlias": "student.demo@pragati.ac.in",
+      "role": "Student",
+      "department": "CSE",
+      "year": "3rd Year",
+      "section": "B",
+      "phone": "+91 98765 43210",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
+      "skills": [
+        "Python",
+        "PyTorch",
+        "FastAPI",
+        "Docker",
+        "ROS"
+      ],
+      "interests": [
+        "Artificial Intelligence",
+        "Edge Computing",
+        "Competitive Programming"
+      ],
+      "bio": "Undergraduate CSE student enthusiastic about practical deep learning and edge autonomy.",
+      "salt": "pec_secure_salt_2026",
+      "passwordHash": "8df6e901d9ba1d299baecfaf12772e80bc423abeb0009be38bfe831426605436",
+      "emailVerified": true,
+      "membershipId": "PEC-MEM-2026-CSE-8492",
+      "validUntil": "30 June 2027",
+      "isDemo": true
+    },
+    {
+      "id": "coord-201",
+      "name": "Mrs. L. Yamuna",
+      "facultyId": "FAC-CSE-AIML-01",
+      "email": "yamuna.l@pragati.ac.in",
+      "demoAlias": "coordinator.demo@pragati.ac.in",
+      "role": "Club Coordinator",
+      "department": "CSE(AIML)",
+      "designation": "Assistant Professor & Faculty Coordinator",
+      "phone": "+91 884 2383305",
+      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80",
+      "assignedClubs": [
+        "I4-08"
+      ],
+      "skills": [
+        "Artificial Intelligence",
+        "Machine Learning",
+        "Research Mentorship"
+      ],
+      "interests": [
+        "Deep Learning Models",
+        "Curricular Innovations"
+      ],
+      "bio": "Faculty Coordinator for AI&ML Turing Club at Pragati Engineering College.",
+      "salt": "pec_secure_salt_2026",
+      "passwordHash": "8df6e901d9ba1d299baecfaf12772e80bc423abeb0009be38bfe831426605436",
+      "emailVerified": true,
+      "membershipId": "PEC-FAC-2026-AIML-01",
+      "validUntil": "Permanent",
+      "isDemo": true
+    },
+    {
+      "id": "std-102",
+      "name": "Priya Patel",
+      "rollNo": "22CS142",
+      "email": "priya.patel@pragati.ac.in",
+      "demoAlias": "leader.demo@pragati.ac.in",
+      "role": "Club Student Leader",
+      "studentLeaderRole": "President",
+      "clubId": "I4-08",
+      "department": "CSE(AIML)",
+      "year": "3rd Year",
+      "section": "A",
+      "phone": "+91 98480 12345",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80",
+      "skills": [
+        "Machine Learning",
+        "Event Management",
+        "Python",
+        "Leadership"
+      ],
+      "interests": [
+        "Tech Hackathons",
+        "Community Building"
+      ],
+      "bio": "Student President of AI&ML Turing Club organizing tech symposiums and workshops.",
+      "salt": "pec_secure_salt_2026",
+      "passwordHash": "8df6e901d9ba1d299baecfaf12772e80bc423abeb0009be38bfe831426605436",
+      "emailVerified": true,
+      "membershipId": "PEC-MEM-2026-AIML-5120",
+      "validUntil": "30 June 2027",
+      "isDemo": true
+    },
+    {
+      "id": "admin-001",
+      "name": "Dr. K. Satyanarayana",
+      "facultyId": "FAC-PEC-001",
+      "email": "principal@pragati.ac.in",
+      "demoAlias": "admin.demo@pragati.ac.in",
+      "role": "Super Admin",
+      "department": "CSE",
+      "designation": "Principal & Head of Academic Council",
+      "phone": "+91 884 2383305",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&auto=format&fit=crop&q=80",
+      "skills": [
+        "Academic Administration",
+        "NBA / NAAC Accreditation",
+        "Institutional Leadership"
+      ],
+      "interests": [
+        "Higher Technical Education",
+        "Outcome-Based Education"
+      ],
+      "bio": "Principal, Pragati Engineering College (Autonomous), Surampalem.",
+      "salt": "pec_secure_salt_2026",
+      "passwordHash": "8df6e901d9ba1d299baecfaf12772e80bc423abeb0009be38bfe831426605436",
+      "emailVerified": true,
+      "membershipId": "PEC-ADMIN-2026-HQ-001",
+      "validUntil": "Lifetime",
+      "isDemo": true
+    }
+  ],
   "clubs": [
     {
       "id": "I4-01",
@@ -736,521 +907,52 @@
       "updatedAt": "2026-09-17T00:00:00.000Z"
     }
   ],
-  "users": [
+  "club_memberships": [
     {
-      "id": "std-101",
-      "name": "Aarav Sharma",
-      "rollNo": "22CS101",
-      "email": "aarav.sharma@pragati.ac.in",
-      "demoAlias": "student.demo@pragati.ac.in",
-      "role": "Student",
-      "department": "CSE",
-      "year": "3rd Year",
-      "section": "B",
-      "phone": "+91 98765 43210",
-      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
-      "skills": [
-        "Python",
-        "PyTorch",
-        "FastAPI",
-        "Docker",
-        "ROS"
-      ],
-      "interests": [
-        "Artificial Intelligence",
-        "Edge Computing",
-        "Competitive Programming"
-      ],
-      "bio": "Undergraduate CSE student enthusiastic about practical deep learning and edge autonomy.",
-      "salt": "pec_secure_salt_2026",
-      "passwordHash": "8df6e901d9ba1d299baecfaf12772e80bc423abeb0009be38bfe831426605436",
-      "emailVerified": true,
-      "membershipId": "PEC-MEM-2026-CSE-8492",
-      "validUntil": "30 June 2027",
-      "isDemo": true
+      "id": "mem-001",
+      "membership_id": "PEC-MEM-2026-AIML-101",
+      "student_id": "std-101",
+      "club_id": "I4-08",
+      "role": "Member",
+      "status": "Approved",
+      "requested_at": "2026-08-15T10:00:00.000Z",
+      "approved_at": "2026-08-16T14:30:00.000Z",
+      "approved_by": "Mrs. L. Yamuna",
+      "remarks": "Approved. Welcome to the AI&ML Turing Club!"
     },
     {
-      "id": "coord-201",
-      "name": "Mrs. L. Yamuna",
-      "facultyId": "FAC-CSE-AIML-01",
-      "email": "yamuna.l@pragati.ac.in",
-      "demoAlias": "coordinator.demo@pragati.ac.in",
-      "role": "Faculty Coordinator",
-      "department": "CSE(AIML)",
-      "designation": "Assistant Professor & Faculty Coordinator",
-      "phone": "+91 884 2383305",
-      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80",
-      "assignedClubs": [
-        "I4-08"
-      ],
-      "skills": [
-        "Artificial Intelligence",
-        "Machine Learning",
-        "Research Mentorship"
-      ],
-      "interests": [
-        "Deep Learning Models",
-        "Curricular Innovations"
-      ],
-      "bio": "Faculty Coordinator for AI&ML Turing Club at Pragati Engineering College.",
-      "salt": "pec_secure_salt_2026",
-      "passwordHash": "8df6e901d9ba1d299baecfaf12772e80bc423abeb0009be38bfe831426605436",
-      "emailVerified": true,
-      "membershipId": "PEC-FAC-2026-AIML-01",
-      "validUntil": "Permanent",
-      "isDemo": true
+      "id": "mem-002",
+      "membership_id": "PEC-MEM-2026-AIML-102",
+      "student_id": "std-102",
+      "club_id": "I4-08",
+      "role": "President",
+      "status": "Approved",
+      "requested_at": "2026-08-10T09:00:00.000Z",
+      "approved_at": "2026-08-11T11:00:00.000Z",
+      "approved_by": "Mrs. L. Yamuna",
+      "remarks": "Designated as Student President for AY 2025-2026."
     },
     {
-      "id": "std-102",
-      "name": "Priya Patel",
-      "rollNo": "22CS142",
-      "email": "priya.patel@pragati.ac.in",
-      "demoAlias": "leader.demo@pragati.ac.in",
-      "role": "Club Admin",
-      "studentLeaderRole": "President",
-      "clubId": "I4-08",
-      "department": "CSE(AIML)",
-      "year": "3rd Year",
-      "section": "A",
-      "phone": "+91 98480 12345",
-      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80",
-      "skills": [
-        "Machine Learning",
-        "Event Management",
-        "Python",
-        "Leadership"
-      ],
-      "interests": [
-        "Tech Hackathons",
-        "Community Building"
-      ],
-      "bio": "Student President of AI&ML Turing Club organizing tech symposiums and workshops.",
-      "salt": "pec_secure_salt_2026",
-      "passwordHash": "8df6e901d9ba1d299baecfaf12772e80bc423abeb0009be38bfe831426605436",
-      "emailVerified": true,
-      "membershipId": "PEC-MEM-2026-AIML-5120",
-      "validUntil": "30 June 2027",
-      "isDemo": true,
-      "assignedClubs": [
-        "I4-08"
-      ]
-    },
-    {
-      "id": "admin-001",
-      "name": "Dr. K. Satyanarayana",
-      "facultyId": "FAC-PEC-001",
-      "email": "principal@pragati.ac.in",
-      "demoAlias": "admin.demo@pragati.ac.in",
-      "role": "Super Admin",
-      "department": "CSE",
-      "designation": "Principal & Head of Academic Council",
-      "phone": "+91 884 2383305",
-      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&auto=format&fit=crop&q=80",
-      "skills": [
-        "Academic Administration",
-        "NBA / NAAC Accreditation",
-        "Institutional Leadership"
-      ],
-      "interests": [
-        "Higher Technical Education",
-        "Outcome-Based Education"
-      ],
-      "bio": "Principal, Pragati Engineering College (Autonomous), Surampalem.",
-      "salt": "pec_secure_salt_2026",
-      "passwordHash": "8df6e901d9ba1d299baecfaf12772e80bc423abeb0009be38bfe831426605436",
-      "emailVerified": true,
-      "membershipId": "PEC-ADMIN-2026-HQ-001",
-      "validUntil": "Lifetime",
-      "isDemo": true
-    },
-    {
-      "id": "std-103",
-      "name": "Kavya Madhavan",
-      "rollNo": "22CS204",
-      "email": "kavya.m@pragati.ac.in",
-      "demoAlias": "kavya.demo@pragati.ac.in",
-      "role": "Student",
-      "department": "CSE(AIML)",
-      "year": "3rd Year",
-      "section": "A",
-      "phone": "+91 98491 11223",
-      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
-      "skills": [
-        "Python",
-        "Deep Learning",
-        "Computer Vision",
-        "PyTorch",
-        "TensorFlow"
-      ],
-      "interests": [
-        "Artificial Intelligence",
-        "Neural Networks",
-        "Autonomous Vehicles"
-      ],
-      "bio": "Junior researcher in computer vision and object detection models.",
-      "salt": "pec_auth_salt_2026_prod",
-      "passwordHash": "1f11463cf1ba107b30c9044d47d6e64df2fa5f0f3531bb8997ef05a18a562479",
-      "emailVerified": true,
-      "membershipId": "PEC-MEM-2026-AIML-103",
-      "validUntil": "30 June 2027",
-      "isDemo": false
-    },
-    {
-      "id": "std-104",
-      "name": "Rohan Varma",
-      "rollNo": "23EC115",
-      "email": "rohan.v@pragati.ac.in",
-      "demoAlias": "rohan.demo@pragati.ac.in",
-      "role": "Student",
-      "department": "ECE",
-      "year": "2nd Year",
-      "section": "B",
-      "phone": "+91 98492 22334",
-      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
-      "skills": [
-        "Embedded C",
-        "Microcontrollers",
-        "Arduino",
-        "MATLAB",
-        "IoT"
-      ],
-      "interests": [
-        "Robotics",
-        "VLSI Design",
-        "Edge Computing"
-      ],
-      "bio": "Electronics enthusiast focused on autonomous micro-rovers and PCB prototyping.",
-      "salt": "pec_auth_salt_2026_prod",
-      "passwordHash": "1f11463cf1ba107b30c9044d47d6e64df2fa5f0f3531bb8997ef05a18a562479",
-      "emailVerified": true,
-      "membershipId": "PEC-MEM-2026-ECE-104",
-      "validUntil": "30 June 2028",
-      "isDemo": false
-    },
-    {
-      "id": "std-105",
-      "name": "Sneha Reddy",
-      "rollNo": "22CS089",
-      "email": "sneha.r@pragati.ac.in",
-      "demoAlias": "sneha.demo@pragati.ac.in",
-      "role": "Student",
-      "department": "CSE(CS)",
-      "year": "3rd Year",
-      "section": "C",
-      "phone": "+91 98493 33445",
-      "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&auto=format&fit=crop&q=80",
-      "skills": [
-        "Cyber Security",
-        "Network Security",
-        "Wireshark",
-        "Python",
-        "Linux"
-      ],
-      "interests": [
-        "Penetration Testing",
-        "Cryptography",
-        "Cloud Security"
-      ],
-      "bio": "Student white-hat security researcher competing in college CTF challenges.",
-      "salt": "pec_auth_salt_2026_prod",
-      "passwordHash": "1f11463cf1ba107b30c9044d47d6e64df2fa5f0f3531bb8997ef05a18a562479",
-      "emailVerified": true,
-      "membershipId": "PEC-MEM-2026-CS-105",
-      "validUntil": "30 June 2027",
-      "isDemo": false
-    },
-    {
-      "id": "std-106",
-      "name": "Vikram Aditya",
-      "rollNo": "23ME044",
-      "email": "vikram.a@pragati.ac.in",
-      "demoAlias": "vikram.demo@pragati.ac.in",
-      "role": "Student",
-      "department": "ME",
-      "year": "2nd Year",
-      "section": "A",
-      "phone": "+91 98494 44556",
-      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80",
-      "skills": [
-        "CAD/CAM",
-        "SolidWorks",
-        "ANSYS",
-        "3D Printing",
-        "Mechanics"
-      ],
-      "interests": [
-        "Robotics",
-        "Automotive Engineering",
-        "Thermal Design"
-      ],
-      "bio": "Mechanical engineering designer passionate about drone airframes and 3D printing.",
-      "salt": "pec_auth_salt_2026_prod",
-      "passwordHash": "1f11463cf1ba107b30c9044d47d6e64df2fa5f0f3531bb8997ef05a18a562479",
-      "emailVerified": true,
-      "membershipId": "PEC-MEM-2026-ME-106",
-      "validUntil": "30 June 2028",
-      "isDemo": false
-    },
-    {
-      "id": "std-107",
-      "name": "Ananya Deshmukh",
-      "rollNo": "22IT052",
-      "email": "ananya.d@pragati.ac.in",
-      "demoAlias": "ananya.demo@pragati.ac.in",
-      "role": "Student",
-      "department": "IT",
-      "year": "3rd Year",
-      "section": "B",
-      "phone": "+91 98495 55667",
-      "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=80",
-      "skills": [
-        "JavaScript",
-        "React",
-        "Node.js",
-        "Docker",
-        "Kubernetes"
-      ],
-      "interests": [
-        "Cloud Computing",
-        "Full Stack Development",
-        "DevOps"
-      ],
-      "bio": "Full stack web developer and cloud infrastructure explorer.",
-      "salt": "pec_auth_salt_2026_prod",
-      "passwordHash": "1f11463cf1ba107b30c9044d47d6e64df2fa5f0f3531bb8997ef05a18a562479",
-      "emailVerified": true,
-      "membershipId": "PEC-MEM-2026-IT-107",
-      "validUntil": "30 June 2027",
-      "isDemo": false
-    },
-    {
-      "id": "std-108",
-      "name": "Karthik Raja",
-      "rollNo": "23CE019",
-      "email": "karthik.r@pragati.ac.in",
-      "demoAlias": "karthik.demo@pragati.ac.in",
-      "role": "Student",
-      "department": "CE",
-      "year": "2nd Year",
-      "section": "A",
-      "phone": "+91 98496 66778",
-      "avatar": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=200&auto=format&fit=crop&q=80",
-      "skills": [
-        "AutoCAD",
-        "STAAD Pro",
-        "GIS",
-        "Surveying",
-        "Green Materials"
-      ],
-      "interests": [
-        "Green Building",
-        "Smart Cities",
-        "Structural Engineering"
-      ],
-      "bio": "Civil engineering sophomore passionate about sustainable urban planning.",
-      "salt": "pec_auth_salt_2026_prod",
-      "passwordHash": "1f11463cf1ba107b30c9044d47d6e64df2fa5f0f3531bb8997ef05a18a562479",
-      "emailVerified": true,
-      "membershipId": "PEC-MEM-2026-CE-108",
-      "validUntil": "30 June 2028",
-      "isDemo": false
-    },
-    {
-      "id": "std-109",
-      "name": "Deepak Chowdary",
-      "rollNo": "22CS178",
-      "email": "deepak.c@pragati.ac.in",
-      "demoAlias": "deepak.demo@pragati.ac.in",
-      "role": "Student",
-      "department": "CSE(AIML)",
-      "year": "3rd Year",
-      "section": "B",
-      "phone": "+91 98497 77889",
-      "avatar": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=200&auto=format&fit=crop&q=80",
-      "skills": [
-        "Python",
-        "SQL",
-        "Scikit-learn",
-        "Pandas",
-        "Data Analysis"
-      ],
-      "interests": [
-        "Machine Learning",
-        "Big Data Analytics",
-        "Predictive Modeling"
-      ],
-      "bio": "Enrolled in AI Turing Club; inactive during current semester due to internship prep.",
-      "salt": "pec_auth_salt_2026_prod",
-      "passwordHash": "1f11463cf1ba107b30c9044d47d6e64df2fa5f0f3531bb8997ef05a18a562479",
-      "emailVerified": true,
-      "membershipId": "PEC-MEM-2026-AIML-109",
-      "validUntil": "30 June 2027",
-      "isDemo": false
-    },
-    {
-      "id": "std-110",
-      "name": "Meera Nambiar",
-      "rollNo": "23CS065",
-      "email": "meera.n@pragati.ac.in",
-      "demoAlias": "meera.demo@pragati.ac.in",
-      "role": "Student",
-      "department": "CSE",
-      "year": "2nd Year",
-      "section": "C",
-      "phone": "+91 98498 88990",
-      "avatar": "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=200&auto=format&fit=crop&q=80",
-      "skills": [
-        "Java",
-        "Data Structures",
-        "Algorithms",
-        "C++",
-        "Git"
-      ],
-      "interests": [
-        "Competitive Programming",
-        "Algorithm Design",
-        "Coding Competitions"
-      ],
-      "bio": "Active coder participating in HackerRank and LeetCode contests.",
-      "salt": "pec_auth_salt_2026_prod",
-      "passwordHash": "1f11463cf1ba107b30c9044d47d6e64df2fa5f0f3531bb8997ef05a18a562479",
-      "emailVerified": true,
-      "membershipId": "PEC-MEM-2026-CSE-110",
-      "validUntil": "30 June 2028",
-      "isDemo": false
-    },
-    {
-      "id": "std-111",
-      "name": "Siddharth Rao",
-      "rollNo": "22EE034",
-      "email": "siddharth.r@pragati.ac.in",
-      "demoAlias": "siddharth.demo@pragati.ac.in",
-      "role": "Student",
-      "department": "EEE",
-      "year": "3rd Year",
-      "section": "A",
-      "phone": "+91 98499 99001",
-      "avatar": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&auto=format&fit=crop&q=80",
-      "skills": [
-        "Power Systems",
-        "Renewable Energy",
-        "Simulink",
-        "PLC SCADA",
-        "MATLAB"
-      ],
-      "interests": [
-        "Electric Vehicles",
-        "Solar Power Grid",
-        "Smart Grids"
-      ],
-      "bio": "Electrical engineering student researching EV battery management and clean energy.",
-      "salt": "pec_auth_salt_2026_prod",
-      "passwordHash": "1f11463cf1ba107b30c9044d47d6e64df2fa5f0f3531bb8997ef05a18a562479",
-      "emailVerified": true,
-      "membershipId": "PEC-MEM-2026-EEE-111",
-      "validUntil": "30 June 2027",
-      "isDemo": false
-    },
-    {
-      "id": "std-112",
-      "name": "Harini Sundaram",
-      "rollNo": "23AI022",
-      "email": "harini.s@pragati.ac.in",
-      "demoAlias": "harini.demo@pragati.ac.in",
-      "role": "Student",
-      "department": "CSE(AIML)",
-      "year": "2nd Year",
-      "section": "B",
-      "phone": "+91 98480 11224",
-      "avatar": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&auto=format&fit=crop&q=80",
-      "skills": [
-        "Natural Language Processing",
-        "HuggingFace",
-        "FastAPI",
-        "Python"
-      ],
-      "interests": [
-        "Generative AI",
-        "Language Models",
-        "Conversational Agents"
-      ],
-      "bio": "AI enthusiast working on low-resource Indian language translation.",
-      "salt": "pec_auth_salt_2026_prod",
-      "passwordHash": "1f11463cf1ba107b30c9044d47d6e64df2fa5f0f3531bb8997ef05a18a562479",
-      "emailVerified": true,
-      "membershipId": "PEC-MEM-2026-AIML-112",
-      "validUntil": "30 June 2028",
-      "isDemo": false
-    },
-    {
-      "id": "guest-001",
-      "name": "Public Guest",
-      "email": "guest@pragati.ac.in",
-      "demoAlias": "guest.demo@pragati.ac.in",
-      "role": "Guest",
-      "department": "General Public",
-      "designation": "Prospective Student / Public Visitor",
-      "phone": "+91 00000 00000",
-      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80",
-      "skills": [
-        "Visitor"
-      ],
-      "interests": [
-        "Technology Exploration"
-      ],
-      "bio": "Public visitor exploring technical clubs at Pragati Engineering College.",
-      "salt": "pec_secure_salt_2026",
-      "passwordHash": "8df6e901d9ba1d299baecfaf12772e80bc423abeb0009be38bfe831426605436",
-      "emailVerified": false,
-      "membershipId": "PEC-GUEST-2026",
-      "validUntil": "Session Only",
-      "isDemo": true
+      "id": "mem-003",
+      "membership_id": "PEC-MEM-2026-ROB-103",
+      "student_id": "std-101",
+      "club_id": "I4-03",
+      "role": "Member",
+      "status": "Approved",
+      "requested_at": "2026-08-20T11:15:00.000Z",
+      "approved_at": "2026-08-21T09:45:00.000Z",
+      "approved_by": "Mr. V.V.N. Sarath",
+      "remarks": "Approved for robotics hardware workgroup."
     }
   ],
-  "departments": [
+  "club_roles": [
     {
-      "code": "CE",
-      "name": "Civil Engineering"
-    },
-    {
-      "code": "IT",
-      "name": "Information Technology"
-    },
-    {
-      "code": "ME",
-      "name": "Mechanical Engineering"
-    },
-    {
-      "code": "CSE",
-      "name": "Computer Science & Engineering"
-    },
-    {
-      "code": "CSE(CS)",
-      "name": "CSE - Cyber Security"
-    },
-    {
-      "code": "CSE(AIML)",
-      "name": "CSE - Artificial Intelligence & Machine Learning"
-    },
-    {
-      "code": "ECE",
-      "name": "Electronics & Communication Engineering"
-    },
-    {
-      "code": "EEE",
-      "name": "Electrical & Electronics Engineering"
-    },
-    {
-      "code": "CSE(DS)",
-      "name": "CSE - Data Science"
-    },
-    {
-      "code": "BSH",
-      "name": "Basic Sciences & Humanities"
-    },
-    {
-      "code": "CSE(AI)",
-      "name": "CSE - Artificial Intelligence"
+      "id": "crole-001",
+      "club_id": "I4-08",
+      "student_id": "std-102",
+      "role_title": "President",
+      "assigned_by": "Mrs. L. Yamuna",
+      "assigned_at": "2026-08-11T11:00:00.000Z"
     }
   ],
   "events": [
@@ -1352,193 +1054,6 @@
       "qr_token_expiry": null
     },
     {
-      "id": "evt-106",
-      "title": "Smart Edge IoT & LoRaWAN Industrial Hackathon",
-      "category": "Hackathon",
-      "event_type": "Hackathon",
-      "club_id": "I4-09",
-      "date": "2026-10-30",
-      "start_time": "09:30",
-      "end_time": "19:00",
-      "venue": "ECE IoT Embedded Systems Lab",
-      "max_participants": 120,
-      "registration_deadline": "2026-10-28 23:59",
-      "status": "Upcoming",
-      "banner": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80",
-      "description": "Connecting long-range LoRa edge nodes with cloud gateways for real-time agricultural telemetry and smart campus environmental monitoring.",
-      "rules": [
-        "Teams of 2 to 3 members.",
-        "Hardware toolkits will be provided in lab sessions."
-      ],
-      "created_by": "Mr. K. Chandra Sekhar",
-      "created_at": "2026-09-05T10:00:00.000Z",
-      "active_qr_token": null,
-      "qr_token_expiry": null
-    },
-    {
-      "id": "evt-107",
-      "title": "Electric Vehicle Battery Management & Telemetry Bootcamp",
-      "category": "Bootcamp",
-      "event_type": "Bootcamp",
-      "club_id": "I4-10",
-      "date": "2026-11-14",
-      "start_time": "10:00",
-      "end_time": "17:00",
-      "venue": "Automotive & Electrical Machines Complex",
-      "max_participants": 90,
-      "registration_deadline": "2026-11-12 23:59",
-      "status": "Upcoming",
-      "banner": "https://images.unsplash.com/photo-1558441719-aa34bbe5f347?w=800&auto=format&fit=crop&q=80",
-      "description": "Deep dive into EV lithium-ion battery state-of-charge algorithms, regenerative braking dynamics, and CAN bus telemetry interfacing.",
-      "rules": [
-        "Open to all EEE, ME, and ECE engineering undergraduates."
-      ],
-      "created_by": "Dr. P.V.S. Mantry",
-      "created_at": "2026-09-06T10:00:00.000Z",
-      "active_qr_token": null,
-      "qr_token_expiry": null
-    },
-    {
-      "id": "evt-201",
-      "title": "Smart Micro-Grid & Renewable Energy Hackathon 2026",
-      "category": "Hackathon",
-      "event_type": "Hackathon",
-      "club_id": "CC-01",
-      "date": "2026-10-22",
-      "start_time": "09:00",
-      "end_time": "18:00",
-      "venue": "EEE Smart Grid Research Lab, PEC Campus",
-      "max_participants": 100,
-      "registration_deadline": "2026-10-20 23:59",
-      "status": "Upcoming",
-      "banner": "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=800&auto=format&fit=crop&q=80",
-      "description": "Designing smart energy monitoring IoT architectures, micro-grid balance controllers, and solar telemetry dashboards for campus sustainability.",
-      "rules": [
-        "Teams of 2 to 4 students from any discipline.",
-        "Demonstration with simulation or micro-controller hardware required."
-      ],
-      "created_by": "Dr. P.V.S. Mantry",
-      "created_at": "2026-09-05T09:00:00.000Z",
-      "active_qr_token": null,
-      "qr_token_expiry": null
-    },
-    {
-      "id": "evt-202",
-      "title": "Smart Water IoT Sensors & Conservation Ideathon",
-      "category": "Hackathon",
-      "event_type": "Hackathon",
-      "club_id": "CC-02",
-      "date": "2026-10-28",
-      "start_time": "10:00",
-      "end_time": "16:30",
-      "venue": "Civil Engineering Environmental Lab",
-      "max_participants": 80,
-      "registration_deadline": "2026-10-26 23:59",
-      "status": "Upcoming",
-      "banner": "https://images.unsplash.com/photo-1544365558-35aa4afcf11f?w=800&auto=format&fit=crop&q=80",
-      "description": "Developing low-cost ultrasonic and turbidity IoT sensor networks for automated campus water auditing, leak detection, and recharge tracking.",
-      "rules": [
-        "Interdisciplinary team projects encouraged."
-      ],
-      "created_by": "Mr. P. Shiva Kumar",
-      "created_at": "2026-09-06T10:00:00.000Z",
-      "active_qr_token": null,
-      "qr_token_expiry": null
-    },
-    {
-      "id": "evt-203",
-      "title": "EcoTech Circular Campus Waste Automation Challenge",
-      "category": "Competition",
-      "event_type": "Competition",
-      "club_id": "CC-03",
-      "date": "2026-11-05",
-      "start_time": "09:30",
-      "end_time": "16:00",
-      "venue": "Mechanical Workshop & Seminar Hall 2",
-      "max_participants": 90,
-      "registration_deadline": "2026-11-03 23:59",
-      "status": "Upcoming",
-      "banner": "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=800&auto=format&fit=crop&q=80",
-      "description": "Prototyping automated solid waste segregation sorting systems using embedded edge computer vision, mechanical sorting chutes, and recycling tracking.",
-      "rules": [
-        "Working scale model or prototype demonstration required."
-      ],
-      "created_by": "Mr. K. V. Rajesh",
-      "created_at": "2026-09-07T11:00:00.000Z",
-      "active_qr_token": null,
-      "qr_token_expiry": null
-    },
-    {
-      "id": "evt-301",
-      "title": "Pragsoft Full-Stack Open Source Code Sprint",
-      "category": "Coding Contest",
-      "event_type": "Coding Contest",
-      "club_id": "EC-04",
-      "date": "2026-10-25",
-      "start_time": "09:00",
-      "end_time": "21:00",
-      "venue": "Central Computing Center Lab 4",
-      "max_participants": 150,
-      "registration_deadline": "2026-10-23 23:59",
-      "status": "Upcoming",
-      "banner": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&auto=format&fit=crop&q=80",
-      "description": "36-hour sprint contributing to open source repositories, modern full-stack web applications, and developer CLI tools under industry mentors.",
-      "rules": [
-        "Individual coders or pairs.",
-        "GitHub repository commits tracked live."
-      ],
-      "created_by": "Mr. Ch. Venkata Ramana",
-      "created_at": "2026-09-08T09:00:00.000Z",
-      "active_qr_token": null,
-      "qr_token_expiry": null
-    },
-    {
-      "id": "evt-302",
-      "title": "Web3 & Spatial Metaverse Virtual World Hackfest",
-      "category": "Hackathon",
-      "event_type": "Hackathon",
-      "club_id": "EC-03",
-      "date": "2026-11-02",
-      "start_time": "10:00",
-      "end_time": "18:00",
-      "venue": "CSE VR & Immersive Simulation Lab",
-      "max_participants": 120,
-      "registration_deadline": "2026-10-31 23:59",
-      "status": "Upcoming",
-      "banner": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80",
-      "description": "Build spatial audio environments, multi-user WebXR avatars, and decentralized campus digital twin exhibits for engineering walkthroughs.",
-      "rules": [
-        "Browser-compatible 3D experiences or VR headset builds."
-      ],
-      "created_by": "Dr. M. Radhika Mani",
-      "created_at": "2026-09-08T10:00:00.000Z",
-      "active_qr_token": null,
-      "qr_token_expiry": null
-    },
-    {
-      "id": "evt-303",
-      "title": "IETE VLSI & Edge Signal Processing Symposium",
-      "category": "Symposium",
-      "event_type": "Symposium",
-      "club_id": "EC-08",
-      "date": "2026-11-10",
-      "start_time": "09:30",
-      "end_time": "17:00",
-      "venue": "ECE Department Auditorium & DSP Lab",
-      "max_participants": 160,
-      "registration_deadline": "2026-11-08 23:59",
-      "status": "Upcoming",
-      "banner": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80",
-      "description": "Technical symposium on Verilog/SystemVerilog RTL synthesis, FPGA prototyping, and edge acoustic signal processing for autonomous systems.",
-      "rules": [
-        "Open to all ECE, EEE, and CSE students."
-      ],
-      "created_by": "Mr. V. Prasanth",
-      "created_at": "2026-09-09T10:00:00.000Z",
-      "active_qr_token": null,
-      "qr_token_expiry": null
-    },
-    {
       "id": "evt-105",
       "title": "Green Building & Sustainable Civil Infrastructure Conclave",
       "category": "Technical Session",
@@ -1560,182 +1075,60 @@
       "created_at": "2026-08-20T10:00:00.000Z",
       "active_qr_token": null,
       "qr_token_expiry": null
-    },
-    {
-      "id": "evt-091",
-      "title": "Hands-on Deep Learning Foundations Workshop",
-      "category": "Workshop",
-      "club_id": "I4-08",
-      "clubId": "I4-08",
-      "club_name": "AI&ML Turing Club",
-      "date": "2026-08-22",
-      "dayOfWeek": "Saturday",
-      "timeSlot": "Afternoon",
-      "start_time": "14:00",
-      "end_time": "17:30",
-      "venue": "CSE Advanced Simulation Lab, PEC",
-      "max_participants": 60,
-      "status": "Completed",
-      "registered_count": 58,
-      "attended_count": 53
-    },
-    {
-      "id": "evt-092",
-      "title": "Mid-Week Competitive Code Sprint",
-      "category": "Competition",
-      "club_id": "I4-01",
-      "clubId": "I4-01",
-      "club_name": "PEC Autonomous Coding Society",
-      "date": "2026-08-26",
-      "dayOfWeek": "Wednesday",
-      "timeSlot": "Evening",
-      "start_time": "16:30",
-      "end_time": "18:30",
-      "venue": "Computer Center 2, PEC",
-      "max_participants": 80,
-      "status": "Completed",
-      "registered_count": 75,
-      "attended_count": 63
-    },
-    {
-      "id": "evt-093",
-      "title": "Embedded Firmware & Sensor Prototyping",
-      "category": "Bootcamp",
-      "club_id": "I4-03",
-      "clubId": "I4-03",
-      "club_name": "Robotics & Hardware Club",
-      "date": "2026-08-29",
-      "dayOfWeek": "Saturday",
-      "timeSlot": "Afternoon",
-      "start_time": "14:00",
-      "end_time": "17:00",
-      "venue": "Robotics Center of Excellence, PEC",
-      "max_participants": 50,
-      "status": "Completed",
-      "registered_count": 48,
-      "attended_count": 42
-    },
-    {
-      "id": "evt-094",
-      "title": "Morning Introductory Seminar on CAD Tools",
-      "category": "Seminar",
-      "club_id": "I4-05",
-      "clubId": "I4-05",
-      "club_name": "3D Printing & Prototyping Club",
-      "date": "2026-08-25",
-      "dayOfWeek": "Tuesday",
-      "timeSlot": "Morning",
-      "start_time": "09:30",
-      "end_time": "12:30",
-      "venue": "Mechanical Seminar Hall",
-      "max_participants": 60,
-      "status": "Completed",
-      "registered_count": 52,
-      "attended_count": 24
     }
   ],
-  "club_memberships": [
+  "event_registrations": [
     {
-      "id": "mem-001",
-      "membership_id": "PEC-MEM-2026-AIML-101",
+      "id": "reg-001",
+      "event_id": "evt-101",
       "student_id": "std-101",
-      "club_id": "I4-08",
-      "role": "Member",
-      "status": "Approved",
-      "requested_at": "2026-08-15T10:00:00.000Z",
-      "approved_at": "2026-08-16T14:30:00.000Z",
-      "approved_by": "Mrs. L. Yamuna",
-      "remarks": "Approved. Welcome to the AI&ML Turing Club!"
+      "ticket_id": "TCK-TUR-042",
+      "registered_at": "2026-09-10T11:00:00.000Z",
+      "status": "Confirmed"
     },
     {
-      "id": "mem-002",
-      "membership_id": "PEC-MEM-2026-AIML-102",
-      "student_id": "std-102",
-      "club_id": "I4-08",
-      "role": "President",
-      "status": "Approved",
-      "requested_at": "2026-08-10T09:00:00.000Z",
-      "approved_at": "2026-08-11T11:00:00.000Z",
-      "approved_by": "Mrs. L. Yamuna",
-      "remarks": "Designated as Student President for AY 2025-2026."
-    },
-    {
-      "id": "mem-003",
-      "membership_id": "PEC-MEM-2026-ROB-103",
+      "id": "reg-002",
+      "event_id": "evt-102",
       "student_id": "std-101",
-      "club_id": "I4-03",
-      "role": "Member",
-      "status": "Approved",
-      "requested_at": "2026-08-20T11:15:00.000Z",
-      "approved_at": "2026-08-21T09:45:00.000Z",
-      "approved_by": "Mr. V.V.N. Sarath",
-      "remarks": "Approved for robotics hardware workgroup."
+      "ticket_id": "TCK-ROB-018",
+      "registered_at": "2026-09-08T14:20:00.000Z",
+      "status": "Confirmed"
     },
     {
-      "id": "mem-103",
-      "membership_id": "PEC-MEM-2026-AIML-103",
-      "student_id": "std-103",
-      "club_id": "I4-08",
-      "role": "Member",
-      "status": "Approved",
-      "requested_at": "2026-08-10T10:00:00.000Z",
-      "approved_at": "2026-08-11T12:00:00.000Z",
-      "approved_by": "Mrs. L. Yamuna"
+      "id": "reg-003",
+      "event_id": "evt-105",
+      "student_id": "std-101",
+      "ticket_id": "TCK-GB-005",
+      "registered_at": "2026-08-28T09:30:00.000Z",
+      "status": "Confirmed"
     },
     {
-      "id": "mem-104",
-      "membership_id": "PEC-MEM-2026-ECE-104",
-      "student_id": "std-104",
-      "club_id": "I4-03",
-      "role": "Member",
-      "status": "Approved",
-      "requested_at": "2026-08-12T09:00:00.000Z",
-      "approved_at": "2026-08-13T10:00:00.000Z",
-      "approved_by": "Faculty"
+      "id": "reg-1789629566058",
+      "event_id": "evt-103",
+      "student_id": "std-101",
+      "ticket_id": "TCK-I4-07-609",
+      "registered_at": "2026-09-17T07:19:26.058Z",
+      "status": "Confirmed"
+    }
+  ],
+  "attendance": [
+    {
+      "id": "att-001",
+      "attendance_id": "ATT-2026-GB-005",
+      "event_id": "evt-105",
+      "student_id": "std-101",
+      "timestamp": "2026-09-02T09:35:12.000Z",
+      "status": "Present",
+      "verification_method": "QR Scan"
     },
     {
-      "id": "mem-105",
-      "membership_id": "PEC-MEM-2026-CS-105",
-      "student_id": "std-105",
-      "club_id": "I4-04",
-      "role": "Member",
-      "status": "Approved",
-      "requested_at": "2026-08-14T11:00:00.000Z",
-      "approved_at": "2026-08-15T14:00:00.000Z",
-      "approved_by": "Faculty"
-    },
-    {
-      "id": "mem-107",
-      "membership_id": "PEC-MEM-2026-IT-107",
-      "student_id": "std-107",
-      "club_id": "I4-07",
-      "role": "Member",
-      "status": "Approved",
-      "requested_at": "2026-08-15T15:00:00.000Z",
-      "approved_at": "2026-08-16T11:00:00.000Z",
-      "approved_by": "Faculty"
-    },
-    {
-      "id": "mem-109",
-      "membership_id": "PEC-MEM-2026-AIML-109",
-      "student_id": "std-109",
-      "club_id": "I4-08",
-      "role": "Member",
-      "status": "Approved",
-      "requested_at": "2026-07-20T10:00:00.000Z",
-      "approved_at": "2026-07-22T10:00:00.000Z",
-      "approved_by": "Mrs. L. Yamuna"
-    },
-    {
-      "id": "mem-112",
-      "membership_id": "PEC-MEM-2026-AIML-112",
-      "student_id": "std-112",
-      "club_id": "I4-08",
-      "role": "Member",
-      "status": "Approved",
-      "requested_at": "2026-08-01T10:00:00.000Z",
-      "approved_at": "2026-08-02T10:00:00.000Z",
-      "approved_by": "Mrs. L. Yamuna"
+      "id": "att-1789629577937",
+      "attendance_id": "ATT-2026-I4-07-942",
+      "event_id": "evt-103",
+      "student_id": "std-101",
+      "timestamp": "2026-09-17T07:19:37.937Z",
+      "status": "Present",
+      "verification_method": "QR Scan"
     }
   ],
   "certificates": [
@@ -1772,140 +1165,6 @@
       "qr_hash": "71a3eeb06775e33fbb412cc5c65921d8e2b215a27cb753d6e963b5a71ccc5534"
     }
   ],
-  "resources": [
-    {
-      "id": "res-001",
-      "title": "Modern Docker & Kubernetes Lab Guide for Cloud Native Microservices",
-      "description": "Comprehensive tutorial on multi-stage Docker builds, Kubernetes manifests, and Helm charts.",
-      "club_id": "I4-07",
-      "category": "Tutorial",
-      "uploaded_by": "Mr. K Siva Shankar",
-      "upload_date": "2026-09-01",
-      "file_url": "https://kubernetes.io/docs/home/",
-      "target_semester": "5th Semester"
-    },
-    {
-      "id": "res-002",
-      "title": "PyTorch Vision Transformers (ViT) & Transfer Learning Notebook",
-      "description": "Hands-on Jupyter notebook covering attention heads, fine-tuning, and ONNX deployment.",
-      "club_id": "I4-08",
-      "category": "Workshop Material",
-      "uploaded_by": "Mrs. L. Yamuna",
-      "upload_date": "2026-08-20",
-      "file_url": "https://pytorch.org/tutorials/",
-      "target_semester": "6th Semester"
-    }
-  ],
-  "projects": [
-    {
-      "id": "proj-001",
-      "title": "AeroShield: Edge-AI Wildfire & Thermal Hazard Detection Drone",
-      "description": "Autonomous payload integrating thermal sensor arrays with Jetson edge computer for instantaneous aerial hot spot alerts.",
-      "problem_statement": "Early detection of agricultural crop fires and thermal hazards before uncontrolled spreading.",
-      "solution": "Lightweight computer vision model running at 30 FPS on onboard edge compute with LoRa telemetry downlink.",
-      "technologies": [
-        "PyTorch",
-        "TensorRT",
-        "Python",
-        "ROS2",
-        "LoRaWAN"
-      ],
-      "team_members": [
-        "Aarav Sharma",
-        "Priya Patel"
-      ],
-      "mentor": "Mrs. L. Yamuna",
-      "github_link": "https://github.com/pragati-eng/aeroshield",
-      "demo_link": "https://aeroshield.pragati.ac.in",
-      "images": [
-        "https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=800&auto=format&fit=crop&q=80"
-      ],
-      "status": "Completed",
-      "club_id": "I4-08",
-      "year": "2025-2026"
-    },
-    {
-      "id": "proj-002",
-      "title": "RoboTrack: Autonomous Warehouse AGV with SLAM & Obstacle Avoidance",
-      "description": "Automated guided vehicle with 2D LiDAR SLAM, ROS2 navigation stack, and differential drive odometry.",
-      "problem_statement": "Automated intra-facility transport of electronics bins with dynamic obstacle replanning.",
-      "solution": "Embedded Teensy 4.1 microcontroller running RTOS communicating over micro-ROS with Jetson Orin.",
-      "technologies": [
-        "ROS2",
-        "C++",
-        "Python",
-        "LiDAR",
-        "Gazebo"
-      ],
-      "team_members": [
-        "Sneha Reddy",
-        "Vikram Aditya"
-      ],
-      "mentor": "Mr. S. Rajesh",
-      "github_link": "https://github.com/pragati-eng/robotrack-agv",
-      "demo_link": "https://robotrack.pragati.ac.in",
-      "images": [
-        "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&auto=format&fit=crop&q=80"
-      ],
-      "status": "Completed",
-      "club_id": "I4-03",
-      "year": "2025-2026"
-    },
-    {
-      "id": "proj-003",
-      "title": "SentinelCore: Zero-Trust Network Traffic Anomaly & Intrusion Guardian",
-      "description": "Deep packet inspection engine parsing NetFlow logs in real-time to alert on unauthorized privilege escalation.",
-      "problem_statement": "Preventing lateral movement and data exfiltration inside campus server clusters.",
-      "solution": "eBPF kernel probe capturing packet flow headers with isolation sandbox rules.",
-      "technologies": [
-        "eBPF",
-        "Go",
-        "Snort",
-        "Wireshark",
-        "Docker"
-      ],
-      "team_members": [
-        "Rohan Varma",
-        "Kavya Madhavan"
-      ],
-      "mentor": "Mrs. N. Swathi",
-      "github_link": "https://github.com/pragati-eng/sentinel-core",
-      "demo_link": "https://sentinel.pragati.ac.in",
-      "images": [
-        "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&auto=format&fit=crop&q=80"
-      ],
-      "status": "Completed",
-      "club_id": "I4-06",
-      "year": "2025-2026"
-    },
-    {
-      "id": "proj-004",
-      "title": "CloudMatrix: Multi-Region Microservices Mesh with Automated Canary Rollouts",
-      "description": "Kubernetes operator orchestrating blue-green traffic switching based on Prometheus error budget burn rate.",
-      "problem_statement": "Minimizing downtime during production microservice upgrades across hybrid cloud nodes.",
-      "solution": "Custom Envoy proxy filter and CRD controller built in Golang with OpenTelemetry tracing.",
-      "technologies": [
-        "Kubernetes",
-        "Golang",
-        "Envoy",
-        "Prometheus",
-        "Helm"
-      ],
-      "team_members": [
-        "Aarav Sharma",
-        "Ananya Deshmukh"
-      ],
-      "mentor": "Mr. K Siva Shankar",
-      "github_link": "https://github.com/pragati-eng/cloud-matrix-mesh",
-      "demo_link": "https://matrix.pragati.ac.in",
-      "images": [
-        "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80"
-      ],
-      "status": "Completed",
-      "club_id": "I4-07",
-      "year": "2025-2026"
-    }
-  ],
   "announcements": [
     {
       "id": "ann-001",
@@ -1930,224 +1189,6 @@
       "created_by": "Mrs. L. Yamuna (Faculty Coordinator)",
       "expiry_date": "2026-10-18",
       "pinned": false
-    }
-  ],
-  "attendance": [
-    {
-      "id": "att-001",
-      "attendance_id": "ATT-2026-GB-005",
-      "event_id": "evt-105",
-      "student_id": "std-101",
-      "timestamp": "2026-09-02T09:35:12.000Z",
-      "status": "Present",
-      "verification_method": "QR Scan"
-    },
-    {
-      "id": "att-1789629577937",
-      "attendance_id": "ATT-2026-I4-07-942",
-      "event_id": "evt-103",
-      "student_id": "std-101",
-      "timestamp": "2026-09-17T07:19:37.937Z",
-      "status": "Present",
-      "verification_method": "QR Scan"
-    },
-    {
-      "id": "att-101",
-      "attendance_id": "ATT-2026-DL-101",
-      "event_id": "evt-091",
-      "student_id": "std-101",
-      "timestamp": "2026-08-22T14:10:00Z",
-      "status": "Present",
-      "verification_method": "QR Scan"
-    },
-    {
-      "id": "att-103",
-      "attendance_id": "ATT-2026-DL-103",
-      "event_id": "evt-091",
-      "student_id": "std-103",
-      "timestamp": "2026-08-22T14:05:00Z",
-      "status": "Present",
-      "verification_method": "QR Scan"
-    },
-    {
-      "id": "att-104",
-      "attendance_id": "ATT-2026-ROB-104",
-      "event_id": "evt-093",
-      "student_id": "std-104",
-      "timestamp": "2026-08-29T14:15:00Z",
-      "status": "Present",
-      "verification_method": "QR Scan"
-    },
-    {
-      "id": "att-110",
-      "attendance_id": "ATT-2026-CS-110",
-      "event_id": "evt-092",
-      "student_id": "std-110",
-      "timestamp": "2026-08-26T16:35:00Z",
-      "status": "Present",
-      "verification_method": "QR Scan"
-    }
-  ],
-  "audit_logs": [
-    {
-      "id": "log-1789669371277-532",
-      "timestamp": "2026-09-17 18:22:51",
-      "user_id": "std-101",
-      "user_role": "Student",
-      "user_name": "Aarav Sharma",
-      "actor": "Aarav Sharma (Student)",
-      "user": "Aarav Sharma (Student)",
-      "user_display": "Aarav Sharma (Student)",
-      "action": "USER_LOGIN",
-      "resource": "auth",
-      "resource_id": "std-101",
-      "affected_record": "auth: std-101",
-      "ip_address": "127.0.0.1",
-      "old_value": null,
-      "new_value": null,
-      "details": "Logged in successfully as Student"
-    },
-    {
-      "id": "log-1789629580885",
-      "timestamp": "2026-09-17 07:19:40",
-      "user": "Coordinator",
-      "action": "Issued Certificate",
-      "affected_record": "PEC-IT-2026-174635",
-      "details": "Awarded to Aarav Sharma for Cloud Native Kubernetes & Microservices Masterclass"
-    },
-    {
-      "id": "log-1789629577937",
-      "timestamp": "2026-09-17 07:19:37",
-      "user": "Aarav Sharma",
-      "action": "Recorded Attendance",
-      "affected_record": "Cloud Native Kubernetes & Microservices Masterclass",
-      "details": "Verified via QR scan (ID: ATT-2026-I4-07-942)"
-    },
-    {
-      "id": "log-1789629577918",
-      "timestamp": "2026-09-17 07:19:37",
-      "user": "Coordinator",
-      "action": "Generated Attendance QR",
-      "affected_record": "Cloud Native Kubernetes & Microservices Masterclass",
-      "details": "Token valid for 30 mins until 2026-09-17T07:49:37.918Z"
-    },
-    {
-      "id": "log-1789629566058",
-      "timestamp": "2026-09-17 07:19:26",
-      "user": "Aarav Sharma",
-      "action": "Registered for Event",
-      "affected_record": "Cloud Native Kubernetes & Microservices Masterclass",
-      "details": "Ticket: TCK-I4-07-609"
-    },
-    {
-      "id": "log-1789629548308",
-      "timestamp": "2026-09-17 07:19:08",
-      "user": "Aarav Sharma",
-      "action": "User Login",
-      "affected_record": "Student",
-      "details": "Logged in via aarav.sharma@pragati.ac.in"
-    },
-    {
-      "id": "log-001",
-      "timestamp": "2026-09-16 10:14:02",
-      "user": "Dr. K. Satyanarayana (Super Admin)",
-      "action": "Verified Club Registry",
-      "affected_record": "All 35 Official PEC Clubs",
-      "details": "Confirmed official status under Career Guidance Cell."
-    },
-    {
-      "id": "log-002",
-      "timestamp": "2026-09-15 14:20:45",
-      "user": "Mrs. L. Yamuna (Faculty Coordinator)",
-      "action": "Approved Symposium",
-      "affected_record": "Turing AI Symposium 2026",
-      "details": "Authorized convention hall and laboratory sessions."
-    }
-  ],
-  "club_roles": [
-    {
-      "id": "crole-001",
-      "club_id": "I4-08",
-      "student_id": "std-102",
-      "role_title": "President",
-      "assigned_by": "Mrs. L. Yamuna",
-      "assigned_at": "2026-08-11T11:00:00.000Z"
-    }
-  ],
-  "event_registrations": [
-    {
-      "id": "reg-001",
-      "event_id": "evt-101",
-      "student_id": "std-101",
-      "ticket_id": "TCK-TUR-042",
-      "registered_at": "2026-09-10T11:00:00.000Z",
-      "status": "Confirmed"
-    },
-    {
-      "id": "reg-002",
-      "event_id": "evt-102",
-      "student_id": "std-101",
-      "ticket_id": "TCK-ROB-018",
-      "registered_at": "2026-09-08T14:20:00.000Z",
-      "status": "Confirmed"
-    },
-    {
-      "id": "reg-003",
-      "event_id": "evt-105",
-      "student_id": "std-101",
-      "ticket_id": "TCK-GB-005",
-      "registered_at": "2026-08-28T09:30:00.000Z",
-      "status": "Confirmed"
-    },
-    {
-      "id": "reg-1789629566058",
-      "event_id": "evt-103",
-      "student_id": "std-101",
-      "ticket_id": "TCK-I4-07-609",
-      "registered_at": "2026-09-17T07:19:26.058Z",
-      "status": "Confirmed"
-    },
-    {
-      "id": "reg-101",
-      "event_id": "evt-091",
-      "student_id": "std-101",
-      "status": "Confirmed",
-      "registered_at": "2026-08-18T10:00:00Z"
-    },
-    {
-      "id": "reg-103",
-      "event_id": "evt-091",
-      "student_id": "std-103",
-      "status": "Confirmed",
-      "registered_at": "2026-08-19T11:00:00Z"
-    },
-    {
-      "id": "reg-104",
-      "event_id": "evt-093",
-      "student_id": "std-104",
-      "status": "Confirmed",
-      "registered_at": "2026-08-24T12:00:00Z"
-    },
-    {
-      "id": "reg-105",
-      "event_id": "evt-104",
-      "student_id": "std-105",
-      "status": "Confirmed",
-      "registered_at": "2026-09-12T14:00:00Z"
-    },
-    {
-      "id": "reg-107",
-      "event_id": "evt-103",
-      "student_id": "std-107",
-      "status": "Confirmed",
-      "registered_at": "2026-09-10T15:00:00Z"
-    },
-    {
-      "id": "reg-110",
-      "event_id": "evt-092",
-      "student_id": "std-110",
-      "status": "Confirmed",
-      "registered_at": "2026-08-20T10:00:00Z"
     }
   ],
   "notifications": [
@@ -2212,6 +1253,59 @@
       "read": true
     }
   ],
+  "resources": [
+    {
+      "id": "res-001",
+      "title": "Modern Docker & Kubernetes Lab Guide for Cloud Native Microservices",
+      "description": "Comprehensive tutorial on multi-stage Docker builds, Kubernetes manifests, and Helm charts.",
+      "club_id": "I4-07",
+      "category": "Tutorial",
+      "uploaded_by": "Mr. K Siva Shankar",
+      "upload_date": "2026-09-01",
+      "file_url": "https://kubernetes.io/docs/home/",
+      "target_semester": "5th Semester"
+    },
+    {
+      "id": "res-002",
+      "title": "PyTorch Vision Transformers (ViT) & Transfer Learning Notebook",
+      "description": "Hands-on Jupyter notebook covering attention heads, fine-tuning, and ONNX deployment.",
+      "club_id": "I4-08",
+      "category": "Workshop Material",
+      "uploaded_by": "Mrs. L. Yamuna",
+      "upload_date": "2026-08-20",
+      "file_url": "https://pytorch.org/tutorials/",
+      "target_semester": "6th Semester"
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj-001",
+      "title": "AeroShield: Edge-AI Wildfire & Thermal Hazard Detection Drone",
+      "description": "Autonomous payload integrating thermal sensor arrays with Jetson edge computer for instantaneous aerial hot spot alerts.",
+      "problem_statement": "Early detection of agricultural crop fires and thermal hazards before uncontrolled spreading.",
+      "solution": "Lightweight computer vision model running at 30 FPS on onboard edge compute with LoRa telemetry downlink.",
+      "technologies": [
+        "PyTorch",
+        "TensorRT",
+        "Python",
+        "ROS2",
+        "LoRaWAN"
+      ],
+      "team_members": [
+        "Aarav Sharma",
+        "Priya Patel"
+      ],
+      "mentor": "Mrs. L. Yamuna",
+      "github_link": "https://github.com/pragati-eng/aeroshield",
+      "demo_link": "https://aeroshield.pragati.ac.in",
+      "images": [
+        "https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=800&auto=format&fit=crop&q=80"
+      ],
+      "status": "Completed",
+      "club_id": "I4-08",
+      "year": "2025-2026"
+    }
+  ],
   "activity_reports": [
     {
       "id": "rep-001",
@@ -2242,31 +1336,70 @@
       "submitted_at": "2026-09-02T14:15:00.000Z"
     }
   ],
-  "student_engagement": [],
-  "club_engagement_scores": [],
-  "recommendations": [],
-  "engagement_predictions": [],
-  "inactive_members": [],
-  "event_intelligence": [],
-  "analytics_snapshots": [],
-  "intelligence_config": [
+  "audit_logs": [
     {
-      "id": "cfg-1",
-      "key": "inactive_event_days",
-      "value": 60,
-      "description": "Days without event attendance before flag"
+      "id": "log-1789629709728",
+      "timestamp": "2026-09-17 07:21:49",
+      "user": "Aarav Sharma",
+      "action": "User Login",
+      "affected_record": "Student",
+      "details": "Logged in via 22cs101"
     },
     {
-      "id": "cfg-2",
-      "key": "inactive_activity_days",
-      "value": 45,
-      "description": "Days without general activity before flag"
+      "id": "log-1789629580885",
+      "timestamp": "2026-09-17 07:19:40",
+      "user": "Coordinator",
+      "action": "Issued Certificate",
+      "affected_record": "PEC-IT-2026-174635",
+      "details": "Awarded to Aarav Sharma for Cloud Native Kubernetes & Microservices Masterclass"
     },
     {
-      "id": "cfg-3",
-      "key": "inactive_project_days",
-      "value": 90,
-      "description": "Days without project participation before flag"
+      "id": "log-1789629577937",
+      "timestamp": "2026-09-17 07:19:37",
+      "user": "Aarav Sharma",
+      "action": "Recorded Attendance",
+      "affected_record": "Cloud Native Kubernetes & Microservices Masterclass",
+      "details": "Verified via QR scan (ID: ATT-2026-I4-07-942)"
+    },
+    {
+      "id": "log-1789629577918",
+      "timestamp": "2026-09-17 07:19:37",
+      "user": "Coordinator",
+      "action": "Generated Attendance QR",
+      "affected_record": "Cloud Native Kubernetes & Microservices Masterclass",
+      "details": "Token valid for 30 mins until 2026-09-17T07:49:37.918Z"
+    },
+    {
+      "id": "log-1789629566058",
+      "timestamp": "2026-09-17 07:19:26",
+      "user": "Aarav Sharma",
+      "action": "Registered for Event",
+      "affected_record": "Cloud Native Kubernetes & Microservices Masterclass",
+      "details": "Ticket: TCK-I4-07-609"
+    },
+    {
+      "id": "log-1789629548308",
+      "timestamp": "2026-09-17 07:19:08",
+      "user": "Aarav Sharma",
+      "action": "User Login",
+      "affected_record": "Student",
+      "details": "Logged in via aarav.sharma@pragati.ac.in"
+    },
+    {
+      "id": "log-001",
+      "timestamp": "2026-09-16 10:14:02",
+      "user": "Dr. K. Satyanarayana (Super Admin)",
+      "action": "Verified Club Registry",
+      "affected_record": "All 35 Official PEC Clubs",
+      "details": "Confirmed official status under Career Guidance Cell."
+    },
+    {
+      "id": "log-002",
+      "timestamp": "2026-09-15 14:20:45",
+      "user": "Mrs. L. Yamuna (Faculty Coordinator)",
+      "action": "Approved Symposium",
+      "affected_record": "Turing AI Symposium 2026",
+      "details": "Authorized convention hall and laboratory sessions."
     }
   ]
 }

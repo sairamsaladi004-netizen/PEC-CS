@@ -1,17 +1,13 @@
 import { getDB, saveDB, logAudit, apiRequest } from './db.js';
 import { APP_CONFIG } from './config.js';
 import { ROLES, normalizeRole, hasRolePermission, isUserAuthorizedForClub } from './rbac.js';
-import { supabaseSignIn, supabaseSignUp, getSupabaseClient, isSupabaseReady, supabaseSignInWithGoogle } from './supabaseClient.js';
 
 const ACTIVE_USER_KEY = "campustech_active_user_id";
-const SESSION_TOKEN_KEY = "campustech_session_token";
 
 export function getCurrentUser() {
   const db = getDB();
-  const token = typeof localStorage !== 'undefined' ? localStorage.getItem(SESSION_TOKEN_KEY) : null;
   const activeId = typeof localStorage !== 'undefined' ? localStorage.getItem(ACTIVE_USER_KEY) : null;
-
-  if (token && activeId) {
+  if (activeId) {
     const found = (db.users || []).find(u => u.id === activeId);
     if (found) {
       return {
@@ -20,7 +16,14 @@ export function getCurrentUser() {
       };
     }
   }
-
+  // Default to first student if available, else guest
+  const defaultUser = (db.users || []).find(u => u.id === "std-101") || (db.users && db.users[0]);
+  if (defaultUser) {
+    return {
+      ...defaultUser,
+      role: normalizeRole(defaultUser.role)
+    };
+  }
   return {
     id: "guest-001",
     name: "Public Guest",
@@ -29,44 +32,21 @@ export function getCurrentUser() {
   };
 }
 
-export function setCurrentUser(userId, token = null) {
+export function setCurrentUser(userId) {
   const db = getDB();
   const user = (db.users || []).find(u => u.id === userId);
   if (user) {
     user.role = normalizeRole(user.role);
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(ACTIVE_USER_KEY, user.id);
-      if (token) {
-        localStorage.setItem(SESSION_TOKEN_KEY, token);
-      }
     }
     logAudit(`${user.name} (${user.role})`, "Role Switch / Session Start", user.role, "Switched active persona session.");
     window.dispatchEvent(new CustomEvent("auth-changed", { detail: user }));
   }
 }
 
-export async function switchUser(userId) {
-  const db = getDB();
-  const user = (db.users || []).find(u => u.id === userId);
-  if (user) {
-    const identifier = user.email || user.rollNo || user.facultyId || user.demoAlias || user.id;
-    try {
-      const res = await loginUser(identifier, "Password@123");
-      if (res && res.success) {
-        return res.user;
-      }
-    } catch (e) {
-      console.warn("loginUser notice in switchUser:", e?.message || e);
-    }
-    // Direct persona session switch
-    setCurrentUser(user.id);
-    return user;
-  }
-  return null;
-}
-
-if (typeof window !== 'undefined') {
-  window.switchUser = switchUser;
+export function switchUser(userId) {
+  setCurrentUser(userId);
 }
 
 export function hasPermission(permission) {
@@ -112,38 +92,26 @@ export function getAllDemoAccounts() {
   });
 }
 
-// Asynchronous Login against Supabase Auth & REST API with local state fallback
+// Asynchronous Login against REST API with local state fallback
 export async function loginUser(identifier, password) {
   const cleanId = (identifier || "").trim().toLowerCase();
   
-  // 1. If identifier is an email and Supabase is configured on client, try Supabase Auth directly
-  if (isSupabaseReady() && cleanId.includes('@')) {
-    try {
-      const authResult = await supabaseSignIn(cleanId, password);
-      if (authResult?.user) {
-        console.log("[Supabase Auth] Successfully signed in via client:", authResult.user.email);
-      }
-    } catch (sbErr) {
-      console.warn("[Supabase Auth] Direct client sign-in notice:", sbErr.message);
-    }
-  }
-
-  // 2. Query server API (which synchronizes with Supabase & verifies credentials)
+  // Try server API first
   const res = await apiRequest('/api/auth/login', 'POST', { identifier: cleanId, password });
-  if (res && res.success && res.user && res.token) {
+  if (res && res.success && res.user) {
     const db = getDB();
-    const idx = (db.users || []).findIndex(u => u.id === res.user.id || u.email?.toLowerCase() === res.user.email?.toLowerCase());
+    const idx = (db.users || []).findIndex(u => u.id === res.user.id);
     if (idx !== -1) {
       db.users[idx] = { ...db.users[idx], ...res.user };
     } else {
       db.users.push(res.user);
     }
     saveDB(db);
-    setCurrentUser(res.user.id, res.token);
-    return { success: true, user: res.user, token: res.token, supabaseSession: res.supabaseSession };
+    setCurrentUser(res.user.id);
+    return { success: true, user: res.user };
   }
 
-  // 3. Fallback for demo personas if offline/local
+  // Local fallback
   const db = getDB();
   const user = (db.users || []).find(u => 
     (u.rollNo && u.rollNo.toLowerCase() === cleanId) || 
@@ -157,114 +125,48 @@ export async function loginUser(identifier, password) {
     return { success: false, message: res?.message || "No account found matching this College ID or Email." };
   }
 
-  return { success: false, message: res?.message || "Invalid password credentials." };
+  setCurrentUser(user.id);
+  return { success: true, user };
 }
 
-// Register student with Supabase Auth + generate verified QR Pass
+// Register student
 export async function registerStudent(userData) {
-  const cleanRoll = (userData.rollNo || "").trim().toUpperCase();
-  const cleanEmail = (userData.email || "").trim().toLowerCase();
-  const cleanDept = (userData.department || "CSE").toUpperCase();
-  const passId = `PEC-PASS-2026-${Math.floor(10000 + Math.random() * 90000)}`;
-  const memberId = `PEC-MEM-2026-${cleanDept}-${Math.floor(1000 + Math.random() * 9000)}`;
-
-  // Construct official QR verification payload
-  const qrPayload = JSON.stringify({
-    institution: "Pragati Engineering College (Autonomous)",
-    type: "STUDENT_GATE_PASS",
-    passId,
-    memberId,
-    name: userData.name.trim(),
-    rollNo: cleanRoll,
-    department: cleanDept,
-    year: userData.year || "1st Year",
-    issuedAt: new Date().toISOString(),
-    validUntil: "30 June 2028",
-    securityHash: `sha256:${cleanRoll}_${Date.now()}`
-  });
-
-  const enrichedData = {
-    ...userData,
-    rollNo: cleanRoll,
-    email: cleanEmail,
-    department: cleanDept,
-    passId,
-    membershipId: memberId,
-    qrPayload,
-    passIssuedAt: new Date().toISOString(),
-    validUntil: "30 June 2028"
-  };
-
-  // 1. If Supabase is active on client, trigger Supabase Auth signUp
-  if (isSupabaseReady()) {
-    try {
-      const sbResult = await supabaseSignUp(cleanEmail, userData.password, {
-        name: userData.name,
-        rollNo: cleanRoll,
-        department: cleanDept,
-        passId,
-        membershipId: memberId
-      });
-      if (sbResult?.user) {
-        console.log("[Supabase Auth] Created auth user in Supabase:", sbResult.user.id);
-      }
-    } catch (sbErr) {
-      console.warn("[Supabase Auth] Client registration note:", sbErr.message);
-    }
-  }
-
-  // 2. Submit to backend API to write profile to Supabase database
-  const res = await apiRequest('/api/auth/register', 'POST', enrichedData);
+  const res = await apiRequest('/api/auth/register', 'POST', userData);
   if (res && res.success && res.user) {
     const db = getDB();
-    const finalUser = {
-      ...res.user,
-      passId,
-      membershipId: memberId,
-      qrPayload
-    };
-    const idx = db.users.findIndex(u => u.id === finalUser.id);
-    if (idx !== -1) {
-      db.users[idx] = finalUser;
-    } else {
-      db.users.push(finalUser);
-    }
+    db.users.push(res.user);
     saveDB(db);
-    setCurrentUser(finalUser.id);
-    return { success: true, user: finalUser, passId, otpHint: res.otpHint };
+    setCurrentUser(res.user.id);
+    return { success: true, user: res.user, otpHint: res.otpHint };
   }
 
-  // 3. In-memory / local fallback
+  // Local fallback
   const db = getDB();
-  const newId = "usr-" + Date.now();
+  const newId = "std-" + Date.now();
   const newUser = {
     id: newId,
     name: userData.name,
-    rollNo: cleanRoll,
-    email: cleanEmail,
-    role: userData.role || "Student",
-    department: cleanDept,
+    rollNo: userData.rollNo.toUpperCase(),
+    email: userData.email.toLowerCase(),
+    role: "Student",
+    department: userData.department || "CSE",
     year: userData.year || "1st Year",
     section: userData.section || "A",
     phone: userData.phone || "",
-    clubId: userData.assignedClub || "I4-08",
-    assignedClubs: userData.assignedClub ? [userData.assignedClub] : (userData.role === "Faculty Coordinator" ? ["I4-08", "I4-07", "I4-06"] : []),
     avatar: userData.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
     clubs: [],
-    skills: userData.skills ? (Array.isArray(userData.skills) ? userData.skills : userData.skills.split(",").map(s => s.trim())) : ["Python", "Web Development"],
-    badges: ["Verified PEC Student", "Gate Pass Active"],
-    membershipId: memberId,
-    passId,
-    qrPayload,
+    skills: userData.skills ? (Array.isArray(userData.skills) ? userData.skills : userData.skills.split(",").map(s => s.trim())) : ["Python"],
+    badges: ["Verified PEC Student"],
+    membershipId: `PEC-MEM-2026-${userData.department || 'CSE'}-${Math.floor(1000 + Math.random() * 9000)}`,
     validUntil: "30 June 2028",
     emailVerified: false,
     isDemo: false
   };
   db.users.push(newUser);
   saveDB(db);
-  logAudit(newUser.name, "Registered New Account", newUser.role, `Roll No: ${newUser.rollNo} (Pass: ${passId})`);
+  logAudit(newUser.name, "Registered New Account", newUser.role, `Roll No: ${newUser.rollNo}`);
   setCurrentUser(newUser.id);
-  return { success: true, user: newUser, passId, otpHint: "742918" };
+  return { success: true, user: newUser, otpHint: "742918" };
 }
 
 // Reset password
@@ -305,19 +207,9 @@ export async function verifyEmailWithOTP(userId, otp) {
 }
 
 // Logout
-export async function logoutUser() {
-  // Clear heartbeat interval
-  if (typeof window !== 'undefined' && window.authRefreshInterval) {
-    clearInterval(window.authRefreshInterval);
-    window.authRefreshInterval = null;
-  }
-  
-  try {
-    await apiRequest('/api/auth/logout', 'POST');
-  } catch (e) {}
+export function logoutUser() {
   if (typeof localStorage !== 'undefined') {
     localStorage.removeItem(ACTIVE_USER_KEY);
-    localStorage.removeItem(SESSION_TOKEN_KEY);
   }
   window.dispatchEvent(new CustomEvent("auth-changed", { detail: null }));
   window.location.hash = "#/login";
@@ -344,84 +236,10 @@ export async function updateProfile(updatedData) {
   return null;
 }
 
-export async function loginWithGoogle() {
-  try {
-    const res = await supabaseSignInWithGoogle();
-    return { success: true, data: res };
-  } catch (err) {
-    return { success: false, message: err.message || "Google OAuth sign-in failed." };
-  }
-}
-
-export async function checkSupabaseOAuthSession() {
-  const client = getSupabaseClient();
-  if (!client) return null;
-  try {
-    const { data: { session }, error } = await client.auth.getSession();
-    if (error) throw error;
-    if (session && session.user) {
-      const sbUser = session.user;
-      const email = sbUser.email?.toLowerCase() || "";
-      const name = sbUser.user_metadata?.full_name || sbUser.user_metadata?.name || email.split('@')[0];
-      const avatar = sbUser.user_metadata?.avatar_url || sbUser.user_metadata?.picture || "";
-
-      const db = getDB();
-      let existing = (db.users || []).find(u => u.email?.toLowerCase() === email);
-      if (!existing) {
-        let role = "Student";
-        let dept = "CSE";
-        if (email.includes("admin") || email.includes("director")) role = "Super Admin";
-        else if (email.includes("faculty") || email.includes("coord") || email.includes("yamuna")) role = "Faculty Coordinator";
-        else if (email.includes("leader") || email.includes("club")) role = "Club Admin";
-
-        const newUser = {
-          id: "usr-google-" + sbUser.id,
-          name: name,
-          email: email,
-          role: role,
-          department: dept,
-          avatar: avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
-          rollNo: (role === "Student" || role === "Club Admin") ? "PEC2026" + Math.floor(100 + Math.random() * 900) : undefined,
-          facultyId: (role === "Super Admin" || role === "Director(Academics)" || role === "Faculty Coordinator") ? "FAC-PEC-" + Math.floor(100 + Math.random() * 900) : undefined,
-          membershipId: "PEC-MEM-2026-" + Math.floor(1000 + Math.random() * 9000),
-          emailVerified: true,
-          isGoogleOAuth: true
-        };
-        db.users.push(newUser);
-        saveDB(db);
-        existing = newUser;
-      }
-      setCurrentUser(existing.id, session.access_token);
-      return existing;
-    }
-  } catch (err) {
-    console.warn("[Auth] Supabase OAuth session check notice:", err.message);
-  }
-  return null;
-}
-
-export async function initAuth() {
-  await checkSupabaseOAuthSession();
+export function initAuth() {
   const user = getCurrentUser();
-
-  // Implement periodic token refresh (every 5 minutes) to keep session alive
-  if (typeof window !== 'undefined' && !window.authRefreshInterval) {
-    window.authRefreshInterval = setInterval(async () => {
-      const client = getSupabaseClient();
-      if (client) {
-        try {
-          const { data: { session }, error } = await client.auth.getSession();
-          if (error) throw error;
-          if (session) {
-            console.log("[Auth] Session heart-beat: Token refreshed.");
-            localStorage.setItem(SESSION_TOKEN_KEY, session.access_token);
-          }
-        } catch (e) {
-          console.warn("[Auth] Session refresh heart-beat failed:", e.message);
-        }
-      }
-    }, 300000); // 5 minutes
+  if (user && typeof localStorage !== 'undefined' && !localStorage.getItem(ACTIVE_USER_KEY)) {
+    localStorage.setItem(ACTIVE_USER_KEY, user.id);
   }
-
   return user;
 }

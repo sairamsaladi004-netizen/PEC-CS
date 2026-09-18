@@ -38,7 +38,7 @@ export const APP_CONFIG = {
     STUDENT: "Student",
     CLUB_ADMIN: "Club Admin",
     FACULTY_COORD: "Faculty Coordinator",
-    SUPER_ADMIN: "Director(Academics)",
+    SUPER_ADMIN: "Super Admin",
     GUEST: "Guest"
   },
   rolePermissions: {
@@ -63,7 +63,6 @@ export const APP_CONFIG = {
       "resources.update", "resources.delete", "announcements.view", "announcements.create",
       "announcements.update", "announcements.delete", "reports.view", "reports.export", "analytics.view", "audit_logs.view"
     ],
-    "Director(Academics)": ["all_permissions", "*"],
     "Super Admin": ["all_permissions", "*"],
     "Guest": ["clubs.view", "events.view", "announcements.view", "resources.view", "view_clubs"]
   }

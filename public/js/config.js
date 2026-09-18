@@ -36,35 +36,18 @@ export const APP_CONFIG = {
   ],
   roles: {
     STUDENT: "Student",
+    CLUB_MEMBER: "Club Member",
     CLUB_ADMIN: "Club Admin",
     FACULTY_COORD: "Faculty Coordinator",
-    SUPER_ADMIN: "Director(Academics)",
-    GUEST: "Guest"
+    DEPT_ADMIN: "Department Admin",
+    SUPER_ADMIN: "Super Admin"
   },
   rolePermissions: {
-    "Student": [
-      "clubs.view", "events.view", "attendance.view", "certificates.view", "projects.view",
-      "projects.create", "resources.view", "announcements.view", "reports.view",
-      "view_clubs", "join_club", "register_event", "view_card", "submit_project", "access_lms", "view_roadmaps", "view_tools", "download_cert"
-    ],
-    "Club Admin": [
-      "clubs.view", "clubs.update", "members.view", "members.approve", "events.view",
-      "events.create", "events.update", "attendance.view", "attendance.mark", "certificates.view",
-      "certificates.request", "projects.view", "projects.create", "projects.update", "resources.view",
-      "resources.create", "resources.update", "announcements.view", "announcements.create", "reports.view", "analytics.view",
-      "manage_club", "create_event", "generate_poster", "scan_attendance", "manage_lms_resources", "view_club_analytics"
-    ],
-    "Faculty Coordinator": [
-      "users.view", "clubs.view", "clubs.update", "members.view", "members.approve", "members.remove",
-      "events.view", "events.create", "events.update", "events.approve", "attendance.view",
-      "attendance.mark", "attendance.update", "attendance.approve", "certificates.view",
-      "certificates.request", "certificates.generate", "certificates.approve", "projects.view",
-      "projects.create", "projects.update", "projects.approve", "resources.view", "resources.create",
-      "resources.update", "resources.delete", "announcements.view", "announcements.create",
-      "announcements.update", "announcements.delete", "reports.view", "reports.export", "analytics.view", "audit_logs.view"
-    ],
-    "Director(Academics)": ["all_permissions", "*"],
-    "Super Admin": ["all_permissions", "*"],
-    "Guest": ["clubs.view", "events.view", "announcements.view", "resources.view", "view_clubs"]
+    "Student": ["view_clubs", "join_club", "register_event", "view_card", "submit_project", "access_lms", "view_roadmaps", "view_tools", "download_cert"],
+    "Club Member": ["view_clubs", "join_club", "register_event", "view_card", "submit_project", "access_lms", "view_roadmaps", "view_tools", "download_cert", "member_perks"],
+    "Club Admin": ["view_clubs", "join_club", "register_event", "view_card", "submit_project", "access_lms", "view_roadmaps", "view_tools", "download_cert", "member_perks", "manage_club", "create_event", "generate_poster", "scan_attendance", "manage_lms_resources", "view_club_analytics"],
+    "Faculty Coordinator": ["view_clubs", "approve_club_teams", "review_projects", "endorse_certificates", "view_club_analytics", "download_reports", "access_lms"],
+    "Department Admin": ["view_clubs", "view_dept_analytics", "manage_dept_clubs", "download_reports", "review_dept_events"],
+    "Super Admin": ["all_permissions", "manage_users", "approve_new_clubs", "manage_rbac", "audit_logs", "institutional_reports", "system_moderation"]
   }
 };

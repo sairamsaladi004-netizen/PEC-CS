@@ -1,306 +1,242 @@
+import { getDB, saveDB, logAudit } from '../db.js';
 import { getCurrentUser } from '../auth.js';
-import { getDB, logAudit } from '../db.js';
 import { showToast } from '../components/toast.js';
 
-export function renderQuizzesView() {
-  const user = getCurrentUser() || {};
-  const db = getDB();
+const QUIZ_DATA = [
+  {
+    id: "quiz-ds-01",
+    title: "Data Structures & Algorithms Sprint",
+    category: "Computer Science",
+    difficulty: "Intermediate",
+    timeLimit: 10, // minutes
+    passingScore: 70,
+    club: "Coding & Algo Society (I4-01)",
+    description: "Assess your mastery of Arrays, Linked Lists, Trees, Dynamic Programming, and Graph Traversals.",
+    questions: [
+      {
+        q: "What is the worst-case time complexity of QuickSort algorithm?",
+        options: ["O(N log N)", "O(N²)", "O(N)", "O(log N)"],
+        correct: 1,
+        explanation: "QuickSort has a worst-case time complexity of O(N²) when the pivot chosen is always the extreme element."
+      },
+      {
+        q: "Which data structure follows the Last-In-First-Out (LIFO) order?",
+        options: ["Queue", "Stack", "Array", "Linked List"],
+        correct: 1,
+        explanation: "Stack uses LIFO principles where push and pop occur at the top."
+      },
+      {
+        q: "In a binary search tree, what is the in-order traversal result?",
+        options: ["Random order", "Reverse sorted order", "Sorted ascending order", "Breadth-first order"],
+        correct: 2,
+        explanation: "In-order traversal (Left, Root, Right) yields elements in ascending sorted order."
+      },
+      {
+        q: "What is the primary advantage of a Hash Table over a Binary Search Tree?",
+        options: ["O(1) average time search", "Guaranteed O(log N) worst case", "Maintains sorted order", "Uses less memory"],
+        correct: 0,
+        explanation: "Hash Tables offer O(1) average time complexity for insertions and lookups."
+      },
+      {
+        q: "Which algorithm is used to find the shortest path in a weighted graph without negative edges?",
+        options: ["Kruskal's Algorithm", "Dijkstra's Algorithm", "Floyd-Warshall", "Prim's Algorithm"],
+        correct: 1,
+        explanation: "Dijkstra's algorithm efficiently computes single-source shortest paths for non-negative weights."
+      }
+    ]
+  },
+  {
+    id: "quiz-py-02",
+    title: "Python 3 & Data Science Essentials",
+    category: "AI & Data Science",
+    difficulty: "Beginner",
+    timeLimit: 8,
+    passingScore: 60,
+    club: "AI & ML Turing Club (I4-08)",
+    description: "Evaluate your core knowledge of Python syntax, List Comprehensions, NumPy arrays, and Pandas DataFrames.",
+    questions: [
+      {
+        q: "Which keyword is used to define a function in Python?",
+        options: ["function", "def", "func", "declare"],
+        correct: 1,
+        explanation: "The 'def' keyword introduces a function definition in Python."
+      },
+      {
+        q: "What is the output of len(set([1, 2, 2, 3, 3, 3])) in Python?",
+        options: ["6", "3", "1", "Error"],
+        correct: 1,
+        explanation: "A Python set automatically removes duplicate elements, yielding {1, 2, 3} with length 3."
+      },
+      {
+        q: "Which library is the standard foundation for array computation in Python data science?",
+        options: ["NumPy", "Flask", "PyGame", "BeautifulSoup"],
+        correct: 0,
+        explanation: "NumPy provides ndarray objects for high-performance vectorized linear algebra and math."
+      },
+      {
+        q: "How do you create a shallow copy of list `a` in Python?",
+        options: ["b = a", "b = a.copy()", "b = a.pointer()", "b = clone(a)"],
+        correct: 1,
+        explanation: "`a.copy()` or `a[:]` creates a shallow duplicate without pointing to the original reference."
+      }
+    ]
+  },
+  {
+    id: "quiz-web-03",
+    title: "Modern Full-Stack Web Development",
+    category: "Web & Cloud",
+    difficulty: "Intermediate",
+    timeLimit: 10,
+    passingScore: 70,
+    club: "Web Innovation Society (I4-05)",
+    description: "Test your skills in JavaScript ES6+, React Hooks, DOM events, and Async/Await REST API integration.",
+    questions: [
+      {
+        q: "What does the 'flex-direction: column' CSS property do?",
+        options: ["Aligns items horizontally", "Stacks items vertically top-to-bottom", "Distributes items with equal gaps", "Hides overflowing content"],
+        correct: 1,
+        explanation: "flex-direction: column sets the main axis vertically."
+      },
+      {
+        q: "Which HTTP method is idempotent and used to retrieve server resources?",
+        options: ["POST", "GET", "PATCH", "DELETE"],
+        correct: 1,
+        explanation: "GET requests retrieve data without altering server state and are idempotent."
+      },
+      {
+        q: "What does Promise.all() return if any single promise rejects?",
+        options: ["Array of settled promises", "Immediately rejects with that error", "Ignores the error", "Returns null"],
+        correct: 1,
+        explanation: "Promise.all fails fast and rejects immediately with the first encountered rejection."
+      }
+    ]
+  },
+  {
+    id: "quiz-iot-04",
+    title: "IoT & Embedded Systems Fundamentals",
+    category: "Hardware & Electronics",
+    difficulty: "Advanced",
+    timeLimit: 12,
+    passingScore: 75,
+    club: "Robotics & Automation Society (I4-02)",
+    description: "Questions covering ESP32 microcontrollers, MQTT protocol, sensor interfacing, and GPIO pinouts.",
+    questions: [
+      {
+        q: "Which lightweight messaging protocol is widely used for IoT devices?",
+        options: ["HTTP/2", "MQTT", "FTP", "SMTP"],
+        correct: 1,
+        explanation: "MQTT (Message Queuing Telemetry Transport) is lightweight publish-subscribe messaging for IoT."
+      },
+      {
+        q: "What is the typical operating voltage for ESP32 and STM32 microcontrollers?",
+        options: ["5.0V", "3.3V", "12.0V", "1.8V"],
+        correct: 1,
+        explanation: "Modern microcontrollers operate on 3.3V logic levels."
+      }
+    ]
+  }
+];
 
-  const quizList = [
-    {
-      id: "qz-101",
-      title: "Turing AI & Deep Learning Benchmark 2026",
-      club: "AI&ML Turing Club (I4-08)",
-      category: "Artificial Intelligence",
-      durationMins: 15,
-      totalQuestions: 5,
-      difficulty: "Intermediate",
-      xpReward: 150,
-      description: "Assess your knowledge of neural network architectures, backpropagation, transformers, and loss functions.",
-      questions: [
-        {
-          id: "q1",
-          question: "Which loss function is standard for multi-class classification tasks with softmax activation?",
-          options: [
-            "Mean Squared Error (MSE)",
-            "Categorical Cross-Entropy",
-            "Binary Cross-Entropy",
-            "Mean Absolute Error (MAE)"
-          ],
-          correct: 1,
-          explanation: "Categorical Cross-Entropy measures the performance of a classification model whose output is a probability value between 0 and 1."
-        },
-        {
-          id: "q2",
-          question: "In Transformer architectures, what is the purpose of Positional Encoding?",
-          options: [
-            "To reduce memory usage during self-attention",
-            "To inject word order / sequence order information into input embeddings",
-            "To prevent vanishing gradients in deep networks",
-            "To normalize activation outputs"
-          ],
-          correct: 1,
-          explanation: "Transformers process all tokens in parallel without recurrence, so positional encodings give the model information about the relative or absolute position of tokens."
-        },
-        {
-          id: "q3",
-          question: "What does the Learning Rate hyperparameter control in Gradient Descent?",
-          options: [
-            "The total number of training epochs",
-            "The batch size per iteration",
-            "The step size taken towards a minimum in loss space during optimization",
-            "The regularization factor against overfitting"
-          ],
-          correct: 2,
-          explanation: "Learning rate determines the step size at each iteration while moving toward a minimum of a loss function."
-        },
-        {
-          id: "q4",
-          question: "Which technique randomly drops neurons during training to prevent co-adaptation and overfitting?",
-          options: [
-            "Batch Normalization",
-            "Dropout",
-            "L2 Weight Decay",
-            "Gradient Clipping"
-          ],
-          correct: 1,
-          explanation: "Dropout sets input units to 0 with a frequency of rate at each step during training time, preventing overfitting."
-        },
-        {
-          id: "q5",
-          question: "What key advantage do Convolutional Neural Networks (CNNs) have over fully connected networks for images?",
-          options: [
-            "Parameter sharing & translation invariance",
-            "No requirement for backpropagation",
-            "Unbounded memory capacity",
-            "Faster inference on non-matrix data"
-          ],
-          correct: 0,
-          explanation: "CNNs exploit spatial structure using local receptive fields, shared weight matrices (filters), and spatial pooling."
-        }
-      ]
-    },
-    {
-      id: "qz-102",
-      title: "PEC CyberShield Web Vulnerabilities & Cryptography",
-      club: "Cyber Security & Forensics Guild (I4-07)",
-      category: "Cyber Security",
-      durationMins: 10,
-      totalQuestions: 4,
-      difficulty: "Advanced",
-      xpReward: 200,
-      description: "Test your vulnerability assessment skills against SQL Injection, XSS, and RSA public-key encryption fundamentals.",
-      questions: [
-        {
-          id: "q1",
-          question: "Which HTTP header is specifically designed to mitigate Cross-Site Scripting (XSS) attacks?",
-          options: [
-            "Content-Security-Policy (CSP)",
-            "Access-Control-Allow-Origin",
-            "X-Frame-Options",
-            "Strict-Transport-Security"
-          ],
-          correct: 0,
-          explanation: "Content-Security-Policy (CSP) restricts the resources (such as JavaScript, CSS, Images) that the browser is allowed to load for a given page."
-        },
-        {
-          id: "q2",
-          question: "In SQL Injection prevention, what is the primary security defense?",
-          options: [
-            "Escaping single quotes manually",
-            "Using Prepared Statements with Parameterized Queries",
-            "Encrypting all database columns",
-            "Hiding database error messages"
-          ],
-          correct: 1,
-          explanation: "Parameterized queries ensure the database driver treats input as data rather than executable SQL code."
-        },
-        {
-          id: "q3",
-          question: "Which cryptographic hashing algorithm is currently considered secure for storing passwords when combined with salt?",
-          options: [
-            "MD5",
-            "SHA-1",
-            "Argon2 / bcrypt",
-            "DES"
-          ],
-          correct: 2,
-          explanation: "Argon2 and bcrypt are memory-hard adaptive key derivation functions designed to resist GPU/ASIC brute-force attacks."
-        },
-        {
-          id: "q4",
-          question: "What type of attack involves an adversary secretly relaying and possibly altering communication between two parties?",
-          options: [
-            "Man-in-the-Middle (MitM)",
-            "Distributed Denial of Service (DDoS)",
-            "Buffer Overflow",
-            "DNS Spoofing"
-          ],
-          correct: 0,
-          explanation: "MitM attacks occur when an attacker intercepts communication between two systems to eavesdrop or impersonate a node."
-        }
-      ]
-    },
-    {
-      id: "qz-103",
-      title: "Full-Stack Data Structures & Algorithmic Efficiency",
-      club: "Pragsoft Developers Society (EC-04)",
-      category: "Computer Science",
-      durationMins: 12,
-      totalQuestions: 4,
-      difficulty: "Beginner/Intermediate",
-      xpReward: 120,
-      description: "Covers Big-O analysis, Hash Table collision resolution, and Queue/Stack traversal algorithms.",
-      questions: [
-        {
-          id: "q1",
-          question: "What is the average time complexity of searching for a key in a balanced Binary Search Tree (BST)?",
-          options: [
-            "O(1)",
-            "O(log N)",
-            "O(N)",
-            "O(N log N)"
-          ],
-          correct: 1,
-          explanation: "In a balanced BST, the height of the tree is log2(N), so search operations require O(log N) time."
-        },
-        {
-          id: "q2",
-          question: "Which Data Structure follows the Last-In, First-Out (LIFO) order?",
-          options: [
-            "Queue",
-            "Stack",
-            "Linked List",
-            "Priority Queue"
-          ],
-          correct: 1,
-          explanation: "A Stack inserts and removes elements from the top, obeying LIFO order."
-        },
-        {
-          id: "q3",
-          question: "How does a Hash Map achieve average O(1) time complexity for lookup operations?",
-          options: [
-            "By sorting all keys upon insertion",
-            "By computing array memory indices directly via a hashing function",
-            "By maintaining a linked list hierarchy",
-            "By running parallel threads"
-          ],
-          correct: 1,
-          explanation: "Hash maps use a hash function to map keys to array bucket indices, enabling direct constant-time access."
-        },
-        {
-          id: "q4",
-          question: "Which sorting algorithm guarantees O(N log N) time complexity even in its worst-case scenario?",
-          options: [
-            "Quick Sort",
-            "Merge Sort",
-            "Bubble Sort",
-            "Insertion Sort"
-          ],
-          correct: 1,
-          explanation: "Merge Sort recursively divides the array in half and merges sorted halves, strictly maintaining O(N log N) runtime."
-        }
-      ]
-    }
-  ];
+let activeQuizState = null;
+let activeTimerInterval = null;
+
+export function renderQuizzesView(params = {}) {
+  const db = getDB();
+  const user = getCurrentUser() || {};
+  const selectedCat = params.category || "All";
+
+  const categories = ["All", "Computer Science", "AI & Data Science", "Web & Cloud", "Hardware & Electronics"];
+
+  const filteredQuizzes = selectedCat === "All" 
+    ? QUIZ_DATA 
+    : QUIZ_DATA.filter(q => q.category === selectedCat);
 
   return `
-    <div class="max-w-7xl mx-auto space-y-6 pb-12">
+    <div class="space-y-6 pb-16">
       
-      <!-- Quiz Header Card -->
-      <div class="bg-gradient-to-r from-slate-900 via-purple-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white border border-slate-800 shadow-xl relative overflow-hidden">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
+      <!-- Top Banner Header -->
+      <div class="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white border border-slate-800 shadow-xl relative overflow-hidden">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div class="space-y-2 max-w-2xl">
-            <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs font-bold border border-purple-400/30">
-              <span>⏱️ PEC Skill Verification Engine</span>
+            <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold border border-blue-400/30">
+              <span>⏱️ Real-Time Assessment Center</span>
+              <span>•</span>
+              <span>Pragati Engineering College</span>
             </div>
-            <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">Timed Technical Quizzes & Assessments</h1>
+            <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">
+              Technical Society Timed Quizzes
+            </h1>
             <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Complete timed multiple-choice assessments issued by official PEC technical societies to validate domain competency, earn leaderboard XP, and qualify for hackathon certificates.
+              Test your algorithmic knowledge, domain mastery, and coding aptitude under strict timed conditions. Score ≥ 70% to claim accredited society skill badges.
             </p>
           </div>
-          
-          <div class="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 text-xs text-center space-y-1 sm:w-56">
-            <div class="text-[10px] uppercase font-bold text-purple-300">Your Quiz Account</div>
-            <div class="font-bold text-white text-sm truncate">${user.name || 'Student'}</div>
-            <div class="text-emerald-400 font-mono text-xs">Ready for Assessment</div>
+
+          <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 text-center shrink-0">
+            <div class="text-2xl font-black text-amber-400 font-mono">PEC Badges</div>
+            <div class="text-[11px] text-slate-300 font-medium mt-0.5">Automated Certificate Rewards</div>
           </div>
         </div>
       </div>
 
-      <!-- Quiz List Grid -->
-      <div id="quiz-list-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        ${quizList.map(q => `
-          <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+      <!-- Category Filter Tabs -->
+      <div class="flex items-center flex-wrap gap-2 pb-2 text-xs font-bold border-b border-slate-200">
+        ${categories.map(cat => `
+          <a href="#/quizzes?category=${encodeURIComponent(cat)}" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap ${selectedCat === cat ? 'bg-blue-600 text-white shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'}">
+            ${cat}
+          </a>
+        `).join('')}
+      </div>
+
+      <!-- Quizzes List Grid -->
+      <div id="quizzes-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        ${filteredQuizzes.map(quiz => `
+          <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
             <div class="space-y-3">
               <div class="flex items-center justify-between">
-                <span class="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-bold uppercase tracking-wider">
-                  ${q.category}
+                <span class="px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 font-bold text-[10px] font-mono border border-blue-200/60">
+                  ${quiz.category}
                 </span>
-                <span class="text-xs font-mono font-bold text-amber-600 flex items-center space-x-1">
-                  <span>✨</span><span>+${q.xpReward} XP</span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${quiz.difficulty === 'Beginner' ? 'bg-emerald-100 text-emerald-800' : quiz.difficulty === 'Intermediate' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'}">
+                  ${quiz.difficulty}
                 </span>
               </div>
 
-              <h3 class="text-base font-black text-slate-900 leading-snug">${q.title}</h3>
-              <p class="text-xs text-slate-500 leading-relaxed">${q.description}</p>
+              <div>
+                <h2 class="text-base font-black text-slate-900 tracking-tight">${quiz.title}</h2>
+                <p class="text-xs text-slate-500 mt-1 line-clamp-2">${quiz.description}</p>
+              </div>
 
-              <div class="pt-2 flex items-center space-x-4 text-xs text-slate-500 font-medium">
-                <div>⏱️ <strong>${q.durationMins} Mins</strong></div>
-                <div>❓ <strong>${q.totalQuestions} Questions</strong></div>
-                <div class="text-purple-700 font-bold">🎯 ${q.difficulty}</div>
+              <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100 grid grid-cols-3 gap-2 text-center text-xs">
+                <div>
+                  <span class="text-[10px] text-slate-400 font-bold uppercase block">Questions</span>
+                  <span class="font-bold text-slate-800 font-mono">${quiz.questions.length} Items</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 font-bold uppercase block">Timer</span>
+                  <span class="font-bold text-blue-600 font-mono">${quiz.timeLimit} mins</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 font-bold uppercase block">Cut-Off</span>
+                  <span class="font-bold text-emerald-600 font-mono">${quiz.passingScore}%</span>
+                </div>
               </div>
             </div>
 
-            <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-              <span class="text-[11px] text-slate-400 truncate max-w-32">${q.club}</span>
-              <button data-start-quiz="${q.id}" class="start-quiz-btn px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center space-x-1">
-                <span>▶</span>
-                <span>Start Assessment</span>
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+              <span class="text-[11px] text-slate-400 font-medium">${quiz.club}</span>
+              <button data-start-quiz="${quiz.id}" class="start-quiz-btn px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-xs transition-colors cursor-pointer flex items-center space-x-1">
+                <span>Start Timed Assessment</span>
+                <span>→</span>
               </button>
             </div>
           </div>
         `).join('')}
       </div>
 
-      <!-- Active Quiz Execution Container (Hidden initially) -->
-      <div id="active-quiz-modal" class="hidden fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-white rounded-3xl max-w-2xl w-full border border-slate-200 shadow-2xl p-6 sm:p-8 my-8 space-y-6 relative">
-          <!-- Quiz Header with Timer -->
-          <div class="flex items-center justify-between border-b border-slate-100 pb-4">
-            <div>
-              <span id="aq-category" class="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-bold uppercase"></span>
-              <h2 id="aq-title" class="text-lg font-black text-slate-900 mt-1"></h2>
-            </div>
-            <div class="bg-slate-900 text-white font-mono font-bold px-4 py-2 rounded-2xl text-sm flex items-center space-x-2 border border-slate-700 shadow-inner">
-              <span class="text-rose-400 animate-pulse">⏱️</span>
-              <span id="aq-timer">15:00</span>
-            </div>
-          </div>
-
-          <!-- Question Content -->
-          <div id="aq-question-box" class="space-y-4">
-            <div class="flex items-center justify-between text-xs font-bold text-slate-400">
-              <span id="aq-q-number">Question 1 of 5</span>
-              <span id="aq-q-progress-pct" class="font-mono text-purple-600">20% Completed</span>
-            </div>
-
-            <h3 id="aq-q-text" class="text-sm sm:text-base font-bold text-slate-900 leading-relaxed"></h3>
-
-            <div id="aq-options-container" class="space-y-2.5 pt-2">
-              <!-- Rendered via JS -->
-            </div>
-          </div>
-
-          <!-- Footer Actions -->
-          <div class="flex items-center justify-between pt-4 border-t border-slate-100">
-            <button id="aq-cancel-btn" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold">
-              Exit Quiz
-            </button>
-            <button id="aq-next-btn" class="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all shadow-md">
-              Next Question →
-            </button>
-          </div>
+      <!-- ACTIVE QUIZ MODAL -->
+      <div id="quiz-modal" class="hidden fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div id="quiz-modal-card" class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 border border-slate-200 shadow-2xl space-y-6">
+          <!-- Rendered dynamically -->
         </div>
       </div>
 
@@ -309,307 +245,248 @@ export function renderQuizzesView() {
 }
 
 export function attachQuizzesEvents() {
-  const quizList = [
-    {
-      id: "qz-101",
-      title: "Turing AI & Deep Learning Benchmark 2026",
-      category: "Artificial Intelligence",
-      durationMins: 15,
-      questions: [
-        {
-          id: "q1",
-          question: "Which loss function is standard for multi-class classification tasks with softmax activation?",
-          options: ["Mean Squared Error (MSE)", "Categorical Cross-Entropy", "Binary Cross-Entropy", "Mean Absolute Error (MAE)"],
-          correct: 1,
-          explanation: "Categorical Cross-Entropy measures classification performance with probability outputs."
-        },
-        {
-          id: "q2",
-          question: "In Transformer architectures, what is the purpose of Positional Encoding?",
-          options: ["To reduce memory usage", "To inject word order / sequence order information into input embeddings", "To prevent vanishing gradients", "To normalize activation outputs"],
-          correct: 1,
-          explanation: "Positional encodings provide sequence order context since Transformers operate in parallel."
-        },
-        {
-          id: "q3",
-          question: "What does the Learning Rate hyperparameter control in Gradient Descent?",
-          options: ["The total number of epochs", "The batch size", "The step size taken towards a minimum in loss space during optimization", "The regularization factor"],
-          correct: 2,
-          explanation: "Learning rate determines the gradient step size at each optimization iteration."
-        },
-        {
-          id: "q4",
-          question: "Which technique randomly drops neurons during training to prevent co-adaptation and overfitting?",
-          options: ["Batch Normalization", "Dropout", "L2 Weight Decay", "Gradient Clipping"],
-          correct: 1,
-          explanation: "Dropout sets input units to 0 randomly during training to prevent overfitting."
-        },
-        {
-          id: "q5",
-          question: "What key advantage do Convolutional Neural Networks (CNNs) have over fully connected networks for images?",
-          options: ["Parameter sharing & translation invariance", "No requirement for backpropagation", "Unbounded memory capacity", "Faster inference on non-matrix data"],
-          correct: 0,
-          explanation: "CNNs leverage local receptive fields and parameter sharing for image processing."
-        }
-      ]
-    },
-    {
-      id: "qz-102",
-      title: "PEC CyberShield Web Vulnerabilities & Cryptography",
-      category: "Cyber Security",
-      durationMins: 10,
-      questions: [
-        {
-          id: "q1",
-          question: "Which HTTP header is specifically designed to mitigate Cross-Site Scripting (XSS) attacks?",
-          options: ["Content-Security-Policy (CSP)", "Access-Control-Allow-Origin", "X-Frame-Options", "Strict-Transport-Security"],
-          correct: 0,
-          explanation: "CSP restricts executable resources loaded by the browser."
-        },
-        {
-          id: "q2",
-          question: "In SQL Injection prevention, what is the primary security defense?",
-          options: ["Escaping single quotes manually", "Using Prepared Statements with Parameterized Queries", "Encrypting all database columns", "Hiding database error messages"],
-          correct: 1,
-          explanation: "Parameterized queries ensure input is treated purely as data."
-        },
-        {
-          id: "q3",
-          question: "Which cryptographic hashing algorithm is currently considered secure for storing passwords when combined with salt?",
-          options: ["MD5", "SHA-1", "Argon2 / bcrypt", "DES"],
-          correct: 2,
-          explanation: "Argon2 and bcrypt are memory-hard adaptive hashing algorithms."
-        },
-        {
-          id: "q4",
-          question: "What type of attack involves an adversary secretly relaying and possibly altering communication between two parties?",
-          options: ["Man-in-the-Middle (MitM)", "Distributed Denial of Service (DDoS)", "Buffer Overflow", "DNS Spoofing"],
-          correct: 0,
-          explanation: "MitM intercepts and alters communications between endpoint nodes."
-        }
-      ]
-    },
-    {
-      id: "qz-103",
-      title: "Full-Stack Data Structures & Algorithmic Efficiency",
-      category: "Computer Science",
-      durationMins: 12,
-      questions: [
-        {
-          id: "q1",
-          question: "What is the average time complexity of searching for a key in a balanced Binary Search Tree (BST)?",
-          options: ["O(1)", "O(log N)", "O(N)", "O(N log N)"],
-          correct: 1,
-          explanation: "A balanced BST search takes O(log N) time relative to tree height."
-        },
-        {
-          id: "q2",
-          question: "Which Data Structure follows the Last-In, First-Out (LIFO) order?",
-          options: ["Queue", "Stack", "Linked List", "Priority Queue"],
-          correct: 1,
-          explanation: "Stacks insert and pop from the top following LIFO logic."
-        },
-        {
-          id: "q3",
-          question: "How does a Hash Map achieve average O(1) time complexity for lookup operations?",
-          options: ["By sorting all keys upon insertion", "By computing array memory indices directly via a hashing function", "By maintaining a linked list hierarchy", "By running parallel threads"],
-          correct: 1,
-          explanation: "Hash functions compute direct array index addresses for keys."
-        },
-        {
-          id: "q4",
-          question: "Which sorting algorithm guarantees O(N log N) time complexity even in its worst-case scenario?",
-          options: ["Quick Sort", "Merge Sort", "Bubble Sort", "Insertion Sort"],
-          correct: 1,
-          explanation: "Merge sort guarantees O(N log N) time regardless of initial array ordering."
-        }
-      ]
+  document.querySelectorAll(".start-quiz-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const quizId = btn.dataset.startQuiz;
+      const quiz = QUIZ_DATA.find(q => q.id === quizId);
+      if (quiz) {
+        startQuizSession(quiz);
+      }
+    });
+  });
+}
+
+function startQuizSession(quiz) {
+  activeQuizState = {
+    quiz,
+    currentQuestionIndex: 0,
+    answers: {},
+    timeRemainingSeconds: quiz.timeLimit * 60,
+    submitted: false
+  };
+
+  const modal = document.getElementById("quiz-modal");
+  if (!modal) return;
+  modal.classList.remove("hidden");
+
+  // Start countdown timer
+  if (activeTimerInterval) clearInterval(activeTimerInterval);
+  activeTimerInterval = setInterval(() => {
+    if (!activeQuizState || activeQuizState.submitted) {
+      clearInterval(activeTimerInterval);
+      return;
     }
-  ];
+    activeQuizState.timeRemainingSeconds--;
+    if (activeQuizState.timeRemainingSeconds <= 0) {
+      clearInterval(activeTimerInterval);
+      submitQuizSession();
+    } else {
+      updateQuizTimerDisplay();
+    }
+  }, 1000);
 
-  let currentActiveQuiz = null;
-  let currentQIndex = 0;
-  let selectedAnswers = {};
-  let quizTimerInterval = null;
-  let remainingSeconds = 0;
+  renderActiveQuizCard();
+}
 
-  document.querySelectorAll('.start-quiz-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const qzId = btn.getAttribute('data-start-quiz');
-      currentActiveQuiz = quizList.find(q => q.id === qzId);
-      if (!currentActiveQuiz) return;
+function updateQuizTimerDisplay() {
+  const timerElem = document.getElementById("quiz-countdown-timer");
+  if (!timerElem || !activeQuizState) return;
+  const mins = Math.floor(activeQuizState.timeRemainingSeconds / 60);
+  const secs = activeQuizState.timeRemainingSeconds % 60;
+  timerElem.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  if (activeQuizState.timeRemainingSeconds < 60) {
+    timerElem.classList.add("text-rose-600", "animate-pulse");
+  }
+}
 
-      currentQIndex = 0;
-      selectedAnswers = {};
-      remainingSeconds = currentActiveQuiz.durationMins * 60;
+function renderActiveQuizCard() {
+  const modalCard = document.getElementById("quiz-modal-card");
+  if (!modalCard || !activeQuizState) return;
 
-      // Update Modal UI
-      document.getElementById('aq-category').textContent = currentActiveQuiz.category;
-      document.getElementById('aq-title').textContent = currentActiveQuiz.title;
+  const { quiz, currentQuestionIndex, answers } = activeQuizState;
+  const q = quiz.questions[currentQuestionIndex];
+  const mins = Math.floor(activeQuizState.timeRemainingSeconds / 60);
+  const secs = activeQuizState.timeRemainingSeconds % 60;
+  const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 
-      renderCurrentQuestion();
-      startTimer();
+  modalCard.innerHTML = `
+    <!-- Quiz Session Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div>
+        <span class="text-[10px] font-bold uppercase tracking-wider text-blue-600">${quiz.category} • ${quiz.title}</span>
+        <h2 class="text-base font-black text-slate-900 mt-0.5">Question ${currentQuestionIndex + 1} of ${quiz.questions.length}</h2>
+      </div>
+      <div class="flex items-center space-x-3">
+        <div class="px-3 py-1.5 rounded-xl bg-slate-900 text-white font-mono font-bold text-xs flex items-center space-x-1.5">
+          <span>⏱️</span>
+          <span id="quiz-countdown-timer">${timeStr}</span>
+        </div>
+        <button id="close-quiz-btn" class="text-slate-400 hover:text-slate-600 text-lg font-bold cursor-pointer">✕</button>
+      </div>
+    </div>
 
-      document.getElementById('active-quiz-modal').classList.remove('hidden');
+    <!-- Question Body -->
+    <div class="space-y-4">
+      <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+        <p class="text-sm font-bold text-slate-900 leading-snug">${q.q}</p>
+      </div>
+
+      <!-- Multiple Choice Radio Cards -->
+      <div class="space-y-2.5">
+        ${q.options.map((opt, idx) => {
+          const isSelected = answers[currentQuestionIndex] === idx;
+          return `
+            <label class="quiz-option-card flex items-center p-3.5 rounded-2xl border cursor-pointer transition-all ${isSelected ? 'bg-blue-50 border-blue-500 shadow-xs ring-1 ring-blue-500' : 'bg-white border-slate-200 hover:border-slate-300'}">
+              <input type="radio" name="quiz-opt" value="${idx}" ${isSelected ? 'checked' : ''} class="w-4 h-4 text-blue-600 focus:ring-blue-500 mr-3" />
+              <span class="text-xs font-semibold text-slate-800">${opt}</span>
+            </label>
+          `;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- Stepper Footer -->
+    <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+      <button id="prev-q-btn" ${currentQuestionIndex === 0 ? 'disabled' : ''} class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold disabled:opacity-40 cursor-pointer">
+        ← Previous
+      </button>
+
+      <div class="flex space-x-1">
+        ${quiz.questions.map((_, i) => `
+          <span class="w-2.5 h-2.5 rounded-full ${i === currentQuestionIndex ? 'bg-blue-600' : answers[i] !== undefined ? 'bg-emerald-500' : 'bg-slate-200'}"></span>
+        `).join('')}
+      </div>
+
+      ${currentQuestionIndex === quiz.questions.length - 1 ? `
+        <button id="submit-quiz-final-btn" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black shadow-md cursor-pointer">
+          Submit Test ✓
+        </button>
+      ` : `
+        <button id="next-q-btn" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold cursor-pointer">
+          Next Question →
+        </button>
+      `}
+    </div>
+  `;
+
+  // Attach session controls
+  document.getElementById("close-quiz-btn")?.addEventListener("click", () => {
+    if (confirm("Quit quiz session? Progress will be lost.")) {
+      closeQuizSession();
+    }
+  });
+
+  document.querySelectorAll("input[name='quiz-opt']").forEach(radio => {
+    radio.addEventListener("change", (e) => {
+      activeQuizState.answers[currentQuestionIndex] = parseInt(e.target.value, 10);
+      renderActiveQuizCard();
     });
   });
 
-  function startTimer() {
-    clearInterval(quizTimerInterval);
-    updateTimerDisplay();
-
-    quizTimerInterval = setInterval(() => {
-      remainingSeconds--;
-      if (remainingSeconds <= 0) {
-        clearInterval(quizTimerInterval);
-        submitQuizResults();
-      } else {
-        updateTimerDisplay();
-      }
-    }, 1000);
-  }
-
-  function updateTimerDisplay() {
-    const mins = Math.floor(remainingSeconds / 60);
-    const secs = remainingSeconds % 60;
-    const timerElem = document.getElementById('aq-timer');
-    if (timerElem) {
-      timerElem.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  document.getElementById("prev-q-btn")?.addEventListener("click", () => {
+    if (activeQuizState.currentQuestionIndex > 0) {
+      activeQuizState.currentQuestionIndex--;
+      renderActiveQuizCard();
     }
-  }
+  });
 
-  function renderCurrentQuestion() {
-    if (!currentActiveQuiz) return;
-    const q = currentActiveQuiz.questions[currentQIndex];
-    const total = currentActiveQuiz.questions.length;
-
-    document.getElementById('aq-q-number').textContent = `Question ${currentQIndex + 1} of ${total}`;
-    document.getElementById('aq-q-progress-pct').textContent = `${Math.round(((currentQIndex + 1) / total) * 100)}% Completed`;
-    document.getElementById('aq-q-text').textContent = q.question;
-
-    const optBox = document.getElementById('aq-options-container');
-    optBox.innerHTML = q.options.map((opt, idx) => {
-      const isSelected = selectedAnswers[currentQIndex] === idx;
-      return `
-        <button data-opt-idx="${idx}" class="quiz-option-btn w-full p-3.5 rounded-2xl border text-left text-xs font-semibold transition-all flex items-center justify-between ${
-          isSelected ? 'bg-purple-50 border-purple-600 text-purple-900 shadow-xs' : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50'
-        }">
-          <div class="flex items-center space-x-3">
-            <span class="w-6 h-6 rounded-full border border-slate-300 flex items-center justify-center text-[10px] font-mono font-bold ${isSelected ? 'bg-purple-600 text-white border-purple-600' : 'bg-slate-100 text-slate-600'}">
-              ${String.fromCharCode(65 + idx)}
-            </span>
-            <span>${opt}</span>
-          </div>
-          ${isSelected ? '<span class="text-purple-600 font-bold">✓</span>' : ''}
-        </button>
-      `;
-    }).join('');
-
-    // Attach option handlers
-    optBox.querySelectorAll('.quiz-option-btn').forEach(b => {
-      b.addEventListener('click', () => {
-        const idx = parseInt(b.getAttribute('data-opt-idx'));
-        selectedAnswers[currentQIndex] = idx;
-        renderCurrentQuestion();
-      });
-    });
-
-    const nextBtn = document.getElementById('aq-next-btn');
-    if (currentQIndex === total - 1) {
-      nextBtn.textContent = "Submit & Complete Assessment ✓";
-      nextBtn.className = "px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-md";
-    } else {
-      nextBtn.textContent = "Next Question →";
-      nextBtn.className = "px-6 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all shadow-md";
+  document.getElementById("next-q-btn")?.addEventListener("click", () => {
+    if (activeQuizState.currentQuestionIndex < activeQuizState.quiz.questions.length - 1) {
+      activeQuizState.currentQuestionIndex++;
+      renderActiveQuizCard();
     }
+  });
+
+  document.getElementById("submit-quiz-final-btn")?.addEventListener("click", () => {
+    submitQuizSession();
+  });
+}
+
+function submitQuizSession() {
+  if (!activeQuizState) return;
+  activeQuizState.submitted = true;
+  if (activeTimerInterval) clearInterval(activeTimerInterval);
+
+  const { quiz, answers } = activeQuizState;
+  let correctCount = 0;
+  quiz.questions.forEach((q, idx) => {
+    if (answers[idx] === q.correct) {
+      correctCount++;
+    }
+  });
+
+  const total = quiz.questions.length;
+  const scorePct = Math.round((correctCount / total) * 100);
+  const passed = scorePct >= quiz.passingScore;
+
+  const modalCard = document.getElementById("quiz-modal-card");
+  if (!modalCard) return;
+
+  const user = getCurrentUser() || {};
+  if (passed && user.id) {
+    const db = getDB();
+    db.certificates = db.certificates || [];
+    const newCert = {
+      id: `CERT-QUIZ-${Date.now().toString().slice(-6)}`,
+      student_id: user.id,
+      studentName: user.name || "Student Delegate",
+      rollNo: user.rollNo || "22A31A0501",
+      awardType: `Certificate of Quiz Excellence (${quiz.title})`,
+      eventName: quiz.title,
+      issued_date: new Date().toISOString().split("T")[0],
+      qrHash: `HASH-QUIZ-${Math.random().toString(36).substring(2, 9).toUpperCase()}`
+    };
+    db.certificates.push(newCert);
+    saveDB(db);
+    logAudit("Student", "Passed Assessment Quiz", user.name, `Quiz: ${quiz.title}`);
   }
 
-  const nextBtn = document.getElementById('aq-next-btn');
-  if (nextBtn) {
-    nextBtn.addEventListener('click', () => {
-      if (selectedAnswers[currentQIndex] === undefined) {
-        showToast("Please select an answer option before proceeding.", "info");
-        return;
-      }
+  modalCard.innerHTML = `
+    <div class="text-center space-y-4 py-4">
+      <div class="w-16 h-16 rounded-full mx-auto flex items-center justify-center text-3xl ${passed ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}">
+        ${passed ? '🏆' : '📚'}
+      </div>
 
-      if (currentQIndex < currentActiveQuiz.questions.length - 1) {
-        currentQIndex++;
-        renderCurrentQuestion();
-      } else {
-        submitQuizResults();
-      }
-    });
-  }
+      <div>
+        <span class="px-3 py-1 rounded-full text-xs font-bold uppercase ${passed ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+          ${passed ? 'Assessment Passed' : 'Needs Practice'}
+        </span>
+        <h2 class="text-2xl font-black text-slate-900 mt-2">Your Score: ${scorePct}%</h2>
+        <p class="text-xs text-slate-500 mt-1">Answered ${correctCount} of ${total} questions correctly. Cut-off score is ${quiz.passingScore}%.</p>
+      </div>
 
-  const cancelBtn = document.getElementById('aq-cancel-btn');
-  if (cancelBtn) {
-    cancelBtn.addEventListener('click', () => {
-      clearInterval(quizTimerInterval);
-      document.getElementById('active-quiz-modal').classList.add('hidden');
-    });
-  }
-
-  function submitQuizResults() {
-    clearInterval(quizTimerInterval);
-    let correctCount = 0;
-    const total = currentActiveQuiz.questions.length;
-
-    currentActiveQuiz.questions.forEach((q, idx) => {
-      if (selectedAnswers[idx] === q.correct) {
-        correctCount++;
-      }
-    });
-
-    const scorePct = Math.round((correctCount / total) * 100);
-    const passed = scorePct >= 60;
-
-    logAudit(
-      getCurrentUser().name || "Student",
-      "Quiz Assessment Submitted",
-      "Student",
-      `Completed ${currentActiveQuiz.title}: Score ${scorePct}% (${correctCount}/${total})`
-    );
-
-    const qBox = document.getElementById('aq-question-box');
-    qBox.innerHTML = `
-      <div class="text-center py-6 space-y-4">
-        <div class="w-16 h-16 rounded-3xl ${passed ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'} flex items-center justify-center text-3xl mx-auto shadow-md">
-          ${passed ? '🎉' : '⚠️'}
+      ${passed ? `
+        <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 text-xs text-emerald-800 space-y-1">
+          <div class="font-bold">🎉 Society Skill Certificate Issued!</div>
+          <p class="text-[11px] text-emerald-700">Your accomplishment has been saved to your digital credential wallet.</p>
         </div>
-        <div>
-          <h3 class="text-lg font-black text-slate-900">${passed ? 'Assessment Passed Successfully!' : 'Assessment Complete'}</h3>
-          <p class="text-xs text-slate-500 mt-1">You answered ${correctCount} out of ${total} questions correctly.</p>
+      ` : `
+        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-600">
+          Review the course resources or re-attempt the quiz to earn your society badge.
         </div>
+      `}
 
-        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 max-w-sm mx-auto space-y-2">
-          <div class="flex justify-between text-xs">
-            <span class="text-slate-500 font-bold">Score Percentage:</span>
-            <span class="font-mono font-bold text-slate-900 text-sm">${scorePct}%</span>
-          </div>
-          <div class="flex justify-between text-xs">
-            <span class="text-slate-500 font-bold">XP Awarded:</span>
-            <span class="font-mono font-bold text-amber-600 text-sm">${passed ? `+${currentActiveQuiz.xpReward} XP` : '0 XP'}</span>
-          </div>
-          <div class="flex justify-between text-xs">
-            <span class="text-slate-500 font-bold">Status Badge:</span>
-            <span class="font-bold text-xs ${passed ? 'text-emerald-600' : 'text-rose-600'}">${passed ? 'PASSED ✓' : 'NEEDS REVISION'}</span>
-          </div>
-        </div>
-
-        <button id="close-quiz-result-btn" class="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all shadow-md">
-          Return to Quizzes
+      <div class="pt-4 border-t border-slate-100 flex items-center justify-center space-x-3 text-xs">
+        ${passed ? `
+          <a href="#/student/certificates" class="px-5 py-2.5 bg-emerald-600 text-white font-bold rounded-xl shadow-md">
+            View Certificate Ledger →
+          </a>
+        ` : ''}
+        <button id="close-quiz-result-btn" class="px-5 py-2.5 bg-slate-900 text-white font-bold rounded-xl cursor-pointer">
+          Close Window
         </button>
       </div>
-    `;
+    </div>
+  `;
 
-    document.getElementById('aq-next-btn').classList.add('hidden');
+  document.getElementById("close-quiz-result-btn")?.addEventListener("click", () => {
+    closeQuizSession();
+  });
+}
 
-    const closeResultBtn = document.getElementById('close-quiz-result-btn');
-    if (closeResultBtn) {
-      closeResultBtn.addEventListener('click', () => {
-        document.getElementById('active-quiz-modal').classList.add('hidden');
-        document.getElementById('aq-next-btn').classList.remove('hidden');
-      });
-    }
-  }
+function closeQuizSession() {
+  if (activeTimerInterval) clearInterval(activeTimerInterval);
+  activeQuizState = null;
+  const modal = document.getElementById("quiz-modal");
+  if (modal) modal.classList.add("hidden");
 }

@@ -1,11 +1,7 @@
 import { getDB } from '../db.js';
-import { getCurrentUser } from '../auth.js';
-import { ROLES } from '../rbac.js';
-import { PermissionGuard, renderAnalyticsGuard, renderApprovalsGuard, renderSuperAdminGuard } from '../components/permissionGuard.js';
 
 export function renderAnalyticsView() {
   const db = getDB();
-  const user = getCurrentUser() || {};
   const totalMembers = db.clubs.reduce((acc, c) => acc + c.memberCount, 0);
   const totalEvents = db.events.length;
   const totalCerts = db.certificates.length;
@@ -208,63 +204,6 @@ export function renderAnalyticsView() {
         </div>
 
       </div>
-
-      <!-- Permission-Guarded Executive Accreditation & Approvals Section -->
-      ${PermissionGuard({
-        roles: [ROLES.SUPER_ADMIN, ROLES.FACULTY_COORDINATOR, ROLES.CLUB_ADMIN],
-        permissions: ["analytics.view", "reports.export"],
-        content: `
-          <div class="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-4">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-              <div class="space-y-1">
-                <div class="flex items-center space-x-2">
-                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                    GUARDED: EXECUTIVE ACCREDITATION
-                  </span>
-                  <span class="text-xs text-slate-400 font-mono">Authenticated as ${user.name} (${user.role})</span>
-                </div>
-                <h3 class="text-lg font-black text-white">NAAC / NBA Accreditation Export & Budget Approvals</h3>
-              </div>
-              <div class="flex items-center space-x-2">
-                <a href="#/reports" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition-all">
-                  Generate Full NAAC Dossier
-                </a>
-                ${PermissionGuard({
-                  roles: [ROLES.SUPER_ADMIN],
-                  content: `
-                    <a href="#/admin/dashboard?tab=audit" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow-md transition-all">
-                      Audit Trail
-                    </a>
-                  `
-                })}
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-              <div class="p-4 rounded-2xl bg-slate-800/80 border border-slate-700/60 space-y-1">
-                <div class="text-slate-400 font-bold uppercase text-[10px]">Criteria 9 Metric Score</div>
-                <div class="text-xl font-mono font-bold text-emerald-400">96.4 / 100</div>
-                <p class="text-[11px] text-slate-400">Exceeds autonomous institution benchmark</p>
-              </div>
-              <div class="p-4 rounded-2xl bg-slate-800/80 border border-slate-700/60 space-y-1">
-                <div class="text-slate-400 font-bold uppercase text-[10px]">Verified Student Artifacts</div>
-                <div class="text-xl font-mono font-bold text-blue-400">${db.projects?.length || 24} Repositories</div>
-                <p class="text-[11px] text-slate-400">Open source & departmental projects</p>
-              </div>
-              <div class="p-4 rounded-2xl bg-slate-800/80 border border-slate-700/60 space-y-1">
-                <div class="text-slate-400 font-bold uppercase text-[10px]">Budget Clearance Status</div>
-                <div class="text-xl font-mono font-bold text-purple-400">100% Ratified</div>
-                <p class="text-[11px] text-slate-400">Principal & Academic Council approved</p>
-              </div>
-            </div>
-          </div>
-        `,
-        fallback: `
-          <div class="p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-500">
-            <span>🔒 Institutional NAAC/NBA scorecards & budget clearances are reserved for faculty coordinators and college administration.</span>
-          </div>
-        `
-      })}
 
     </div>
   `;

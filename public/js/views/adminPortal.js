@@ -1,22 +1,8 @@
 import { getCurrentUser } from '../auth.js';
 import { getDB, apiRequest } from '../db.js';
-import { ROLES, normalizeRole } from '../rbac.js';
-import { renderAccessDenied, attachAccessDeniedEvents } from '../components/accessDenied.js';
-import { renderDepartmentParticipationChart, renderSystemActivityStream } from '../components/d3Visualizers.js';
-import { PermissionGuard, renderSuperAdminGuard, renderApprovalsGuard, renderAnalyticsGuard } from '../components/permissionGuard.js';
 
 export function renderAdminPortalView(subSection = "dashboard") {
   const user = getCurrentUser() || {};
-  const currentRole = normalizeRole(user.role);
-
-  if (currentRole !== ROLES.SUPER_ADMIN) {
-    return renderAccessDenied({
-      requiredRole: ROLES.SUPER_ADMIN,
-      attemptedRoute: `#/admin/${subSection || 'dashboard'}`,
-      message: `Access denied. The Executive Admin Console is restricted to <strong>Director(Academics)</strong> (Central College Administration). Your active role is <strong>${currentRole}</strong>.`
-    });
-  }
-
   const db = getDB();
 
   const totalUsers = (db.users || []).length;
@@ -41,7 +27,7 @@ export function renderAdminPortalView(subSection = "dashboard") {
             <div class="flex items-center space-x-2 flex-wrap">
               <h1 class="text-xl font-black text-slate-900 tracking-tight">${user.name}</h1>
               <span class="px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 text-[10px] font-bold uppercase tracking-wider">
-                Director (Academics)
+                Super Admin
               </span>
               ${user.isDemo ? '<span class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-mono font-bold">DEMO ACCOUNT</span>' : ''}
             </div>
@@ -67,7 +53,7 @@ export function renderAdminPortalView(subSection = "dashboard") {
         </div>
       </div>
 
-      <!-- Navigation Tabs for Director(Academics) Portal -->
+      <!-- Navigation Tabs for Super Admin Portal -->
       <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 border-b border-slate-200 text-xs font-bold">
         <a href="#/admin/dashboard" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}">
           📊 Executive Console
@@ -171,7 +157,7 @@ export function renderAdminPortalView(subSection = "dashboard") {
               <option value="Student">Student</option>
               <option value="Club Student Leader">Club Student Leader (President / VP)</option>
               <option value="Club Coordinator">Club Coordinator (Faculty)</option>
-              <option value="Director(Academics)">Director(Academics) (Principal / Council)</option>
+              <option value="Super Admin">Super Admin (Principal / Council)</option>
             </select>
           </div>
 
@@ -234,7 +220,7 @@ function renderAdminTabContent(tab, ctx) {
                     let roleBadge = "bg-blue-100 text-blue-800";
                     if (u.role === "Club Coordinator") roleBadge = "bg-purple-100 text-purple-800";
                     if (u.role === "Club Student Leader") roleBadge = "bg-emerald-100 text-emerald-800";
-                    if (u.role === "Super Admin" || u.role === "Director(Academics)") roleBadge = "bg-rose-100 text-rose-800";
+                    if (u.role === "Super Admin") roleBadge = "bg-rose-100 text-rose-800";
 
                     return `
                       <tr class="hover:bg-slate-50/60">
@@ -539,231 +525,61 @@ function renderAdminTabContent(tab, ctx) {
       `;
 
     default: // Executive Overview
-      const globalBudgetAllocated = 2500000;
-      const globalBudgetUtilized = 1350000;
-      const globalBudgetPct = Math.round((globalBudgetUtilized / globalBudgetAllocated) * 100);
-
       return `
         <div class="space-y-6">
           
-          <!-- God Mode KPI Row -->
+          <!-- Master KPI Row -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs hover:border-rose-400 transition-colors">
+            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
               <div class="text-slate-400 text-xs font-bold uppercase tracking-wider">Official Clubs</div>
               <div class="text-2xl font-black text-slate-900 mt-1">35</div>
               <div class="text-[10px] text-emerald-600 mt-0.5">100% Chartered</div>
             </div>
 
-            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs hover:border-rose-400 transition-colors">
+            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
               <div class="text-slate-400 text-xs font-bold uppercase tracking-wider">Active Students</div>
               <div class="text-2xl font-black text-rose-600 mt-1">${totalStudents}</div>
               <div class="text-[10px] text-slate-500 mt-0.5">Verified Pragati users</div>
             </div>
 
-            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs hover:border-rose-400 transition-colors">
-              <div class="text-slate-400 text-xs font-bold uppercase tracking-wider">Global Budget Utilized</div>
-              <div class="text-2xl font-black text-amber-600 mt-1">${globalBudgetPct}%</div>
-              <div class="text-[10px] text-slate-500 mt-0.5">₹${globalBudgetUtilized.toLocaleString()} / ₹${globalBudgetAllocated.toLocaleString()}</div>
+            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
+              <div class="text-slate-400 text-xs font-bold uppercase tracking-wider">College Events</div>
+              <div class="text-2xl font-black text-purple-600 mt-1">${totalEvents}</div>
+              <div class="text-[10px] text-slate-500 mt-0.5">${totalRegistrations} total passes</div>
             </div>
 
-            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs hover:border-rose-400 transition-colors">
+            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
               <div class="text-slate-400 text-xs font-bold uppercase tracking-wider">Certificates Minted</div>
               <div class="text-2xl font-black text-blue-600 mt-1">${totalCertificates}</div>
               <div class="text-[10px] text-slate-500 mt-0.5">SHA-256 verifiable</div>
             </div>
           </div>
 
-          <!-- Institutional Governance & Emergency Operations -->
-          <div class="bg-rose-50/50 rounded-3xl p-6 border border-rose-200 shadow-xs space-y-4">
-            <div class="flex items-center justify-between border-b border-rose-200/60 pb-3">
-              <div class="flex items-center space-x-2">
-                <span class="w-8 h-8 rounded-xl bg-rose-100 text-rose-800 flex items-center justify-center text-sm font-bold border border-rose-200">👑</span>
-                <div>
-                  <h3 class="text-sm font-black text-rose-950">Executive God Mode Control</h3>
-                  <p class="text-[11px] text-rose-700">Top-level institutional overrides and accreditation modules</p>
-                </div>
+          <!-- Institutional Governance Quick Links -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <a href="#/admin/users" class="p-5 rounded-2xl bg-white border border-slate-200 hover:border-rose-500 hover:shadow-md transition-all group">
+              <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg mb-3">
+                👥
               </div>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              <!-- NAAC/NBA Compliance Matrix -->
-              <div class="bg-white p-5 rounded-2xl border border-rose-100 shadow-xs space-y-3">
-                <h4 class="text-xs font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">Institutional Compliance Score</h4>
-                
-                <div class="space-y-3 pt-1">
-                  <div class="flex items-center justify-between text-[11px] font-bold">
-                    <span class="text-slate-700">NAAC Criteria 9 (Co-Curricular)</span>
-                    <span class="text-emerald-600">A+ Status</span>
-                  </div>
-                  <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                    <div class="bg-emerald-500 h-1.5 rounded-full" style="width: 94%"></div>
-                  </div>
-                  
-                  <div class="flex items-center justify-between text-[11px] font-bold mt-2">
-                    <span class="text-slate-700">NBA Student Progression</span>
-                    <span class="text-blue-600">92% Met</span>
-                  </div>
-                  <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                    <div class="bg-blue-500 h-1.5 rounded-full" style="width: 92%"></div>
-                  </div>
-                </div>
-                
-                <button type="button" onclick="alert('Exporting Institutional NBA/NAAC Dossier...')" class="w-full mt-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-[10px] font-bold transition-colors">
-                  Export Master Compliance Report 📥
-                </button>
-              </div>
-              
-              <!-- Emergency Operations -->
-              <div class="bg-white p-5 rounded-2xl border border-rose-100 shadow-xs space-y-3">
-                <h4 class="text-xs font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">Emergency Directives</h4>
-                
-                <div class="space-y-2 pt-1">
-                  <button type="button" onclick="alert('System Alert: Initiating global halt on all pending events...')" class="w-full flex items-center justify-between p-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors cursor-pointer group">
-                    <span class="text-xs font-bold text-rose-900">🚨 Halt All Club Events Globally</span>
-                    <span class="text-[10px] px-2 py-0.5 bg-white rounded text-rose-700 shadow-sm font-mono group-hover:scale-105 transition-transform">EXECUTE</span>
-                  </button>
-                  
-                  <button type="button" onclick="alert('Accessing master budget override panel...')" class="w-full flex items-center justify-between p-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition-colors cursor-pointer group">
-                    <span class="text-xs font-bold text-amber-900">💰 Override Chapter Budgets</span>
-                    <span class="text-[10px] px-2 py-0.5 bg-white rounded text-amber-700 shadow-sm font-mono group-hover:scale-105 transition-transform">AUTHORIZE</span>
-                  </button>
-                  
-                  <button type="button" onclick="alert('Forcing mandatory sync with University ERP...')" class="w-full flex items-center justify-between p-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors cursor-pointer group">
-                    <span class="text-xs font-bold text-slate-800">⚙️ Force ERP Data Synchronization</span>
-                    <span class="text-[10px] px-2 py-0.5 bg-white rounded text-slate-600 shadow-sm font-mono group-hover:scale-105 transition-transform">SYNC</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+              <h4 class="text-xs font-bold text-slate-900 group-hover:text-rose-600">RBAC Identity Management</h4>
+              <p class="text-xs text-slate-500 mt-1">Assign club coordinators, promote student leaders, and enforce department authorities.</p>
+            </a>
 
-          <!-- D3 Visualizations: Department Participation & System Activity Stream -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            <!-- D3 Department Participation & Attendance Chart -->
-            <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
-              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div class="flex items-center space-x-2">
-                  <span class="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center text-sm font-bold border border-blue-200">🏢</span>
-                  <div>
-                    <h3 class="text-sm font-black text-slate-900">Department-Wise Student Participation & Attendance</h3>
-                    <p class="text-[11px] text-slate-500">Cross-department engagement across 35 technical chapters</p>
-                  </div>
-                </div>
-                <div class="flex items-center space-x-3 text-[10px] font-bold">
-                  <span class="flex items-center space-x-1 text-blue-600"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span><span>Registered</span></span>
-                  <span class="flex items-center space-x-1 text-emerald-600"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span><span>Attendance</span></span>
-                </div>
+            <a href="#/admin/attendance" class="p-5 rounded-2xl bg-white border border-slate-200 hover:border-rose-500 hover:shadow-md transition-all group">
+              <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg mb-3">
+                ⏱️
               </div>
+              <h4 class="text-xs font-bold text-slate-900 group-hover:text-blue-600">Cross-Society Attendance</h4>
+              <p class="text-xs text-slate-500 mt-1">Audit gate check-ins, percentage thresholds, and download official NAAC/NBA rosters.</p>
+            </a>
 
-              <div id="admin-dept-participation-chart" class="w-full min-h-[220px]"></div>
-            </div>
-
-            <!-- D3 Real-Time System Activity & Audit Stream -->
-            <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
-              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div class="flex items-center space-x-2">
-                  <span class="w-8 h-8 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center text-sm font-bold border border-rose-200">⚡</span>
-                  <div>
-                    <h3 class="text-sm font-black text-slate-900">Real-Time System Activity & Governance Telemetry</h3>
-                    <p class="text-[11px] text-slate-500">Audit actions, QR check-ins, approvals, and credential minting</p>
-                  </div>
-                </div>
-                <span class="text-[10px] font-mono font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-xl border border-rose-200">
-                  ${totalAuditLogs} Logged
-                </span>
+            <a href="#/admin/audit-logs" class="p-5 rounded-2xl bg-white border border-slate-200 hover:border-rose-500 hover:shadow-md transition-all group">
+              <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-lg mb-3">
+                📜
               </div>
-
-              <div id="admin-system-activity-stream" class="w-full min-h-[180px]"></div>
-            </div>
-
-          </div>
-
-          <!-- Global Monitoring & System Firehose -->
-          <div class="bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4 relative overflow-hidden mt-6">
-            <!-- Decorative background elements -->
-            <div class="absolute -right-8 -top-8 w-40 h-40 bg-rose-500/10 rounded-full blur-2xl pointer-events-none"></div>
-            <div class="absolute -left-8 -bottom-8 w-40 h-40 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
-            
-            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3 relative z-10">
-              <div class="flex items-center space-x-2">
-                <span class="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center text-sm font-bold border border-slate-700">📡</span>
-                <div>
-                  <h3 class="text-sm font-black text-white">Global Telemetry & System Firehose</h3>
-                  <p class="text-[11px] text-slate-400">Live monitoring of all activities across Pragati CampusTech</p>
-                </div>
-              </div>
-              <div class="flex items-center space-x-4">
-                <div class="flex flex-col items-end">
-                  <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Active Sessions</span>
-                  <span class="text-xs font-mono font-bold text-emerald-400">1,248</span>
-                </div>
-                <div class="flex flex-col items-end">
-                  <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">API Latency</span>
-                  <span class="text-xs font-mono font-bold text-blue-400">42ms</span>
-                </div>
-              </div>
-            </div>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 relative z-10">
-              <!-- Security & Access Events -->
-              <div class="space-y-3">
-                <h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 border-b border-slate-700/60 pb-1">Security & Access Events</h4>
-                <div class="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-                  ${(db.audit_logs || []).slice().reverse().slice(0, 10).map(log => `
-                    <div class="flex flex-col bg-slate-800/50 p-2.5 rounded-xl border border-slate-700 hover:border-slate-600 transition-colors">
-                      <div class="flex items-center justify-between">
-                        <span class="text-[10px] font-bold text-white truncate max-w-[150px]">${log.actor}</span>
-                        <span class="text-[9px] font-mono text-slate-400">${new Date(log.timestamp).toLocaleString(undefined, {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</span>
-                      </div>
-                      <div class="flex items-center space-x-1.5 mt-1">
-                        <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 font-mono">${log.role || 'System'}</span>
-                        <span class="text-[10px] text-blue-300 truncate">${log.action}</span>
-                      </div>
-                      <div class="text-[9px] text-slate-400 mt-1 truncate">${log.details || ''}</div>
-                    </div>
-                  `).join('')}
-                </div>
-              </div>
-              
-              <!-- System Infrastructure Health -->
-              <div class="space-y-4">
-                <h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 border-b border-slate-700/60 pb-1">Core Infrastructure Health</h4>
-                
-                <div class="grid grid-cols-2 gap-3">
-                  <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700">
-                    <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Database Load (Supabase)</div>
-                    <div class="text-lg font-black text-white mt-0.5">24%</div>
-                    <div class="w-full bg-slate-700 rounded-full h-1 mt-1.5 overflow-hidden">
-                      <div class="bg-blue-500 h-1 rounded-full" style="width: 24%"></div>
-                    </div>
-                  </div>
-                  
-                  <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700">
-                    <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Storage Capacity</div>
-                    <div class="text-lg font-black text-white mt-0.5">14.2 GB</div>
-                    <div class="text-[9px] text-slate-500 mt-0.5">Used of 50GB allocated</div>
-                  </div>
-                  
-                  <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700">
-                    <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Memory Usage</div>
-                    <div class="text-lg font-black text-white mt-0.5">68%</div>
-                    <div class="w-full bg-slate-700 rounded-full h-1 mt-1.5 overflow-hidden">
-                      <div class="bg-amber-500 h-1 rounded-full" style="width: 68%"></div>
-                    </div>
-                  </div>
-                  
-                  <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700">
-                    <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">System Status</div>
-                    <div class="text-sm font-black text-emerald-400 mt-1 flex items-center space-x-1.5">
-                      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                      <span>ALL SYSTEMS GO</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+              <h4 class="text-xs font-bold text-slate-900 group-hover:text-slate-800">Council Audit Trails</h4>
+              <p class="text-xs text-slate-500 mt-1">Tamper-evident logs of every approval, credential minting, and administrative action.</p>
+            </a>
           </div>
 
         </div>
@@ -772,22 +588,6 @@ function renderAdminTabContent(tab, ctx) {
 }
 
 export function attachAdminPortalEvents() {
-  attachAccessDeniedEvents();
-
-  // Initialize D3 Charts if containers are present
-  const deptChartContainer = document.getElementById("admin-dept-participation-chart");
-  const activityStreamContainer = document.getElementById("admin-system-activity-stream");
-
-  if (deptChartContainer || activityStreamContainer) {
-    const db = getDB();
-    if (deptChartContainer) {
-      renderDepartmentParticipationChart("admin-dept-participation-chart", db);
-    }
-    if (activityStreamContainer) {
-      renderSystemActivityStream("admin-system-activity-stream", db.audit_logs || []);
-    }
-  }
-
   // Circular modal
   const annModal = document.getElementById("admin-ann-modal");
   const openAnnBtn = document.getElementById("admin-publish-ann-btn");
@@ -812,7 +612,7 @@ export function attachAdminPortalEvents() {
     annAlert.textContent = "Publishing circular to all student devices...";
 
     const res = await apiRequest('/api/announcements/create', 'POST', {
-      title, content, target_audience: target, priority, author: `${user.name} (Director(Academics))`
+      title, content, target_audience: target, priority, author: `${user.name} (Super Admin)`
     });
 
     if (res && res.success) {

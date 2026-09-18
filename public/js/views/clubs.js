@@ -1,10 +1,7 @@
-import { getDB, saveDB, logAudit, apiRequest } from '../db.js';
+import { getDB, saveDB, logAudit } from '../db.js';
 import { getCurrentUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 import { APP_CONFIG } from '../config.js';
-import { getClubCompatibilityBreakdown } from '../intelligenceEngine.js';
-import { PermissionGuard, renderApprovalsGuard, applyDOMPermissionGuards } from '../components/permissionGuard.js';
-import { ROLES } from '../rbac.js';
 
 export function renderClubsView(params = {}) {
   const db = getDB();
@@ -14,10 +11,8 @@ export function renderClubsView(params = {}) {
   // Single Club Detail View
   if (selectedClubId) {
     const club = db.clubs.find(c => c.id === selectedClubId) || db.clubs[0];
-    const userMemberships = user.id ? (db.club_memberships || []).filter(m => m.student_id === user.id || m.studentId === user.id) : [];
-    const isMember = (user.clubs && user.clubs.includes(club.id)) || userMemberships.some(m => (m.club_id === club.id || m.clubId === club.id) && m.status === "Approved");
-    const isPending = userMemberships.some(m => (m.club_id === club.id || m.clubId === club.id) && m.status === "Pending");
-    const isFaculty = ["Faculty Coordinator", "Department Admin", "Director (Academics)"].includes(user.role);
+    const isMember = user.clubs && user.clubs.includes(club.id);
+    const isFaculty = ["Faculty Coordinator", "Department Admin", "Super Admin"].includes(user.role);
     const isClubAdmin = user.role === "Club Admin" || user.adminForClub === club.id || isFaculty;
     const clubEvents = (db.events || []).filter(e => e.clubId === club.id);
     const executiveTeam = club.executiveTeam || [];
@@ -77,13 +72,9 @@ export function renderClubsView(params = {}) {
                 <span class="px-4 py-2.5 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 rounded-xl text-xs font-bold flex items-center space-x-1.5">
                   <span>✓ Enrolled Member</span>
                 </span>
-              ` : isPending ? `
-                <span class="px-4 py-2.5 bg-amber-500/20 border border-amber-500/40 text-amber-300 rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-sm">
-                  <span>⏳ Request Sent (Waiting for Coordinator Approval)</span>
-                </span>
               ` : `
-                <button data-clubid="${club.id}" class="join-club-btn px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-500/20 transition-all cursor-pointer">
-                  + Request to Join Club
+                <button data-clubid="${club.id}" class="join-club-btn px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-500/20 transition-all">
+                  + Join Club
                 </button>
               `}
               <a href="#/club-dashboard?id=${club.id}" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold border border-slate-700 transition-colors flex items-center space-x-1.5">
@@ -167,15 +158,11 @@ export function renderClubsView(params = {}) {
               <div class="space-y-3">
                 <div class="flex items-center justify-between">
                   <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Student Executive Committee</h3>
-                  ${PermissionGuard({
-                    roles: [ROLES.CLUB_ADMIN, ROLES.FACULTY_COORDINATOR, ROLES.SUPER_ADMIN],
-                    clubId: club.id,
-                    content: `
-                      <button id="add-team-member-btn" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[11px] font-bold transition-colors">
-                        + Nominate Student
-                      </button>
-                    `
-                  })}
+                  ${isClubAdmin ? `
+                    <button id="add-team-member-btn" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[11px] font-bold transition-colors">
+                      + Nominate Student
+                    </button>
+                  ` : ''}
                 </div>
 
                 ${executiveTeam.length === 0 ? `
@@ -192,7 +179,7 @@ export function renderClubsView(params = {}) {
                           <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800">${exec.role}</span>
                         </div>
                         <div class="text-[11px] text-slate-500 font-mono">${exec.year || 'Student Member'} • ${exec.email || 'Email on file'}</div>
-                        ${exec.status === 'Pending Faculty Approval' ? renderApprovalsGuard(`
+                        ${(isFaculty && exec.status === 'Pending Faculty Approval') ? `
                           <div class="pt-2 border-t border-slate-200 flex items-center justify-end space-x-2">
                             <button data-clubid="${club.id}" data-memberindex="${idx}" class="approve-exec-btn px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px] font-bold">
                               Approve
@@ -201,7 +188,7 @@ export function renderClubsView(params = {}) {
                               Decline
                             </button>
                           </div>
-                        `) : ''}
+                        ` : ''}
                       </div>
                     `).join('')}
                   </div>
@@ -242,34 +229,6 @@ export function renderClubsView(params = {}) {
           <!-- RIGHT SIDEBAR: METADATA & ACCREDITATION -->
           <div class="space-y-6">
             
-            ${user.role === 'Student' ? (() => {
-              const compat = getClubCompatibilityBreakdown(user.id, club.id, db);
-              return `
-                <!-- AI Fit & Skill Alignment Card -->
-                <div class="bg-gradient-to-br from-purple-900 to-indigo-950 p-6 rounded-3xl text-white shadow-md space-y-3.5 border border-purple-800/60">
-                  <div class="flex items-center justify-between">
-                    <span class="text-[10px] font-black tracking-wider uppercase text-purple-300">AI Compatibility Engine</span>
-                    <span class="px-2 py-0.5 rounded-md bg-purple-500/30 text-purple-200 text-[10px] font-mono font-bold">
-                      ${compat.compatibilityScore}% Match
-                    </span>
-                  </div>
-                  <div>
-                    <div class="text-xs text-purple-300 font-medium">Top Match Reason (Skills & Activities):</div>
-                    <div class="text-lg font-black text-emerald-400 mt-0.5 flex items-center space-x-2">
-                      <span>✨</span>
-                      <span>${compat.oneWordReason || 'Synergy'}</span>
-                    </div>
-                  </div>
-                  <div class="p-2.5 rounded-xl bg-purple-950/60 border border-purple-700/50 text-[11px] text-purple-200 space-y-1">
-                    <div class="font-bold text-white">${compat.activityEvidence || 'Continuous student activity profile'}</div>
-                    ${compat.matchingSkills?.length ? `
-                      <div class="text-[10px] text-purple-300">Synergistic skills: <strong>${compat.matchingSkills.join(', ')}</strong></div>
-                    ` : ''}
-                  </div>
-                </div>
-              `;
-            })() : ''}
-
             <!-- Official Verification & Accreditation Card -->
             <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
               <div class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-blue-600">
@@ -316,8 +275,8 @@ export function renderClubsView(params = {}) {
                 <span>Club Metrics & Department Stats</span>
                 <span>→</span>
               </a>
-              <a href="#/badges?clubId=${club.id}" class="flex items-center justify-between p-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold transition-colors">
-                <span>✨ Generate Holographic Club Badge</span>
+              <a href="#/membership-card" class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium transition-colors">
+                <span>View Digital Student Membership</span>
                 <span>→</span>
               </a>
               <a href="#/reports" class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium transition-colors">
@@ -374,23 +333,9 @@ export function renderClubsView(params = {}) {
   // =========================================================================
   // MAIN CLUBS DIRECTORY VIEW (35 Pragati Engineering College Clubs)
   // =========================================================================
-  // Handle Club Admin scoping
-  let allClubs = db.clubs || [];
-  if (user.role === "Club Admin") {
-    const assignedIds = new Set([
-      user.clubId,
-      ...(user.clubs || []),
-      ...(user.assignedClubs || []),
-      user.adminForClub
-    ].filter(Boolean));
-    if (assignedIds.size > 0) {
-      allClubs = (db.clubs || []).filter(c => assignedIds.has(c.id));
-    }
-  }
-
-  const industry4Clubs = allClubs.filter(c => c.category === "Industry 4.0");
-  const coCurricularClubs = allClubs.filter(c => c.category === "Co-Curricular");
-  const extraCurricularClubs = allClubs.filter(c => c.category === "Extra-Curricular");
+  const industry4Clubs = db.clubs.filter(c => c.category === "Industry 4.0");
+  const coCurricularClubs = db.clubs.filter(c => c.category === "Co-Curricular");
+  const extraCurricularClubs = db.clubs.filter(c => c.category === "Extra-Curricular");
 
   return `
     <div class="space-y-6 pb-16">
@@ -447,7 +392,7 @@ export function renderClubsView(params = {}) {
         <!-- Category Filter Tabs -->
         <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 text-xs">
           <button data-category="all" class="club-category-btn px-3.5 py-1.5 rounded-xl font-bold bg-blue-600 text-white shadow-sm transition-all">
-            All Clubs (${allClubs.length})
+            All Clubs (${db.clubs.length})
           </button>
           <button data-category="Industry 4.0" class="club-category-btn px-3.5 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all">
             Industry 4.0 (${industry4Clubs.length})
@@ -463,16 +408,14 @@ export function renderClubsView(params = {}) {
 
       <!-- Clubs Count Indicator -->
       <div class="flex items-center justify-between text-xs text-slate-500 px-1">
-        <span id="clubs-count-display">Showing ${user.role === 'Club Admin' ? 'assigned' : 'all'} ${allClubs.length} official college clubs</span>
+        <span id="clubs-count-display">Showing all ${db.clubs.length} official college clubs</span>
         <span class="text-slate-400 font-mono">Pragati Engineering College (Autonomous)</span>
       </div>
 
       <!-- Clubs Grid -->
       <div id="clubs-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        ${allClubs.map(club => {
-          const userMemberships = user.id ? (db.club_memberships || []).filter(m => m.student_id === user.id || m.studentId === user.id) : [];
-          const isMember = (user.clubs && user.clubs.includes(club.id)) || userMemberships.some(m => (m.club_id === club.id || m.clubId === club.id) && m.status === "Approved");
-          const isPending = userMemberships.some(m => (m.club_id === club.id || m.clubId === club.id) && m.status === "Pending");
+        ${db.clubs.map(club => {
+          const isMember = user.clubs && user.clubs.includes(club.id);
           
           const categoryBadgeClass = 
             club.category === "Industry 4.0" ? "bg-purple-100 text-purple-800 border-purple-200" :
@@ -502,16 +445,6 @@ export function renderClubsView(params = {}) {
                   </div>
 
                   <div class="absolute top-3 right-3 flex items-center space-x-1.5">
-                    ${user.role === 'Student' ? (() => {
-                      const compat = getClubCompatibilityBreakdown(user.id, club.id, db);
-                      return `
-                        <span class="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-purple-900/90 text-purple-200 backdrop-blur-sm border border-purple-500/50 flex items-center space-x-1.5 shadow-sm" title="AI Match: ${compat.compatibilityScore}% based on ${compat.oneWordReason}">
-                          <span>🤖</span>
-                          <span>${compat.compatibilityScore}%</span>
-                          <span class="text-[9px] px-1 bg-purple-800/80 rounded text-purple-300 font-sans">${compat.oneWordReason || 'Synergy'}</span>
-                        </span>
-                      `;
-                    })() : ''}
                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-900/90 text-white backdrop-blur-sm border border-slate-700">
                       Dept: ${club.department}
                     </span>
@@ -565,15 +498,10 @@ export function renderClubsView(params = {}) {
                 </a>
                 ${isMember ? `
                   <span class="px-3 py-2.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200">
-                    ✓ Member
-                  </span>
-                ` : isPending ? `
-                  <span class="px-3 py-2.5 bg-amber-50 text-amber-700 text-xs font-bold rounded-xl border border-amber-200 flex items-center space-x-1" title="Waiting for coordinator & club access approval">
-                    <span>⏳</span>
-                    <span>Request Sent</span>
+                    ✓ Joined
                   </span>
                 ` : `
-                  <button data-clubid="${club.id}" class="join-club-btn px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer">
+                  <button data-clubid="${club.id}" class="join-club-btn px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition-colors">
                     Join
                   </button>
                 `}
@@ -668,77 +596,22 @@ export function attachClubsEvents(params = {}) {
       const club = (db.clubs || []).find(c => c.id === clubId);
       if (!club) return;
 
-      btn.textContent = "Submitting Request...";
+      btn.textContent = "Submitting...";
       btn.disabled = true;
 
-      // Create or update membership in local database with status 'Pending'
-      if (!db.club_memberships) db.club_memberships = [];
-      const existingMemIndex = db.club_memberships.findIndex(m => (m.student_id === user.id || m.studentId === user.id) && (m.club_id === club.id || m.clubId === club.id));
-      
-      const newMembership = {
-        id: "mem-" + Date.now(),
-        membership_id: `PEC-REQ-2026-${(club.shortName || club.code || club.id || 'ENG').toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`,
-        student_id: user.id,
-        studentId: user.id,
-        club_id: club.id,
-        clubId: club.id,
-        role: "Member",
-        status: "Pending",
-        requested_at: new Date().toISOString(),
-        appliedDate: new Date().toISOString().split("T")[0],
-        approved_at: null,
-        approved_by: null,
-        remarks: "Request submitted. Waiting for club and faculty coordinator review.",
-        statement: `Applicant interest submitted by ${user.name} (${user.rollNo || user.department || 'Student'}).`,
-        studentName: user.name,
-        studentEmail: user.email,
-        rollNo: user.rollNo || "22A31A0501",
-        department: user.department || "Computer Science & Engineering",
-        skills: user.skills || []
-      };
-
-      if (existingMemIndex >= 0) {
-        db.club_memberships[existingMemIndex] = { ...db.club_memberships[existingMemIndex], ...newMembership };
-      } else {
-        db.club_memberships.unshift(newMembership);
-      }
-
-      // Record notification for coordinator
-      if (!db.notifications) db.notifications = [];
-      db.notifications.unshift({
-        id: "notif-" + Date.now(),
-        user_id: club.facultyCoordinator || "coordinator",
-        title: "New Club Membership Request",
-        message: `${user.name} (${user.rollNo || 'Student'}) requested to join ${club.name}. Review application in Coordinator Portal.`,
-        category: "Membership",
-        link: "#/coordinator-portal",
-        time: "Just now",
-        created_at: new Date().toISOString(),
-        read: false
-      });
-
-      saveDB(db);
-
-      // Trigger backend API endpoint
-      await apiRequest('/api/memberships/request', 'POST', {
+      const res = await apiRequest('/api/memberships/request', 'POST', {
         studentId: user.id,
         clubId: club.id,
         statement: `Applicant interest submitted by ${user.name} (${user.rollNo || 'Student'}).`
       });
 
-      logAudit(`${user.name} (${user.role})`, "Requested Club Membership", club.name, "Membership status: Pending review by Faculty Coordinator");
-      showToast(
-        "Request Sent to Club & Faculty Coordinator",
-        `Your request to join ${club.name} has been sent. Waiting for access approval from the club leadership and faculty coordinator.`,
-        "info"
-      );
-
-      btn.outerHTML = `
-        <span class="px-3.5 py-2.5 bg-amber-50 text-amber-700 text-xs font-bold rounded-xl border border-amber-200 flex items-center space-x-1.5 shadow-sm">
-          <span>⏳</span>
-          <span>Request Sent (Waiting for Access)</span>
-        </span>
-      `;
+      if (res && res.success) {
+        showToast(`Application Submitted!`, res.message || `Your application to join ${club.name} is submitted for faculty coordinator review.`, "success");
+        setTimeout(() => window.location.reload(), 600);
+      } else {
+        showToast("Application Notice", res?.message || `Application for ${club.name} processed.`, "info");
+        setTimeout(() => window.location.reload(), 600);
+      }
     });
   });
 

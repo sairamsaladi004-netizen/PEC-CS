@@ -1,72 +1,36 @@
-import { getDB, logAudit, getSupabase } from './db.js';
+import { getDB, logAudit } from './db.js';
 import { ROLES, normalizeRole, hasRolePermission, isUserAuthorizedForClub } from './rbac.js';
-import { resolveSession } from './sessions.js';
 
-// Resolve caller authentication from Bearer header exclusively (valid cryptographically generated session tokens or Supabase JWTs)
-export async function authenticateUser(req, res, next) {
+// Resolve caller authentication from headers
+export function authenticateUser(req, res, next) {
   const authHeader = req.headers['authorization'];
+  const xUserId = req.headers['x-user-id'];
   const db = getDB();
-  const supabase = getSupabase();
 
-  let token = null;
+  let tokenOrId = null;
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.substring(7).trim();
+    tokenOrId = authHeader.substring(7).trim();
+  } else if (xUserId) {
+    tokenOrId = xUserId.trim();
   }
 
-  if (token && token !== 'guest') {
-    // 1. Check if token is a valid Supabase JWT (format: xxx.yyy.zzz)
-    if (supabase && token.includes('.') && token.split('.').length === 3) {
-      try {
-        const { data: { user: authUser }, error } = await supabase.auth.getUser(token);
-        if (authUser && !error) {
-          let profile = (db.users || []).find(u =>
-            (u.auth_user_id && u.auth_user_id === authUser.id) ||
-            (u.id === authUser.id) ||
-            (u.email && u.email.toLowerCase() === (authUser.email || '').toLowerCase())
-          );
+  if (tokenOrId && tokenOrId !== 'guest') {
+    const user = (db.users || []).find(u =>
+      u.id === tokenOrId ||
+      (u.email && u.email.toLowerCase() === tokenOrId.toLowerCase()) ||
+      (u.rollNo && u.rollNo.toUpperCase() === tokenOrId.toUpperCase())
+    );
 
-          if (!profile) {
-            profile = {
-              id: authUser.id,
-              auth_user_id: authUser.id,
-              email: authUser.email,
-              name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email.split('@')[0],
-              role: authUser.user_metadata?.role || ROLES.STUDENT,
-              emailVerified: !!authUser.email_confirmed_at,
-              department: authUser.user_metadata?.department || "CSE"
-            };
-            if (!Array.isArray(db.users)) db.users = [];
-            db.users.push(profile);
-          }
-
-          req.user = {
-            ...profile,
-            role: normalizeRole(profile.role),
-            supabaseAuthUser: authUser
-          };
-          return next();
-        }
-      } catch (err) {
-        console.warn("[Auth Middleware] Supabase JWT verification warning:", err.message);
-      }
-    }
-
-    // 2. Resolve cryptographically generated session token via sessions table
-    const activeSession = resolveSession(token);
-    if (activeSession && activeSession.user_id) {
-      const user = (db.users || []).find(u => u.id === activeSession.user_id);
-      if (user) {
-        req.user = {
-          ...user,
-          role: normalizeRole(user.role),
-          sessionId: activeSession.token
-        };
-        return next();
-      }
+    if (user) {
+      req.user = {
+        ...user,
+        role: normalizeRole(user.role)
+      };
+      return next();
     }
   }
 
-  // Default to unauthenticated Guest persona if no valid session token
+  // Default to Guest persona if no valid token
   req.user = {
     id: "guest",
     name: "Public Visitor",
@@ -115,10 +79,10 @@ export function requirePermission(permission) {
   };
 }
 
-// Enforce Club Scope: User must be Director (Academics) or authorized for the specific clubId
+// Enforce Club Scope: User must be Super Admin, Department Admin (for dept clubs), Faculty Coordinator (for assigned clubs), or Club Admin (for own club)
 export function requireClubScope(getClubIdFn) {
   return (req, res, next) => {
-    const clubId = typeof getClubIdFn === 'function' ? getClubIdFn(req) : (req.params.clubId || req.body.club_id || req.body.clubId);
+    const clubId = typeof getClubIdFn === 'function' ? getClubIdFn(req) : (req.params.clubId || req.params.id || req.body.club_id || req.body.clubId || req.query.clubId || req.query.id);
 
     if (!clubId) {
       return res.status(400).json({
@@ -127,13 +91,14 @@ export function requireClubScope(getClubIdFn) {
       });
     }
 
-    if (!isUserAuthorizedForClub(req.user, clubId)) {
+    const db = getDB();
+    if (!isUserAuthorizedForClub(req.user, clubId, db)) {
       return res.status(403).json({
         success: false,
         code: "FORBIDDEN_CLUB_SCOPE",
         clubId,
         userRole: req.user.role,
-        message: `Cross-club access violation. You are not authorized to access or manage records for Club ${clubId}.`
+        message: `Cross-club access violation. As a ${req.user.role}, you are not authorized to access or manage records for Club ${clubId}.`
       });
     }
 

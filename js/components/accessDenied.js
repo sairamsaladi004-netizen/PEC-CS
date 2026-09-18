@@ -3,7 +3,7 @@ import { getCurrentUser, switchUser, getAllDemoAccounts } from '../auth.js';
 import { ROLES } from '../rbac.js';
 
 export function renderAccessDenied({
-  requiredRole = "Director (Academics)",
+  requiredRole = "Super Admin",
   requiredPermission = null,
   attemptedRoute = "",
   clubId = null,
@@ -77,10 +77,10 @@ export function renderAccessDenied({
 export function attachAccessDeniedEvents() {
   const btn = document.getElementById("quick-switch-authorized-role-btn");
   if (btn) {
-    btn.addEventListener("click", async () => {
+    btn.addEventListener("click", () => {
       const userId = btn.getAttribute("data-user-id");
       if (userId) {
-        await switchUser(userId);
+        switchUser(userId);
         window.location.reload();
       }
     });

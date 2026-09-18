@@ -1,6 +1,4 @@
 import { OFFICIAL_PEC_CLUBS } from "./officialClubs.js";
-import { INITIAL_RESOURCES } from "../data/resources.js";
-import { showToast } from './components/toast.js';
 
 export const DB_KEY = "campustech_pec_db_v3";
 
@@ -95,23 +93,46 @@ export const INITIAL_SEED = {
       isDemo: true
     },
     {
+      id: "dept-001",
+      name: "Dr. M. Radhika Mani",
+      facultyId: "HOD-CSE-001",
+      email: "hod.cse@pragati.ac.in",
+      demoAlias: "deptadmin.demo@pragati.ac.in",
+      role: "Department Admin",
+      department: "CSE",
+      designation: "Professor & Head of CSE Department",
+      year: "HOD",
+      semester: "Permanent",
+      phone: "+91 884 2383301",
+      avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&auto=format&fit=crop&q=80",
+      clubs: [],
+      skills: ["Academic Leadership", "Curriculum Strategy", "NBA Accreditation", "Departmental Governance"],
+      interests: ["Data Science", "Research & Innovation", "Technical Societies"],
+      bio: "Head of Computer Science & Engineering Department overseeing all departmental technical societies and clubs.",
+      badges: ["Department Head - CSE", "NBA Committee Chair"],
+      membershipId: "PEC-HOD-2026-CSE",
+      validUntil: "Permanent",
+      emailVerified: true,
+      isDemo: true
+    },
+    {
       id: "admin-001",
       name: "Dr. K. Satyanarayana",
       facultyId: "FAC-PEC-001",
-      email: "director.academics@pragati.ac.in",
-      demoAlias: "principal@pragati.ac.in",
+      email: "principal@pragati.ac.in",
+      demoAlias: "admin.demo@pragati.ac.in",
       role: "Super Admin",
       department: "CSE",
-      designation: "Director (Academics) & Head of Academic Council",
-      year: "Director (Academics)",
+      designation: "Principal & Head of Academic Council",
+      year: "Principal",
       semester: "Permanent",
       phone: "+91 884 2383305",
       avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&auto=format&fit=crop&q=80",
       clubs: ["I4-01", "I4-08", "CC-05"],
       skills: ["Academic Administration", "NBA / NAAC Accreditation", "Institutional Leadership"],
       interests: ["Higher Technical Education", "Outcome-Based Education"],
-      bio: "Director (Academics), Pragati Engineering College (Autonomous), Surampalem.",
-      badges: ["Director (Academics)", "Institutional Head", "Council President"],
+      bio: "Principal, Pragati Engineering College (Autonomous), Surampalem.",
+      badges: ["Institutional Head", "Council President"],
       membershipId: "PEC-ADMIN-2026-HQ-001",
       validUntil: "Lifetime",
       emailVerified: true,
@@ -310,249 +331,6 @@ export const INITIAL_SEED = {
       tags: ["Sustainability", "Civil Engineering", "LEED Ratings"],
       created_by: "Mr L Praveen Kumar",
       created_at: "2026-08-20T10:00:00.000Z",
-      active_qr_token: null,
-      qr_token_expiry: null,
-      registrations: []
-    },
-    {
-      id: "evt-106",
-      title: "Edge Computing & LoRaWAN Smart Campus Hackathon",
-      category: "Hackathon",
-      event_type: "Hackathon",
-      club_id: "I4-09",
-      clubId: "I4-09",
-      date: "2026-10-24",
-      time: "08:30 - 20:30",
-      start_time: "08:30",
-      end_time: "20:30",
-      venue: "ECE Embedded Systems Lab & Open Courtyard",
-      capacity: 160,
-      max_participants: 160,
-      registeredCount: 128,
-      registration_deadline: "2026-10-22 23:59",
-      status: "Upcoming",
-      banner: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80",
-      description: "Build low-power long-range IoT sensor networks deployed across the PEC campus for air quality, solar tracking, and water flow monitoring.",
-      rules: ["Teams of 2 to 3 members.", "Hardware development boards (ESP32/LoRa) provided on deposit."],
-      tags: ["IoT", "LoRaWAN", "Edge Computing", "Hardware"],
-      created_by: "Mr. G. Durga Prasad",
-      created_at: "2026-09-05T10:00:00.000Z",
-      active_qr_token: null,
-      qr_token_expiry: null,
-      registrations: []
-    },
-    {
-      id: "evt-107",
-      title: "Spatial Computing & Digital Twin Industrial Workshop",
-      category: "Bootcamp",
-      event_type: "Bootcamp",
-      club_id: "I4-04",
-      clubId: "I4-04",
-      date: "2026-11-04",
-      time: "09:30 - 16:30",
-      start_time: "09:30",
-      end_time: "16:30",
-      venue: "AR/VR Simulation Lab, CSE Block",
-      capacity: 90,
-      max_participants: 90,
-      registeredCount: 72,
-      registration_deadline: "2026-11-02 23:59",
-      status: "Upcoming",
-      banner: "https://images.unsplash.com/photo-1593508512255-86ab42a8e620?w=800&auto=format&fit=crop&q=80",
-      description: "Hands-on development of real-time industrial digital twins using WebXR, Unity 3D, and real-time telemetry streaming pipelines.",
-      rules: ["Individual participation.", "Basic knowledge of 3D coordinates recommended."],
-      tags: ["AR/VR", "Digital Twin", "Unity3D", "WebXR"],
-      created_by: "Mr. A. Avinash",
-      created_at: "2026-09-06T10:00:00.000Z",
-      active_qr_token: null,
-      qr_token_expiry: null,
-      registrations: []
-    },
-    {
-      id: "evt-201",
-      title: "Smart Grid & Microgrid Renewable Energy Hackathon",
-      category: "Hackathon",
-      event_type: "Hackathon",
-      club_id: "CC-01",
-      clubId: "CC-01",
-      date: "2026-10-22",
-      time: "09:00 - 18:00",
-      start_time: "09:00",
-      end_time: "18:00",
-      venue: "EEE Power Systems Simulation Center",
-      capacity: 150,
-      max_participants: 150,
-      registeredCount: 114,
-      registration_deadline: "2026-10-20 23:59",
-      status: "Upcoming",
-      banner: "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=800&auto=format&fit=crop&q=80",
-      description: "Design automated peak load leveling algorithms and solar microgrid distribution systems for sustainable university campuses.",
-      rules: ["Teams of 2 to 4 students from all engineering disciplines.", "Simulink and Python models permitted."],
-      tags: ["Smart Grid", "Renewable Energy", "MATLAB", "Sustainability"],
-      created_by: "Mrs. K. Deepthi",
-      created_at: "2026-09-07T10:00:00.000Z",
-      active_qr_token: null,
-      qr_token_expiry: null,
-      registrations: []
-    },
-    {
-      id: "evt-202",
-      title: "Hydrological Sensor Networks & IoT Water Quality Conclave",
-      category: "Workshop",
-      event_type: "Workshop",
-      club_id: "CC-02",
-      clubId: "CC-02",
-      date: "2026-10-29",
-      time: "10:00 - 15:30",
-      start_time: "10:00",
-      end_time: "15:30",
-      venue: "Environmental Engineering Lab, CE Block",
-      capacity: 80,
-      max_participants: 80,
-      registeredCount: 65,
-      registration_deadline: "2026-10-27 23:59",
-      status: "Upcoming",
-      banner: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80",
-      description: "Real-time water quality monitoring, turbidity sensor telemetry, and automatic filtration feedback control for rural water safety.",
-      rules: ["Open to Civil, ECE, and CSE students."],
-      tags: ["Water Analytics", "Sensors", "Civil Engineering"],
-      created_by: "Mr. B. Rajesh",
-      created_at: "2026-09-08T10:00:00.000Z",
-      active_qr_token: null,
-      qr_token_expiry: null,
-      registrations: []
-    },
-    {
-      id: "evt-204",
-      title: "Campus Tech for Good: Rural Digital Empowerment Sprint",
-      category: "Hackathon",
-      event_type: "Hackathon",
-      club_id: "CC-05",
-      clubId: "CC-05",
-      date: "2026-11-12",
-      time: "09:00 - 19:00",
-      start_time: "09:00",
-      end_time: "19:00",
-      venue: "Central Seminar Hall 2",
-      capacity: 140,
-      max_participants: 140,
-      registeredCount: 98,
-      registration_deadline: "2026-11-10 23:59",
-      status: "Upcoming",
-      banner: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&auto=format&fit=crop&q=80",
-      description: "Develop lightweight multilingual PWA web tools and offline educational resources for nearby rural schools in East Godavari district.",
-      rules: ["Open-source solutions only.", "Mobile-first offline capability required."],
-      tags: ["Social Impact", "Open Source", "Mobile Web", "PWA"],
-      created_by: "Dr. P. V. S. Machiraju",
-      created_at: "2026-09-09T10:00:00.000Z",
-      active_qr_token: null,
-      qr_token_expiry: null,
-      registrations: []
-    },
-    {
-      id: "evt-301",
-      title: "Pragsoft 24-Hour Full-Stack Distributed Systems Buildathon",
-      category: "Hackathon",
-      event_type: "Hackathon",
-      club_id: "EC-04",
-      clubId: "EC-04",
-      date: "2026-10-26",
-      time: "09:00 - 09:00 (+1 day)",
-      start_time: "09:00",
-      end_time: "09:00",
-      venue: "Computer Center Lab 1 & 2 (Overnight Hackathon)",
-      capacity: 200,
-      max_participants: 200,
-      registeredCount: 176,
-      registration_deadline: "2026-10-24 23:59",
-      status: "Upcoming",
-      banner: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&auto=format&fit=crop&q=80",
-      description: "Pragsoft flagship overnight hackathon building distributed microservices, event queues, resilience engineering, and reactive frontends.",
-      rules: ["Teams of 2 to 4 members.", "Night pass consent required from college warden/HOD."],
-      tags: ["Microservices", "Full Stack", "Distributed Systems", "Cash Prize ₹50,000"],
-      created_by: "Mr. Ch. Venkata Ramana",
-      created_at: "2026-09-10T10:00:00.000Z",
-      active_qr_token: null,
-      qr_token_expiry: null,
-      registrations: []
-    },
-    {
-      id: "evt-302",
-      title: "WebXR & Spatial Metaverse Developer Conclave",
-      category: "Workshop",
-      event_type: "Workshop",
-      club_id: "EC-03",
-      clubId: "EC-03",
-      date: "2026-10-31",
-      time: "10:00 - 16:00",
-      start_time: "10:00",
-      end_time: "16:00",
-      venue: "CSE(AI) Advanced Multimedia Lab",
-      capacity: 110,
-      max_participants: 110,
-      registeredCount: 88,
-      registration_deadline: "2026-10-29 23:59",
-      status: "Upcoming",
-      banner: "https://images.unsplash.com/photo-1622979135225-d2ba269bc1df?w=800&auto=format&fit=crop&q=80",
-      description: "Three.js, WebGL shader optimization, and avatar synchronization in shared persistent 3D virtual spaces.",
-      rules: ["Laptop with WebGL 2.0 supported browser."],
-      tags: ["WebXR", "ThreeJS", "Metaverse", "WebGL"],
-      created_by: "Mr. M. Radhika Mani",
-      created_at: "2026-09-11T10:00:00.000Z",
-      active_qr_token: null,
-      qr_token_expiry: null,
-      registrations: []
-    },
-    {
-      id: "evt-303",
-      title: "Autonomous GO-KART EV Powertrain & Telemetry Grand Prix",
-      category: "Competition",
-      event_type: "Competition",
-      club_id: "EC-06",
-      clubId: "EC-06",
-      date: "2026-11-06",
-      time: "08:30 - 17:00",
-      start_time: "08:30",
-      end_time: "17:00",
-      venue: "PEC Automotive Testing Track & Workshop Grounds",
-      capacity: 120,
-      max_participants: 120,
-      registeredCount: 104,
-      registration_deadline: "2026-11-04 23:59",
-      status: "Upcoming",
-      banner: "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&auto=format&fit=crop&q=80",
-      description: "Track trials of student-built electric go-karts featuring CAN-bus telemetry, regenerative braking controllers, and thermal battery management.",
-      rules: ["Safety gear and fire safety briefing mandatory."],
-      tags: ["Electric Vehicles", "Automotive", "Mechanical", "Telemetry"],
-      created_by: "Mr. K. V. S. R. K. Prasad",
-      created_at: "2026-09-12T10:00:00.000Z",
-      active_qr_token: null,
-      qr_token_expiry: null,
-      registrations: []
-    },
-    {
-      id: "evt-304",
-      title: "High-Frequency VLSI & Embedded Signal Processing Symposium",
-      category: "Technical Session",
-      event_type: "Technical Session",
-      club_id: "EC-08",
-      clubId: "EC-08",
-      date: "2026-11-14",
-      time: "10:00 - 16:30",
-      start_time: "10:00",
-      end_time: "16:30",
-      venue: "IETE Seminar Hall, ECE Block",
-      capacity: 130,
-      max_participants: 130,
-      registeredCount: 92,
-      registration_deadline: "2026-11-12 23:59",
-      status: "Upcoming",
-      banner: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80",
-      description: "Keynotes and research presentations on FPGA accelerators, RISC-V softcores, and edge DSP pipelines in wireless communications.",
-      rules: ["Open to UG & PG students."],
-      tags: ["VLSI", "FPGA", "Signal Processing", "IETE"],
-      created_by: "Dr. V. Sailaja",
-      created_at: "2026-09-13T10:00:00.000Z",
       active_qr_token: null,
       qr_token_expiry: null,
       registrations: []
@@ -827,7 +605,50 @@ export const INITIAL_SEED = {
     }
   ],
 
-  resources: INITIAL_RESOURCES,
+  resources: [
+    {
+      id: "res-001",
+      title: "Modern Docker & Kubernetes Lab Guide for Cloud Native Microservices",
+      description: "Comprehensive tutorial on multi-stage Docker builds, Kubernetes manifests, and Helm charts.",
+      club_id: "I4-07",
+      clubId: "I4-07",
+      category: "Lab Guide",
+      uploaded_by: "Mr. K Siva Shankar",
+      author: "Mr. K Siva Shankar",
+      upload_date: "2026-09-01",
+      dateAdded: "2026-09-01",
+      file_url: "https://kubernetes.io/docs/home/",
+      link: "https://kubernetes.io/docs/home/",
+      target_semester: "5th Semester",
+      targetSemester: "5th Semester",
+      readTime: "45 mins lab",
+      domain: "Cloud Computing",
+      difficulty: "Intermediate",
+      bookmarks: 142,
+      completions: 89
+    },
+    {
+      id: "res-002",
+      title: "PyTorch Vision Transformers (ViT) & Transfer Learning Notebook",
+      description: "Hands-on Jupyter notebook covering attention heads, fine-tuning, and ONNX deployment.",
+      club_id: "I4-08",
+      clubId: "I4-08",
+      category: "Code Notebook",
+      uploaded_by: "Mrs. L. Yamuna",
+      author: "Mrs. L. Yamuna",
+      upload_date: "2026-08-20",
+      dateAdded: "2026-08-20",
+      file_url: "https://pytorch.org/tutorials/",
+      link: "https://pytorch.org/tutorials/",
+      target_semester: "6th Semester",
+      targetSemester: "6th Semester",
+      readTime: "60 mins lab",
+      domain: "Artificial Intelligence & ML",
+      difficulty: "Advanced",
+      bookmarks: 230,
+      completions: 164
+    }
+  ],
 
   projects: [
     {
@@ -1221,39 +1042,22 @@ export const INITIAL_SEED = {
 INITIAL_SEED.auditLogs = INITIAL_SEED.audit_logs;
 INITIAL_SEED.auditLog = INITIAL_SEED.audit_logs;
 
-import { initSupabaseClient, getSupabaseClient } from './supabaseClient.js';
-
-// In-memory single source of truth for runtime database
-let memoryDB = null;
-let isDbInitialized = false;
-
-// Database Access & Persistence Layer backed by Supabase & Express API
+// Database Access & Persistence Layer
 export function getDB() {
-  if (memoryDB) return memoryDB;
-
   try {
     const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(DB_KEY) : null;
     let data;
-    if (raw) {
-      try {
-        data = JSON.parse(raw);
-      } catch (e) {
-        data = null;
-      }
-    }
-
-    if (!data) {
+    if (!raw) {
       data = JSON.parse(JSON.stringify(INITIAL_SEED));
+      saveDB(data);
+      return data;
     }
+    data = JSON.parse(raw);
     
-    // Ensure all 35 official Pragati Engineering College clubs are loaded
+    // Auto-migration: Ensure all 35 official Pragati Engineering College clubs are loaded
     if (!data.clubs || data.clubs.length < 35 || data.clubs.some(c => c.id === "acm" || c.id === "gdsc")) {
       data.clubs = JSON.parse(JSON.stringify(OFFICIAL_PEC_CLUBS));
-    }
-
-    // Ensure events across all categories exist
-    if (!Array.isArray(data.events) || data.events.length < 10) {
-      data.events = JSON.parse(JSON.stringify(INITIAL_SEED.events));
+      saveDB(data);
     }
 
     // Ensure all relational arrays exist
@@ -1261,12 +1065,13 @@ export function getDB() {
     if (!Array.isArray(data.event_registrations)) data.event_registrations = INITIAL_SEED.event_registrations;
     if (!Array.isArray(data.attendance)) data.attendance = INITIAL_SEED.attendance;
     if (!Array.isArray(data.feedback)) data.feedback = INITIAL_SEED.feedback;
-    if (!Array.isArray(data.resources) || data.resources.length < 10) data.resources = JSON.parse(JSON.stringify(INITIAL_RESOURCES));
+    if (!Array.isArray(data.resources) || data.resources.length === 0) data.resources = INITIAL_SEED.resources;
     if (!Array.isArray(data.activity_reports) || data.activity_reports.length === 0) data.activity_reports = INITIAL_SEED.activity_reports;
     if (!Array.isArray(data.audit_logs)) data.audit_logs = INITIAL_SEED.audit_logs;
     if (!Array.isArray(data.projects) || data.projects.length < 3) data.projects = INITIAL_SEED.projects;
     if (!Array.isArray(data.certificates) || data.certificates.length < 3) {
       data.certificates = INITIAL_SEED.certificates;
+      saveDB(data);
     }
 
     // Ensure all certificate records have consistent dual naming fields
@@ -1300,46 +1105,20 @@ export function getDB() {
     data.auditLogs = data.audit_logs;
     data.auditLog = data.audit_logs;
 
-    memoryDB = data;
-
-    // Trigger async initialization from Supabase/Backend if not yet run
-    if (!isDbInitialized) {
-      initDB();
-    }
-
-    return memoryDB;
+    return data;
   } catch (err) {
-    console.error("Error initializing in-memory database:", err);
-    memoryDB = JSON.parse(JSON.stringify(INITIAL_SEED));
-    return memoryDB;
+    console.error("Error reading database from localStorage:", err);
+    return JSON.parse(JSON.stringify(INITIAL_SEED));
   }
 }
 
 export function saveDB(data) {
-  memoryDB = data;
-
-  // Persist asynchronously to the backend / Supabase PostgreSQL
-  if (typeof fetch !== 'undefined') {
-    apiRequest('/api/db/sync', 'POST', {
-      feedback: data.feedback,
-      notifications: data.notifications,
-      events: data.events,
-      announcements: data.announcements,
-      resources: data.resources,
-      projects: data.projects,
-      attendance: data.attendance
-    }).catch(err => {
-      console.warn("[SaveDB] Asynchronous sync notice:", err.message);
-    });
-  }
-
-  // Backup cache in localStorage strictly for instantaneous offline resume
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(DB_KEY, JSON.stringify(data));
     }
   } catch (err) {
-    // Ignore storage quota warnings
+    console.error("Error saving database to localStorage:", err);
   }
 }
 
@@ -1350,7 +1129,6 @@ export function resetDB() {
     localStorage.removeItem("campustech_pec_db_v1");
   }
   const clean = JSON.parse(JSON.stringify(INITIAL_SEED));
-  memoryDB = clean;
   saveDB(clean);
   return clean;
 }
@@ -1373,62 +1151,25 @@ export function logAudit(actor, action, target, details) {
   db.audit_logs.unshift(logEntry);
   db.auditLogs = db.audit_logs;
   db.auditLog = db.audit_logs;
-
-  // Dispatch directly to the audit log API in backend/Supabase
-  if (typeof fetch !== 'undefined') {
-    apiRequest('/api/audit-logs', 'POST', {
-      action,
-      affected_record: target,
-      details,
-      actor
-    }).catch(() => {});
-  }
-
-  return logEntry;
+  saveDB(db);
 }
 
-export async function initDB() {
-  isDbInitialized = true;
-
-  // Initialize Supabase browser client
-  try {
-    await initSupabaseClient();
-  } catch (err) {
-    console.warn("[InitDB] Supabase client init notice:", err);
-  }
-
-  // Fetch live synchronized database from the backend Express API backed by Supabase
+export function initDB() {
+  // Sync in background with /api/db if server is up
   if (typeof fetch !== 'undefined') {
-    try {
-      const sessionToken = typeof localStorage !== 'undefined' ? localStorage.getItem("campustech_session_token") : null;
-      const headers = { "Content-Type": "application/json" };
-      if (sessionToken) {
-        headers['Authorization'] = `Bearer ${sessionToken}`;
-      }
-
-      const res = await fetch('/api/db', { headers });
-      if (res.ok) {
-        const serverData = await res.json();
+    fetch('/api/db')
+      .then(r => r.ok ? r.json() : null)
+      .then(serverData => {
         if (serverData && serverData.clubs && serverData.clubs.length >= 35) {
-          const current = memoryDB || getDB();
-          memoryDB = {
-            ...current,
-            ...serverData,
-            // Retain local client preferences if any
-            preferences: current.preferences || {}
-          };
-          // Update cache
-          try {
-            if (typeof localStorage !== 'undefined') {
-              localStorage.setItem(DB_KEY, JSON.stringify(memoryDB));
-            }
-          } catch (e) {}
-          console.log(`[InitDB] Synchronized ${memoryDB.clubs.length} clubs and ${memoryDB.events?.length || 0} events from Supabase backend.`);
+          const local = getDB();
+          // Merge server data with local preservation
+          const merged = { ...local, ...serverData };
+          saveDB(merged);
         }
-      }
-    } catch (err) {
-      console.warn("[InitDB] Backend fetch notice:", err.message);
-    }
+      })
+      .catch(err => {
+        // Silently use cached local db
+      });
   }
   return getDB();
 }
@@ -1440,57 +1181,13 @@ export async function apiRequest(endpoint, method = "GET", body = null) {
       method,
       headers: { "Content-Type": "application/json" }
     };
-    
-    // Check for session token: Supabase Auth Session token or secure session token
-    let token = typeof localStorage !== 'undefined' ? localStorage.getItem("campustech_session_token") : null;
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          token = session.access_token;
-        }
-      } catch (e) {}
+    const activeUserId = typeof localStorage !== 'undefined' ? localStorage.getItem("campustech_active_user_id") : null;
+    if (activeUserId) {
+      opts.headers['x-user-id'] = activeUserId;
+      opts.headers['Authorization'] = `Bearer ${activeUserId}`;
     }
-
-    if (token) {
-      opts.headers['Authorization'] = `Bearer ${token}`;
-    }
-
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(endpoint, opts);
-
-    // Handle 401 Unauthorized: clear invalid session token
-    if (res.status === 401 && token) {
-      console.warn(`[API] 401 Unauthorized detected for endpoint ${endpoint}. Checking Supabase session...`);
-      
-      // Try to refresh Supabase session before logging out
-      const supabase = getSupabaseClient();
-      if (supabase) {
-        try {
-          const { data: { session } } = await supabase.auth.refreshSession();
-          if (session?.access_token) {
-            console.log("[API] Supabase session refreshed successfully, retrying request.");
-            // Retry the request once with new token
-            return await apiRequest(endpoint, method, body);
-          }
-        } catch (e) {
-          console.error("[API] Failed to refresh Supabase session:", e);
-        }
-      }
-      
-      // If refresh failed, proceed with logout
-      if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem("campustech_session_token");
-        localStorage.removeItem("campustech_active_user_id");
-      }
-      if (typeof window !== 'undefined' && window.location.hash !== '#/login') {
-        showToast("Your session has expired. Please sign in again.", "error");
-        window.dispatchEvent(new CustomEvent("auth-changed", { detail: null }));
-        window.location.hash = "#/login";
-      }
-    }
-
     const data = await res.json();
     if (data && typeof data === 'object') {
       data._httpStatus = res.status;
@@ -1504,6 +1201,3 @@ export async function apiRequest(endpoint, method = "GET", body = null) {
     return null;
   }
 }
-
-export { escapeHtml, sanitizeUrl } from "./utils.js";
-

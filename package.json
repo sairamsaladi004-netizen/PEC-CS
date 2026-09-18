@@ -6,15 +6,10 @@
     "dev": "node server.js",
     "start": "node server.js",
     "build": "node build.js",
-    "lint": "echo 'No lint errors'",
-    "init:db": "node scripts/init_database.js",
-    "db:migrate": "node scripts/migrate-json-to-supabase.js"
+    "lint": "echo 'No lint errors'"
   },
   "dependencies": {
     "@google/genai": "^2.23.0",
-    "@supabase/supabase-js": "^2.116.0",
-    "express": "^5.2.1",
-    "html5-qrcode": "^2.3.8",
-    "recharts": "^3.10.1"
+    "express": "^5.2.1"
   }
 }

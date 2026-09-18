@@ -1,7 +1,6 @@
-import { getCurrentUser, switchUser, getAllDemoAccounts, logoutUser } from '../auth.js';
+import { getCurrentUser, switchUser, getAllDemoAccounts } from '../auth.js';
 import { ROLES, normalizeRole } from '../rbac.js';
 import { getNotificationsForUser, getUnreadCount } from '../notifications.js';
-import { escapeHtml, sanitizeUrl } from '../utils.js';
 
 export function renderNavbar() {
   const user = getCurrentUser() || {};
@@ -20,7 +19,7 @@ export function renderNavbar() {
   };
 
   return `
-    <header class="no-print sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-white">
+    <header class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
           
@@ -35,12 +34,12 @@ export function renderNavbar() {
                   <span>Pragati University</span>
                   <span class="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono">PEC Autonomous</span>
                 </div>
-                <div class="text-[10px] text-slate-400 font-medium">Technical Club Management Platform</div>
+                ${!user.id || currentRole === ROLES.GUEST ? '<div class="text-[10px] text-slate-400 font-medium">Technical Club Management Platform</div>' : ''}
               </div>
             </a>
 
-            <!-- Dynamic Role-Based Desktop Nav Links -->
-            <nav class="hidden lg:flex items-center space-x-1 ml-4 text-xs font-semibold">
+            <!-- Dynamic Role-Based Nav Links (Always Visible) -->
+            <nav class="flex flex-wrap items-center space-x-1 ml-4 text-[10px] sm:text-xs font-semibold">
               ${renderDesktopNavForRole(currentRole, currentHash)}
             </nav>
           </div>
@@ -53,12 +52,6 @@ export function renderNavbar() {
               <span class="w-1.5 h-1.5 rounded-full ${currentRole === ROLES.SUPER_ADMIN ? 'bg-rose-400' : currentRole === ROLES.FACULTY_COORDINATOR ? 'bg-purple-400' : currentRole === ROLES.CLUB_ADMIN ? 'bg-blue-400' : currentRole === ROLES.STUDENT ? 'bg-emerald-400' : 'bg-slate-400'}"></span>
               <span>${currentRole}</span>
             </div>
-
-            <!-- Supabase DB Status Trigger -->
-            <button id="open-supabase-modal-btn" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 text-xs flex items-center space-x-1.5 border border-emerald-700/60 transition-colors cursor-pointer" title="Supabase Database Management Console">
-              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span class="hidden sm:inline font-bold">Supabase DB</span>
-            </button>
 
             <!-- Global Search Trigger -->
             <button id="nav-search-trigger" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center space-x-1.5 border border-slate-700/60 transition-colors">
@@ -104,20 +97,20 @@ export function renderNavbar() {
               </select>
             </div>
 
-            <!-- Sign In / Sign Out & Profile Link -->
+            <!-- Sign In / Switch Account / Profile Link -->
             ${currentRole === ROLES.GUEST ? `
-              <a href="#/login" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold shadow-md transition-colors flex items-center space-x-2 shrink-0">
+              <a href="#/login" class="px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md transition-colors flex items-center space-x-1 shrink-0">
                 <span>🔐</span>
-                <span class="inline">Institutional Sign In</span>
+                <span class="inline">Sign In</span>
               </a>
             ` : `
-              <div class="flex items-center space-x-2 shrink-0">
-                <button id="nav-logout-btn" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold shadow-md transition-colors flex items-center space-x-1.5 cursor-pointer" title="Sign Out from Portal">
-                  <span>🚪</span>
-                  <span class="hidden sm:inline">Sign Out</span>
-                </button>
-                <a href="#/student-profile" class="flex items-center pl-1 group shrink-0" title="Open Profile (${user.name})">
-                  <img src="${user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}" class="w-9 h-9 rounded-xl object-cover border-2 border-slate-700 group-hover:border-blue-500 transition-all shadow-sm" alt="${user.name}" />
+              <div class="flex items-center space-x-1.5 shrink-0">
+                <a href="#/login" class="px-2 sm:px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold border border-slate-700 transition-colors flex items-center space-x-1" title="Sign In or Switch Account">
+                  <span>🔐</span>
+                  <span class="hidden sm:inline">Sign In</span>
+                </a>
+                <a href="#/student-profile" class="flex items-center pl-0.5 group shrink-0" title="Open Profile (${user.name})">
+                  <img src="${user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}" class="w-8 h-8 rounded-xl object-cover border border-blue-500/50 group-hover:ring-2 group-hover:ring-blue-400 transition-all" alt="${user.name}" />
                 </a>
               </div>
             `}
@@ -150,15 +143,6 @@ export function renderNavbar() {
             `).join('')}
           </select>
         </div>
-
-        ${currentRole !== ROLES.GUEST ? `
-          <div class="pt-2 border-t border-slate-800">
-            <button id="mobile-logout-btn" class="w-full py-2.5 rounded-xl bg-rose-600/25 border border-rose-500/40 text-rose-300 hover:text-white font-bold flex items-center justify-center space-x-2 cursor-pointer">
-              <span>🚪</span>
-              <span>Sign Out from System</span>
-            </button>
-          </div>
-        ` : ''}
       </div>
     </header>
   `;
@@ -170,41 +154,40 @@ function renderDesktopNavForRole(role, currentHash) {
 
   if (norm === ROLES.SUPER_ADMIN) {
     return `
-      <a href="#/admin/dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/admin') ? 'bg-rose-600 text-white' : 'text-rose-300 hover:text-white hover:bg-rose-900/40'}">🏛️ Director Portal</a>
+      <a href="#/admin/dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/admin') ? 'bg-rose-600 text-white' : 'text-rose-300 hover:text-white hover:bg-rose-900/40'}">👑 Admin Console</a>
       <a href="#/admin/dashboard?tab=users" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Users & Roles</a>
       <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">All 35 Clubs</a>
       <a href="#/events" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Events</a>
       <a href="#/attendance" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Attendance</a>
       <a href="#/verify" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Certificates</a>
       <a href="#/reports" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Reports</a>
-      <a href="#/leaderboard" class="px-2.5 py-1.5 rounded-lg text-amber-300 hover:text-white hover:bg-amber-900/30 font-bold">🏆 Leaderboard</a>
       <a href="#/admin/dashboard?tab=audit" class="px-2.5 py-1.5 rounded-lg text-amber-300 hover:text-white hover:bg-amber-900/30 font-mono text-[11px]">Audit Logs</a>
     `;
   }
 
   if (norm === ROLES.FACULTY_COORDINATOR) {
     return `
-      <a href="#/coordinator/dashboard" class="px-2 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/coordinator') ? 'bg-purple-600 text-white' : 'text-purple-300 hover:text-white hover:bg-purple-900/40'}">🎓 Faculty Portal</a>
-      <a href="#/clubs" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">My Clubs</a>
-      <a href="#/calendar" class="px-2 py-1.5 rounded-lg text-indigo-300 hover:text-white hover:bg-indigo-900/30 font-bold">📅 Calendar</a>
-      <a href="#/quizzes" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">⏱️ Quizzes</a>
-      <a href="#/practice" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">💡 Problem Sets</a>
-      <a href="#/study-circles" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">👥 Peer Circles</a>
-      <a href="#/attendance" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Attendance</a>
-      <a href="#/reports" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Reports</a>
+      <a href="#/coordinator/dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/coordinator') ? 'bg-purple-600 text-white' : 'text-purple-300 hover:text-white hover:bg-purple-900/40'}">🎓 Faculty Portal</a>
+      <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">My Clubs</a>
+      <a href="#/coordinator/dashboard?tab=members" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Members</a>
+      <a href="#/coordinator/events" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Events & Approvals</a>
+      <a href="#/attendance" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Attendance</a>
+      <a href="#/coordinator/dashboard?tab=certificates" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Certificates</a>
+      <a href="#/reports" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Reports</a>
+      <a href="#/announcements" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Notices</a>
     `;
   }
 
   if (norm === ROLES.CLUB_ADMIN) {
     return `
-      <a href="#/club-dashboard" class="px-2 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/club-dashboard') ? 'bg-blue-600 text-white' : 'text-blue-300 hover:text-white hover:bg-blue-900/40'}">⚡ Club Dashboard</a>
-      <a href="#/clubs" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">My Club</a>
-      <a href="#/calendar" class="px-2 py-1.5 rounded-lg text-indigo-300 hover:text-white hover:bg-indigo-900/30 font-bold">📅 Calendar</a>
-      <a href="#/quizzes" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">⏱️ Quizzes</a>
-      <a href="#/practice" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">💡 Problem Sets</a>
-      <a href="#/study-circles" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">👥 Peer Circles</a>
-      <a href="#/attendance" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">QR Kiosk</a>
-      <a href="#/projects" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Projects</a>
+      <a href="#/club-dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/club-dashboard') ? 'bg-blue-600 text-white' : 'text-blue-300 hover:text-white hover:bg-blue-900/40'}">⚡ Club Dashboard</a>
+      <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">My Club</a>
+      <a href="#/attendance" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">QR Kiosk</a>
+      <a href="#/projects" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Projects</a>
+      <a href="#/quizzes" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Quizzes</a>
+      <a href="#/practice" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Practice</a>
+      <a href="#/study-circles" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Study Circles</a>
+      <a href="#/announcements" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Notices</a>
     `;
   }
 
@@ -213,13 +196,11 @@ function renderDesktopNavForRole(role, currentHash) {
       <a href="#/student/dashboard" class="px-2.5 py-1.5 rounded-lg transition-colors ${currentHash.startsWith('#/student') ? 'bg-emerald-600 text-white' : 'text-emerald-300 hover:text-white hover:bg-emerald-900/40'}">🎒 Student Portal</a>
       <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">35 Clubs</a>
       <a href="#/events" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Events & Passes</a>
-      <a href="#/calendar" class="px-2.5 py-1.5 rounded-lg text-indigo-300 hover:text-white hover:bg-indigo-900/30 font-bold">📅 Calendar</a>
       <a href="#/quizzes" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Timed Quizzes</a>
       <a href="#/practice" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Problem Sets</a>
       <a href="#/study-circles" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Peer Circles</a>
       <a href="#/student/certificates" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Certificates</a>
       <a href="#/membership-card" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Digital ID</a>
-      <a href="#/leaderboard" class="px-2.5 py-1.5 rounded-lg text-amber-300 hover:text-white hover:bg-amber-900/30 font-bold">🏆 Leaderboard</a>
     `;
   }
 
@@ -228,8 +209,6 @@ function renderDesktopNavForRole(role, currentHash) {
     <a href="#/" class="px-2.5 py-1.5 rounded-lg text-white hover:bg-slate-800">Home</a>
     <a href="#/clubs" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">35 Official Clubs</a>
     <a href="#/events" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Public Events</a>
-    <a href="#/calendar" class="px-2.5 py-1.5 rounded-lg text-indigo-300 hover:text-white hover:bg-indigo-900/30 font-bold">📅 Event Calendar</a>
-    <a href="#/leaderboard" class="px-2.5 py-1.5 rounded-lg text-amber-300 hover:text-white hover:bg-amber-900/30 font-bold">🏆 Leaderboard</a>
     <a href="#/announcements" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Public Notices</a>
     <a href="#/verify" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">Verify Credential</a>
     <a href="#/about" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">About PEC</a>
@@ -311,12 +290,12 @@ function renderNotifList() {
   return notifs.map(n => `
     <div class="p-3 hover:bg-slate-800/60 transition-colors ${!n.read ? 'bg-blue-950/20' : ''}">
       <div class="flex items-start justify-between gap-2">
-        <div class="font-bold text-slate-200 text-xs">${escapeHtml(n.title)}</div>
-        <span class="text-[10px] text-slate-400 shrink-0 font-mono">${escapeHtml(n.time)}</span>
+        <div class="font-bold text-slate-200 text-xs">${n.title}</div>
+        <span class="text-[10px] text-slate-400 shrink-0 font-mono">${n.time}</span>
       </div>
-      <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">${escapeHtml(n.message)}</p>
+      <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">${n.message}</p>
       ${n.link ? `
-        <a href="${sanitizeUrl(n.link)}" class="notif-link inline-block mt-1.5 text-[10px] text-blue-400 hover:text-blue-300 font-semibold" data-id="${escapeHtml(n.id)}">
+        <a href="${n.link}" class="notif-link inline-block mt-1.5 text-[10px] text-blue-400 hover:text-blue-300 font-semibold" data-id="${n.id}">
           View details →
         </a>
       ` : ''}
@@ -328,16 +307,16 @@ export function attachNavbarEvents() {
   // Persona switcher
   const switcher = document.getElementById("persona-switcher-select");
   if (switcher) {
-    switcher.addEventListener("change", async (e) => {
-      await switchUser(e.target.value);
+    switcher.addEventListener("change", (e) => {
+      switchUser(e.target.value);
       window.location.reload();
     });
   }
 
   const mobileSwitcher = document.getElementById("mobile-persona-select");
   if (mobileSwitcher) {
-    mobileSwitcher.addEventListener("change", async (e) => {
-      await switchUser(e.target.value);
+    mobileSwitcher.addEventListener("change", (e) => {
+      switchUser(e.target.value);
       window.location.reload();
     });
   }
@@ -375,44 +354,16 @@ export function attachNavbarEvents() {
     });
   }
 
-  // Supabase Console trigger
-  const sbBtn = document.getElementById("open-supabase-modal-btn");
-  if (sbBtn) {
-    sbBtn.addEventListener("click", () => {
-      const sbModal = document.getElementById("supabase-config-modal");
-      if (sbModal) sbModal.classList.remove("hidden");
-    });
-  }
-
   // Search shortcut
   const searchTrigger = document.getElementById("nav-search-trigger");
   if (searchTrigger) {
     searchTrigger.addEventListener("click", () => {
-      if (typeof window.openGlobalSearch === 'function') {
-        window.openGlobalSearch();
-      } else {
-        const modal = document.getElementById("global-search-modal");
-        if (modal) {
-          modal.classList.remove("hidden");
-          const input = document.getElementById("global-search-input");
-          if (input) input.focus();
-        }
+      const searchModal = document.getElementById("search-modal");
+      if (searchModal) {
+        searchModal.classList.remove("hidden");
+        const input = document.getElementById("search-input");
+        if (input) input.focus();
       }
-    });
-  }
-
-  // Sign Out event handlers
-  const logoutBtn = document.getElementById("nav-logout-btn");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", async () => {
-      await logoutUser();
-    });
-  }
-
-  const mobileLogoutBtn = document.getElementById("mobile-logout-btn");
-  if (mobileLogoutBtn) {
-    mobileLogoutBtn.addEventListener("click", async () => {
-      await logoutUser();
     });
   }
 }

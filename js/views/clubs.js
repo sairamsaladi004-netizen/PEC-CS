@@ -3,8 +3,6 @@ import { getCurrentUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 import { APP_CONFIG } from '../config.js';
 import { getClubCompatibilityBreakdown } from '../intelligenceEngine.js';
-import { PermissionGuard, renderApprovalsGuard, applyDOMPermissionGuards } from '../components/permissionGuard.js';
-import { ROLES } from '../rbac.js';
 
 export function renderClubsView(params = {}) {
   const db = getDB();
@@ -17,7 +15,7 @@ export function renderClubsView(params = {}) {
     const userMemberships = user.id ? (db.club_memberships || []).filter(m => m.student_id === user.id || m.studentId === user.id) : [];
     const isMember = (user.clubs && user.clubs.includes(club.id)) || userMemberships.some(m => (m.club_id === club.id || m.clubId === club.id) && m.status === "Approved");
     const isPending = userMemberships.some(m => (m.club_id === club.id || m.clubId === club.id) && m.status === "Pending");
-    const isFaculty = ["Faculty Coordinator", "Department Admin", "Director (Academics)"].includes(user.role);
+    const isFaculty = ["Faculty Coordinator", "Department Admin", "Super Admin"].includes(user.role);
     const isClubAdmin = user.role === "Club Admin" || user.adminForClub === club.id || isFaculty;
     const clubEvents = (db.events || []).filter(e => e.clubId === club.id);
     const executiveTeam = club.executiveTeam || [];
@@ -167,15 +165,11 @@ export function renderClubsView(params = {}) {
               <div class="space-y-3">
                 <div class="flex items-center justify-between">
                   <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Student Executive Committee</h3>
-                  ${PermissionGuard({
-                    roles: [ROLES.CLUB_ADMIN, ROLES.FACULTY_COORDINATOR, ROLES.SUPER_ADMIN],
-                    clubId: club.id,
-                    content: `
-                      <button id="add-team-member-btn" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[11px] font-bold transition-colors">
-                        + Nominate Student
-                      </button>
-                    `
-                  })}
+                  ${isClubAdmin ? `
+                    <button id="add-team-member-btn" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[11px] font-bold transition-colors">
+                      + Nominate Student
+                    </button>
+                  ` : ''}
                 </div>
 
                 ${executiveTeam.length === 0 ? `
@@ -192,7 +186,7 @@ export function renderClubsView(params = {}) {
                           <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800">${exec.role}</span>
                         </div>
                         <div class="text-[11px] text-slate-500 font-mono">${exec.year || 'Student Member'} • ${exec.email || 'Email on file'}</div>
-                        ${exec.status === 'Pending Faculty Approval' ? renderApprovalsGuard(`
+                        ${(isFaculty && exec.status === 'Pending Faculty Approval') ? `
                           <div class="pt-2 border-t border-slate-200 flex items-center justify-end space-x-2">
                             <button data-clubid="${club.id}" data-memberindex="${idx}" class="approve-exec-btn px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px] font-bold">
                               Approve
@@ -201,7 +195,7 @@ export function renderClubsView(params = {}) {
                               Decline
                             </button>
                           </div>
-                        `) : ''}
+                        ` : ''}
                       </div>
                     `).join('')}
                   </div>
@@ -316,8 +310,8 @@ export function renderClubsView(params = {}) {
                 <span>Club Metrics & Department Stats</span>
                 <span>→</span>
               </a>
-              <a href="#/badges?clubId=${club.id}" class="flex items-center justify-between p-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold transition-colors">
-                <span>✨ Generate Holographic Club Badge</span>
+              <a href="#/membership-card" class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium transition-colors">
+                <span>View Digital Student Membership</span>
                 <span>→</span>
               </a>
               <a href="#/reports" class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium transition-colors">

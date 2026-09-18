@@ -3,15 +3,11 @@ import { attachSearchModalEvents } from './components/searchModal.js';
 import { initDB } from './db.js';
 import { initAuth } from './auth.js';
 import { initNotifications } from './notifications.js';
-import { initSupabaseClient } from './supabaseClient.js';
-import { initializeAuthService } from './services/authService.js';
 
 // Initialize SPA
-document.addEventListener("DOMContentLoaded", async () => {
-  // Initialize state layers and Supabase client / auth service
+document.addEventListener("DOMContentLoaded", () => {
+  // Initialize state layers
   initDB();
-  await initSupabaseClient();
-  await initializeAuthService();
   initAuth();
   initNotifications();
 

@@ -1,296 +1,320 @@
-// Pragati Engineering College (PEC Autonomous) - CampusTech
-// Dynamic Digital Club Member Badge Studio with Holographic Foil & QR Generation
-
 import { getCurrentUser } from '../auth.js';
-import { getDB } from '../db.js';
+import { getDB, saveDB, logAudit } from '../db.js';
 import { showToast } from '../components/toast.js';
+import { 
+  generateMembershipQRPayload, 
+  renderQRCodeToElement, 
+  downloadQRCodeAsImage 
+} from '../utils/qrHelper.js';
 
-export function renderMembershipCardView(params = {}) {
+export function renderMembershipCardView() {
   const user = getCurrentUser() || {};
   const db = getDB();
-  const allClubs = db.clubs || [];
   
-  // Resolve user clubs
-  const userClubIds = user.clubs || (user.clubId ? [user.clubId] : ["I4-08"]);
-  const userClubs = userClubIds.map(id => allClubs.find(c => c.id === id)).filter(Boolean);
-  
-  // Selected club from params or first club or default
-  const selectedClubId = params.clubId || userClubIds[0] || "I4-08";
-  const activeClub = allClubs.find(c => c.id === selectedClubId) || userClubs[0] || allClubs[0] || {
-    id: "I4-08",
-    name: "Google Developer Student Club",
-    code: "GDSC-PEC",
-    category: "Technical Society",
-    department: "CSE",
-    domain: "AI & Cloud Systems",
-    icon: "🌐"
-  };
+  // Calculate affiliated clubs
+  const userClubs = (user.clubs || []).map(id => db.clubs.find(c => c.id === id)).filter(Boolean);
+  if (userClubs.length === 0) {
+    const defaultClub = db.clubs.find(c => c.id === "I4-08") || db.clubs[0] || {
+      id: "I4-08",
+      name: "AI&ML Turing Club",
+      shortName: "Turing AI",
+      domain: "Artificial Intelligence & Robotics",
+      department: "CSE"
+    };
+    userClubs.push(defaultClub);
+  }
 
+  const primaryClub = userClubs[0];
   const rollNumber = user.rollNo || user.facultyId || "22A31A0501";
-  const department = user.department || "Computer Science & Engineering";
-  const memberId = user.membershipId || `PEC-MEM-2026-${(department.substring(0,3)).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
-  const passId = user.passId || `PEC-PASS-2026-${rollNumber.replace(/[^A-Z0-9]/gi, '')}`;
-  const validUntil = user.validUntil || "30 JUNE 2028";
-  const userRole = user.role || "Student";
-  const initialTier = params.tier || (user.role === "Club Admin" ? "Executive Lead" : "Student Member");
+  const memberId = user.membershipId || `PEC-MEM-2026-${(user.department || 'CSE').toUpperCase()}-${rollNumber.slice(-4) || '8492'}`;
+  const validUntil = user.validUntil || "30 JUNE 2027";
+  const userRoleTitle = user.role === "Student" ? "Active Student Member" : (user.role || "Student Delegate");
+  const upcomingEvents = db.events || [];
 
   return `
     <div class="space-y-8 pb-16 max-w-5xl mx-auto">
       
       <!-- Top Header & Action Controls -->
-      <div class="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+      <div class="no-print flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
           <div class="flex items-center space-x-2">
             <span class="px-2.5 py-0.5 rounded-md bg-blue-100 text-blue-800 text-[10px] font-bold uppercase tracking-wider">CCTSC Accredited Credential</span>
             <span class="text-xs text-emerald-600 font-bold flex items-center">
-              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping mr-1.5 inline-block"></span>
-              Live Holographic Security Token
+              <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-ping"></span>
+              Verified Unique Dynamic QR Pass
             </span>
           </div>
-          <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1">Digital Club Member Badge Studio</h1>
-          <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Tamper-evident holographic smart badge with dynamic QR pass for 35 Technical Societies, Hackathon Arena, & Innovation Labs</p>
+          <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1">Student Smart Membership Card & Event Check-in QR</h1>
+          <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Cryptographically signed digital student delegate badge and optical QR pass for campus hackathons, society workshops & maker labs</p>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2.5">
-          <button id="flip-badge-btn" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center space-x-2 cursor-pointer">
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="flip-card-btn" class="px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center space-x-1.5 cursor-pointer">
             <span>🔄</span>
-            <span>Flip Badge</span>
+            <span>Flip Badge (3D)</span>
           </button>
-          <button id="download-badge-png-btn" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center space-x-1.5 cursor-pointer">
+          
+          <button id="open-qr-modal-btn" class="px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer">
+            <span>🔍</span>
+            <span>Enlarge QR / Kiosk Mode</span>
+          </button>
+
+          <button id="download-qr-btn" class="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer">
             <span>📥</span>
-            <span>Save Badge PNG</span>
+            <span>Download QR PNG</span>
           </button>
-          <button id="download-qr-btn" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-all flex items-center space-x-1.5 cursor-pointer">
-            <span>📱</span>
-            <span>Save QR Pass</span>
+
+          <button id="copy-memid-btn" data-memid="${memberId}" class="px-3 py-2.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-all flex items-center space-x-1.5 cursor-pointer">
+            <span>📋</span>
+            <span>Copy ID</span>
           </button>
-          <button id="print-badge-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center space-x-2 cursor-pointer">
+          
+          <button id="print-card-btn" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center space-x-1.5 cursor-pointer">
             <span>🖨️</span>
             <span>Print Badge</span>
           </button>
         </div>
       </div>
 
-      <!-- Interactive Customizer Studio Toolbar -->
-      <div class="no-print bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          
-          <!-- Club Selector -->
-          <div class="space-y-1.5">
-            <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center justify-between">
-              <span>Technical Society / Club</span>
-              <span class="text-[10px] text-blue-600 font-normal">${allClubs.length} Active Chapters</span>
-            </label>
-            <select id="badge-club-select" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer">
-              <optgroup label="My Enrolled Societies">
-                ${userClubs.map(c => `<option value="${c.id}" ${c.id === activeClub.id ? 'selected' : ''}>${c.name} (${c.department || 'CSE'})</option>`).join('')}
-              </optgroup>
-              <optgroup label="All 35 PEC Technical Societies">
-                ${allClubs.map(c => `<option value="${c.id}" ${c.id === activeClub.id ? 'selected' : ''}>${c.name} [${c.category || 'Tech'}]</option>`).join('')}
-              </optgroup>
-            </select>
-          </div>
-
-          <!-- Role / Member Tier Selector -->
-          <div class="space-y-1.5">
-            <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Badge Tier / Designation</label>
-            <select id="badge-tier-select" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer">
-              <option value="Active Student Member" ${initialTier === 'Active Student Member' || initialTier === 'Student Member' ? 'selected' : ''}>Active Student Member</option>
-              <option value="Executive Committee Lead" ${initialTier === 'Executive Committee Lead' || initialTier === 'Executive Lead' ? 'selected' : ''}>Executive Committee Lead</option>
-              <option value="Hackathon Champion" ${initialTier === 'Hackathon Champion' ? 'selected' : ''}>Hackathon Champion / Gold Winner</option>
-              <option value="Industry 4.0 Fellow" ${initialTier === 'Industry 4.0 Fellow' ? 'selected' : ''}>Industry 4.0 Tech Fellow</option>
-              <option value="Technical Secretary" ${initialTier === 'Technical Secretary' ? 'selected' : ''}>Technical Secretary (CCTSC)</option>
-              <option value="Faculty Advisor" ${userRole === 'Faculty Coordinator' ? 'selected' : ''}>Faculty Coordinator / Advisor</option>
-            </select>
-          </div>
-
-          <!-- Holographic Foil Theme Selector -->
-          <div class="space-y-1.5">
-            <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Holographic Foil Spectrum</label>
-            <div class="flex items-center space-x-1.5 pt-0.5">
-              <button class="holo-theme-btn flex-1 py-1.5 rounded-xl font-bold text-[10px] bg-blue-600 text-white shadow-xs transition-all" data-theme="sapphire" title="Celestial Sapphire">Sapphire</button>
-              <button class="holo-theme-btn flex-1 py-1.5 rounded-xl font-bold text-[10px] bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all" data-theme="obsidian" title="Obsidian Gold Foil">Gold</button>
-              <button class="holo-theme-btn flex-1 py-1.5 rounded-xl font-bold text-[10px] bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all" data-theme="emerald" title="Cyber Emerald">Emerald</button>
-              <button class="holo-theme-btn flex-1 py-1.5 rounded-xl font-bold text-[10px] bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all" data-theme="crimson" title="Crimson Council">Ruby</button>
-              <button class="holo-theme-btn flex-1 py-1.5 rounded-xl font-bold text-[10px] bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all" data-theme="nebula" title="Nebula Amethyst">Nebula</button>
-              <button class="holo-theme-btn flex-1 py-1.5 rounded-xl font-bold text-[10px] bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all" data-theme="prismatic" title="Full Prismatic Spectrum">Prism</button>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Secondary Controls: 3D Tilt, Glare, Token Copy -->
-        <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div class="flex items-center space-x-4">
-            <label class="flex items-center space-x-2 text-slate-600 font-semibold cursor-pointer">
-              <input type="checkbox" id="toggle-holo-shimmer" checked class="rounded text-blue-600 focus:ring-blue-500">
-              <span class="text-[11px]">Dynamic Iridescent Shimmer</span>
-            </label>
-            <label class="flex items-center space-x-2 text-slate-600 font-semibold cursor-pointer">
-              <input type="checkbox" id="toggle-3d-tilt" checked class="rounded text-blue-600 focus:ring-blue-500">
-              <span class="text-[11px]">3D Gyro / Cursor Physics</span>
-            </label>
+      <!-- Society Affiliation & Check-in Pass Customizer Bar -->
+      <div class="no-print bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">QR Pass Configuration & Gate Routing</h3>
+            <p class="text-xs text-slate-500">Configure your unique QR code for universal campus access or bind it to a specific active symposium.</p>
           </div>
 
           <div class="flex items-center space-x-2">
-            <span class="font-mono text-[11px] text-slate-500">Pass Token: <strong class="text-indigo-600 font-bold">${passId}</strong></span>
-            <button id="copy-token-btn" data-token="${passId}" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] transition-all">
-              📋 Copy Token
-            </button>
+            <span class="text-xs font-bold text-slate-500">Pass Mode:</span>
+            <div class="inline-flex p-1 bg-slate-100 rounded-xl text-xs font-bold">
+              <button id="mode-universal-btn" class="px-3 py-1 rounded-lg bg-white text-blue-700 shadow-xs transition-all">Universal Gate Pass</button>
+              <button id="mode-event-btn" class="px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition-all">Event Fast Pass</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100 text-xs">
+          <!-- Society Selector -->
+          <div class="space-y-1.5">
+            <label class="block font-bold text-slate-700">Active Society Affiliation Badge:</label>
+            <div class="flex flex-wrap gap-2" id="society-button-group">
+              ${userClubs.map((c, idx) => `
+                <button 
+                  class="club-badge-select px-3 py-1.5 rounded-xl font-bold transition-all ${idx === 0 ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}" 
+                  data-clubid="${c.id}" 
+                  data-clubname="${c.name}" 
+                  data-domain="${c.domain || 'Industry 4.0'}"
+                >
+                  ${c.shortName || c.name}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Event Binding Selector (for Event Fast Pass Mode) -->
+          <div class="space-y-1.5" id="event-selector-container">
+            <label class="block font-bold text-slate-700">Target Event for Fast Gate Check-in:</label>
+            <select id="pass-target-event-select" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500">
+              <option value="">-- Universal Access (All Campus Gates) --</option>
+              ${upcomingEvents.map(e => `
+                <option value="${e.id}">${e.title} (${e.date} • ${e.venue})</option>
+              `).join('')}
+            </select>
           </div>
         </div>
       </div>
 
-      <!-- Holographic Interactive 3D Badge Stage -->
-      <div class="flex flex-col items-center justify-center py-4">
+      <!-- Interactive Smart Badge Display Area -->
+      <div class="flex flex-col items-center justify-center py-2">
         
-        <div class="holo-badge-container w-full max-w-xl">
+        <div class="w-full max-w-md perspective-1000">
           
-          <!-- Badge Outer Frame (Printable & Exportable Area) -->
-          <div id="digital-badge-card" class="badge-card-printable holo-badge-foil theme-sapphire-holo holo-guilloche-pattern relative w-full h-[380px] rounded-3xl text-white p-6 shadow-2xl select-none flex flex-col justify-between overflow-hidden border border-white/25">
+          <!-- Smart Card Container with Luxury Holographic Outer Frame -->
+          <div id="smart-card" class="printable-area relative w-full h-[350px] rounded-3xl bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white p-6 shadow-2xl border-2 border-indigo-500/40 select-none transition-all duration-700 transform-style-3d flex flex-col justify-between overflow-hidden">
             
-            <!-- Metallic Holographic Watermark Glows -->
-            <div class="absolute -right-20 -top-20 w-64 h-64 bg-gradient-to-br from-blue-400/30 via-indigo-500/20 to-transparent rounded-full blur-2xl pointer-events-none"></div>
-            <div class="absolute -left-20 -bottom-20 w-64 h-64 bg-gradient-to-tr from-amber-400/20 via-purple-500/20 to-transparent rounded-full blur-2xl pointer-events-none"></div>
+            <!-- Metallic Holographic Watermark / Light Ripple -->
+            <div class="absolute -right-20 -top-20 w-60 h-60 bg-gradient-to-br from-blue-400/20 via-indigo-500/10 to-transparent rounded-full blur-2xl pointer-events-none"></div>
+            <div class="absolute -left-20 -bottom-20 w-60 h-60 bg-gradient-to-tr from-amber-400/15 via-rose-500/10 to-transparent rounded-full blur-2xl pointer-events-none"></div>
 
-            <!-- CSS Holographic Iridescent Shimmer Overlay Layer -->
-            <div id="badge-holo-shimmer-layer" class="holo-iridescent-overlay"></div>
-            <!-- Metallic Gleam Bar -->
-            <div id="badge-holo-gleam-layer" class="holo-light-gleam"></div>
-
-            <!-- BADGE FRONT VIEW -->
-            <div id="badge-front-view" class="h-full flex flex-col justify-between relative z-20 transition-opacity duration-300">
+            <!-- CARD FRONT VIEW -->
+            <div id="card-front" class="h-full flex flex-col justify-between relative z-10 transition-opacity duration-300">
               
-              <!-- Top Institutional Crest & Security Stamp -->
-              <div class="flex items-center justify-between border-b border-white/20 pb-3">
-                <div class="flex items-center space-x-3">
-                  <!-- Rotating Holographic Seal -->
-                  <div class="holo-seal-badge w-11 h-11 rounded-2xl flex items-center justify-center font-black text-slate-950 text-lg shadow-lg border border-amber-200 shrink-0">
-                    🦅
+              <!-- Top Institutional Ribbon -->
+              <div class="flex items-center justify-between border-b border-white/15 pb-2.5">
+                <div class="flex items-center space-x-2.5">
+                  <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center font-black text-white text-xs shadow-md border border-white/20">
+                    P
                   </div>
                   <div>
-                    <div class="text-[12px] font-black uppercase tracking-wider text-white flex items-center space-x-1.5">
-                      <span>PRAGATI ENGINEERING COLLEGE</span>
-                      <span class="text-[9px] font-bold px-1.5 py-0.2 bg-blue-500/40 text-blue-200 rounded font-mono">AUTONOMOUS</span>
-                    </div>
-                    <div class="text-[9px] text-amber-300 font-mono tracking-wide">CENTRAL COUNCIL OF TECHNICAL SOCIETIES (CCTSC)</div>
+                    <div class="text-[10px] font-black uppercase tracking-wider text-white">PRAGATI ENGINEERING COLLEGE</div>
+                    <div class="text-[8px] text-blue-300 font-mono tracking-wide">AUTONOMOUS • CENTRAL TECHNICAL COUNCIL (CCTSC)</div>
                   </div>
                 </div>
                 
-                <div class="flex flex-col items-end">
-                  <div id="badge-tier-pill" class="px-2.5 py-0.5 rounded-full bg-amber-400/25 border border-amber-400/60 text-amber-300 text-[9px] font-extrabold uppercase tracking-wider shadow-sm flex items-center space-x-1">
-                    <span>✦ ${initialTier}</span>
-                  </div>
-                  <div class="text-[8px] font-mono text-slate-300 mt-0.5">NAAC 'A' GRADE • NBA TIER-1</div>
+                <div class="flex items-center space-x-1 px-2.5 py-0.5 rounded-lg bg-amber-400/20 border border-amber-400/40 text-amber-300 text-[9px] font-extrabold uppercase tracking-wider shadow-sm">
+                  <span>✦ SMART AID</span>
                 </div>
               </div>
 
-              <!-- Center Bio & Club Designation Grid -->
+              <!-- Center Bio Grid -->
               <div class="flex items-center space-x-4 my-2">
                 <div class="relative shrink-0">
-                  <img id="badge-student-avatar" src="${user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200'}" class="w-22 h-26 rounded-2xl object-cover border-2 border-white/60 shadow-2xl bg-slate-900" alt="${user.name}" />
-                  <div class="absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center text-[10px] text-white font-black shadow-md" title="Cryptographically Verified Active Token">✓</div>
+                  <img src="${user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200'}" class="w-20 h-24 rounded-2xl object-cover border-2 border-white/40 shadow-xl bg-slate-800" alt="${user.name}" />
+                  <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center text-[10px] text-white" title="Active Verified Token">✓</div>
                 </div>
 
                 <div class="space-y-1 overflow-hidden flex-1">
-                  <div id="badge-student-name" class="text-xl sm:text-2xl font-black text-white tracking-tight truncate">${user.name || 'Pragati Student'}</div>
+                  <div class="text-base sm:text-lg font-black text-white tracking-tight truncate">${user.name}</div>
+                  <div class="text-xs text-blue-400 font-mono font-black tracking-wider">${rollNumber}</div>
                   
-                  <div class="text-xs text-amber-300 font-mono font-black tracking-wider flex items-center space-x-2">
-                    <span id="badge-student-roll">ROLL: ${rollNumber}</span>
-                    <span class="text-slate-400">•</span>
-                    <span class="text-blue-300 font-sans">${user.year || '3rd Year'} (${user.section || 'A'})</span>
-                  </div>
-                  
-                  <div class="text-[11px] text-slate-200 font-semibold truncate">
-                    Department of <strong class="text-white">${department}</strong>
+                  <div class="text-[11px] text-slate-300 font-medium">
+                    Dept. of ${user.department || 'CSE'} • <span class="text-slate-400">${user.year || '3rd Year'}</span>
                   </div>
 
-                  <!-- Active Club Badge Insignia -->
-                  <div id="badge-club-pill" class="text-[11px] font-bold truncate bg-emerald-950/80 border border-emerald-400/50 text-emerald-300 px-3 py-1 rounded-xl inline-flex items-center space-x-1.5 shadow-sm">
-                    <span id="badge-club-icon">${activeClub.icon || '🏛️'}</span>
-                    <span id="badge-club-name">${activeClub.name}</span>
+                  <div id="badge-club-display" class="text-[10px] text-emerald-300 font-bold truncate bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded-md inline-block">
+                    🏛️ ${primaryClub.name || 'Technical Society Member'}
+                  </div>
+
+                  <div id="badge-pass-mode-indicator" class="text-[9px] text-indigo-300 font-mono block">
+                    ⚡ Pass: Universal Gate Access
                   </div>
                 </div>
               </div>
 
-              <!-- Holographic Microchip, QR Pass & Card Credentials Footer -->
-              <div class="pt-3 border-t border-white/20 flex items-center justify-between">
+              <!-- Micro-strip & Unique Dynamic QR Code Token Footer -->
+              <div class="pt-2.5 border-t border-white/15 flex items-center justify-between">
                 <div class="space-y-0.5">
-                  <div class="flex items-center space-x-2">
-                    <!-- EMV Gold Microchip Graphic with Circuit Traces -->
-                    <div class="holo-chip-circuit w-10 h-8 rounded-lg bg-gradient-to-br from-yellow-300 via-amber-400 to-amber-600 border border-yellow-200 flex items-center justify-center shadow-md relative overflow-hidden" title="Contactless Smart RFID/NFC Microchip">
-                      <div class="w-full h-[1px] bg-amber-800/40 absolute top-2.5"></div>
-                      <div class="w-full h-[1px] bg-amber-800/40 absolute bottom-2.5"></div>
-                      <div class="w-[1px] h-full bg-amber-800/40 absolute left-3.5"></div>
-                      <div class="w-[1px] h-full bg-amber-800/40 absolute right-3.5"></div>
-                      <span class="text-[9px] relative z-10 font-bold text-slate-900">📶</span>
-                    </div>
-                    <div>
-                      <div class="text-[8px] font-mono text-slate-300 uppercase tracking-wider">SMART AID PASS</div>
-                      <div id="badge-memid-val" class="text-xs font-black font-mono tracking-wider text-white">${memberId}</div>
-                    </div>
-                  </div>
-                  <div class="text-[8px] font-mono text-slate-300">VALID SESSION: <span class="text-amber-300 font-bold">${validUntil}</span></div>
+                  <div class="text-[8px] font-mono text-slate-400 uppercase tracking-wider">SMART AID CREDENTIAL ID</div>
+                  <div id="badge-memid-text" class="text-xs font-black font-mono tracking-wider text-slate-100">${memberId}</div>
+                  <div class="text-[8px] font-mono text-slate-400">VALID SESSION: <span class="text-amber-300">${validUntil}</span></div>
                 </div>
 
-                <!-- Dynamic High-Resolution QR Code Container -->
-                <div class="flex flex-col items-center justify-center bg-white p-1.5 rounded-2xl shadow-xl shrink-0 cursor-pointer hover:scale-105 transition-transform" id="badge-qr-wrapper" title="Click to view QR pass payload">
-                  <div id="badge-qr-canvas-box" class="w-16 h-16 flex items-center justify-center"></div>
+                <!-- Unique Dynamic QR Code Pass Container -->
+                <div class="flex items-center space-x-2">
+                  <div class="w-7 h-6 rounded-md bg-amber-300/30 border border-amber-300/60 flex items-center justify-center text-[9px] shadow-xs" title="Smart Chip Contactless Ready">
+                    💳
+                  </div>
+                  <!-- Renders high-contrast scannable QR Code -->
+                  <div 
+                    id="card-qr-box" 
+                    class="w-16 h-16 bg-white p-1 rounded-xl shadow-lg shrink-0 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
+                    title="Click to Enlarge QR for Gate Kiosks"
+                  ></div>
                 </div>
               </div>
 
             </div>
 
-            <!-- BADGE BACK VIEW (Shown on Flip) -->
-            <div id="badge-back-view" class="hidden h-full flex flex-col justify-between text-xs relative z-20">
+            <!-- CARD BACK VIEW (Hidden by default, shown on Flip) -->
+            <div id="card-back" class="hidden h-full flex flex-col justify-between text-xs relative z-10">
               
-              <!-- Encrypted Magnetic Strip Header -->
-              <div class="h-10 bg-slate-950 -mx-6 -mt-6 mb-2 flex items-center justify-between px-6 border-b border-slate-800">
-                <span class="text-[9px] font-mono text-slate-400 tracking-widest uppercase">ENCRYPTED MAGNETIC STRIP • CCTSC-GATEWAY-AUTH-2026</span>
-                <span class="text-[9px] font-mono text-emerald-400 flex items-center space-x-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
-                  <span>SYNCED</span>
-                </span>
+              <!-- Magnetic Strip Emulation Header -->
+              <div class="h-9 bg-slate-950 -mx-6 -mt-6 mb-2 flex items-center px-6 border-b border-slate-800">
+                <span class="text-[9px] font-mono text-slate-500 tracking-widest uppercase">ENCRYPTED MAGNETIC STRIP • CCTSC-PEC-GATEWAY-AUTH</span>
               </div>
 
               <div class="space-y-2">
                 <div class="text-[11px] font-black text-white uppercase tracking-wider flex items-center justify-between">
-                  <span>Institutional Privileges & Chapter Regulations</span>
-                  <span class="text-[9px] font-mono text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30">CLEARANCE: LEVEL-2 LABS</span>
+                  <span>Campus Privileges & Regulations</span>
+                  <span class="text-[9px] font-mono text-blue-400">SEC-LEVEL: A</span>
                 </div>
                 <p class="text-[10px] text-slate-300 leading-relaxed">
-                  This official biometric and cryptographic identity badge certifies active delegate status in <strong class="text-white" id="badge-back-club-name">${activeClub.name}</strong>, with autonomous access to High-Performance GPU clusters, IoT sensor testing benches, and hackathon arenas.
+                  This official institutional credential is valid across all 35 Technical Societies, Innovation & Maker Labs, IEEE/ACM Student Chapters, and High-Performance Compute Facilities at Pragati Engineering College (Autonomous).
                 </p>
-                <div class="bg-slate-900/80 p-2.5 rounded-2xl border border-white/10 text-[9px] font-mono text-slate-300 space-y-1">
-                  <div class="flex justify-between">
-                    <span>Holder Role: <strong class="text-amber-300" id="badge-back-tier">${initialTier}</strong></span>
-                    <span>Gate Pass: <strong class="text-emerald-400">${passId}</strong></span>
-                  </div>
-                  <div>Security Token: <span class="text-blue-300">sha256:0x${rollNumber}::PEC_CCTSC_AUTH</span></div>
-                  <div>Issuing Authority: <span class="text-white font-bold">Office of Central Council Secretariat & Principal, PEC</span></div>
+                <div class="bg-slate-900/80 p-2 rounded-xl border border-white/10 text-[9px] font-mono text-slate-300 space-y-1">
+                  <div>• Holder Role: <span class="text-amber-300 font-bold">${userRoleTitle}</span></div>
+                  <div class="truncate">• Verification Hash: <span id="back-hash-display" class="text-blue-300">sha256:0x${rollNumber}::PEC2026</span></div>
+                  <div>• Authority: <span class="text-white">Dean of Technical Council, PEC</span></div>
                 </div>
               </div>
 
-              <!-- Barcode & Seals Footer -->
-              <div class="space-y-1.5 pt-2 border-t border-white/20">
-                <div class="flex items-center justify-between">
-                  <!-- Barcode Emulation -->
-                  <div class="space-y-0.5">
-                    <div class="font-mono text-slate-400 text-[8px] tracking-widest">||| | |||| | | |||| ||| || | ||| |||| | |</div>
-                    <div class="font-mono text-slate-300 text-[9px]">${rollNumber} • ${memberId}</div>
-                  </div>
-                  <div class="text-right text-[8px] font-mono text-slate-400">
-                    <div>Helpline: <strong class="text-white">+91 884 2383305</strong></div>
-                    <div>Portal: <strong class="text-white">cgc@pragati.ac.in</strong></div>
-                  </div>
+              <!-- Footer Helplines & Return Notice -->
+              <div class="space-y-1 pt-2 border-t border-white/15">
+                <div class="flex justify-between text-[9px] text-slate-400 font-mono">
+                  <span>Secretariat Contact:</span>
+                  <span class="text-white font-bold">cgc@pragati.ac.in</span>
                 </div>
-                <div class="text-center pt-0.5 text-[8px] text-blue-300 font-mono">
-                  Pragati Engineering College (Autonomous) • Surampalem, ADB Road, AP 533437
+                <div class="flex justify-between text-[9px] text-slate-400 font-mono">
+                  <span>Emergency Helpline:</span>
+                  <span class="text-white font-bold">+91 884 2383305</span>
+                </div>
+                <div class="text-center pt-1 text-[8px] text-blue-300 font-mono">
+                  Click 'Flip Badge' to return to credential front
                 </div>
               </div>
 
             </div>
 
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Dedicated Event Check-in QR Pass & Gate Hub Section -->
+      <div class="no-print bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+          <div class="space-y-1">
+            <div class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider font-mono">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-ping"></span>
+              <span>Live Gate Check-in Engine</span>
+            </div>
+            <h2 class="text-xl font-black text-slate-900 tracking-tight">Optical QR Check-in & Gate Pass Hub</h2>
+            <p class="text-xs text-slate-500">Present this high-resolution QR token at campus event entrance kiosks or mobile check-in scanners.</p>
+          </div>
+
+          <!-- Test Check-in Simulator Trigger -->
+          <div class="flex items-center space-x-2">
+            <button id="test-checkin-btn" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center space-x-2 cursor-pointer">
+              <span>⚡</span>
+              <span>Simulate Gate Check-in Test</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+          
+          <!-- High-Contrast QR Token Showcase -->
+          <div class="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-2xl border border-slate-200 text-center space-y-3">
+            <div id="hub-qr-container" class="w-40 h-40 bg-white p-3 rounded-2xl border-2 border-slate-200 shadow-sm flex items-center justify-center"></div>
+            <div>
+              <div class="text-xs font-bold text-slate-900 font-mono" id="hub-qr-roll">${rollNumber}</div>
+              <div class="text-[10px] text-slate-500 font-mono" id="hub-qr-memid">${memberId}</div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button id="hub-download-qr-btn" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[11px] font-bold transition-colors">
+                Save QR Image
+              </button>
+              <button id="hub-enlarge-qr-btn" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-[11px] font-bold transition-colors">
+                Enlarge
+              </button>
+            </div>
+          </div>
+
+          <!-- Payload & Verification Details -->
+          <div class="md:col-span-2 space-y-3 text-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Cryptographic Signature</span>
+                <div id="hub-token-hash" class="font-mono text-slate-800 font-bold truncate">0x8f4a3c19...</div>
+                <div class="text-[10px] text-emerald-600 font-semibold">✓ Signed by CCTSC Key Infrastructure</div>
+              </div>
+
+              <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Gate Verification Scope</span>
+                <div id="hub-pass-scope" class="font-bold text-slate-800">Universal Access (35 Societies)</div>
+                <div class="text-[10px] text-blue-600 font-semibold">Automatic Attendance Ledger Sync</div>
+              </div>
+            </div>
+
+            <!-- JSON Payload Inspection Viewer (Collapsible) -->
+            <div class="p-4 bg-slate-900 text-slate-300 rounded-2xl font-mono text-[11px] space-y-2 overflow-hidden border border-slate-800">
+              <div class="flex items-center justify-between text-slate-400 text-[10px] font-bold uppercase tracking-wider pb-1 border-b border-slate-800">
+                <span>Decoded QR Scannable JSON Payload</span>
+                <button id="copy-json-payload-btn" class="text-blue-400 hover:text-blue-300 underline font-normal">Copy JSON</button>
+              </div>
+              <pre id="json-payload-display" class="overflow-x-auto text-[10px] text-emerald-400 leading-relaxed max-h-32">Loading payload...</pre>
+            </div>
           </div>
 
         </div>
@@ -298,27 +322,27 @@ export function renderMembershipCardView(params = {}) {
       </div>
 
       <!-- Member Rights & Privileges Bento Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-2">
+        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-2">
           <div class="w-9 h-9 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-base font-bold">⚡</div>
-          <h3 class="font-bold text-slate-900 text-sm">Instant QR Gate Check-in</h3>
+          <h3 class="font-bold text-slate-900 text-sm">Instant Gate Check-in</h3>
           <p class="text-xs text-slate-600 leading-relaxed">
-            Contactless entry to technical symposiums, hackathons, and guest lectures via gate scanners reading the cryptographic token.
+            Contactless optical entry to hackathons, workshops, and inter-collegiate technical symposiums with anti-duplicate validation.
           </p>
         </div>
 
-        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-2">
+        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-2">
           <div class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-base font-bold">🔬</div>
           <h3 class="font-bold text-slate-900 text-sm">Hardware & Cloud Labs</h3>
           <p class="text-xs text-slate-600 leading-relaxed">
-            Exclusive reservation rights for NVIDIA Jetson kits, 3D printers, IoT sensor benches, and cloud sandbox credits.
+            Exclusive reservation rights for NVIDIA Jetson kits, 3D printers, IoT sensor benches, and compute cluster sandboxes.
           </p>
         </div>
 
-        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-2">
+        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-2">
           <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-base font-bold">📜</div>
-          <h3 class="font-bold text-slate-900 text-sm">NAAC Tier-1 Accreditation</h3>
+          <h3 class="font-bold text-slate-900 text-sm">Verified Credentials</h3>
           <p class="text-xs text-slate-600 leading-relaxed">
             Direct synchronization with accredited certificates, institutional transcripts, and NBA Tier-1 portfolio audits.
           </p>
@@ -326,32 +350,74 @@ export function renderMembershipCardView(params = {}) {
 
       </div>
 
-      <!-- QR Code Inspection Modal -->
-      <div id="qr-inspector-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 border border-slate-200 shadow-2xl space-y-4">
-          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div class="flex items-center space-x-2">
-              <span class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">📱</span>
-              <h3 class="text-sm font-black text-slate-900">Cryptographic QR Pass Payload</h3>
+      <!-- Full-screen Enlarge QR Modal for Kiosk Scanners -->
+      <div id="enlarge-qr-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 sm:p-8 shadow-2xl text-center space-y-5 border border-slate-200">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div class="text-left">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-blue-600 font-mono">KIOSK SCANNER MODE</span>
+              <h3 class="text-base font-black text-slate-900">Student Gate Pass QR</h3>
             </div>
-            <button id="close-qr-modal-btn" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600">✕</button>
-          </div>
-          
-          <div class="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-slate-200">
-            <div id="modal-large-qr-box" class="w-44 h-44 flex items-center justify-center bg-white p-2 rounded-xl shadow-md"></div>
-            <p class="text-[11px] text-slate-500 font-mono mt-3 text-center">Scan with Campus Gate Kiosk or Mobile Camera</p>
+            <button id="close-enlarge-modal-btn" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
           </div>
 
-          <div class="bg-slate-900 text-slate-200 p-3 rounded-xl font-mono text-[10px] space-y-1 overflow-x-auto">
-            <div><strong class="text-blue-400">ID:</strong> <span id="modal-payload-id">${passId}</span></div>
-            <div><strong class="text-emerald-400">HOLDER:</strong> ${user.name} (${rollNumber})</div>
-            <div><strong class="text-amber-400">CHAPTER:</strong> <span id="modal-payload-club">${activeClub.name}</span></div>
-            <div><strong class="text-purple-400">HASH:</strong> sha256:0x${rollNumber}::PEC_CCTSC_AUTH</div>
+          <!-- Maximum Brightness & Contrast Display Area -->
+          <div class="bg-white p-4 rounded-2xl border-4 border-slate-900 shadow-md inline-block mx-auto">
+            <div id="modal-qr-container" class="w-56 h-56 flex items-center justify-center"></div>
           </div>
 
-          <div class="flex items-center justify-end space-x-2 pt-2">
-            <button id="modal-download-qr-btn" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md">
-              Download QR Image
+          <div class="space-y-1">
+            <div class="text-base font-black text-slate-900">${user.name}</div>
+            <div class="text-xs font-mono font-bold text-blue-600">${rollNumber} • Dept. of ${user.department || 'CSE'}</div>
+            <div class="text-[10px] text-slate-500 font-mono">${memberId}</div>
+          </div>
+
+          <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-[11px] leading-relaxed text-left flex items-start space-x-2">
+            <span>💡</span>
+            <span>Hold your screen steadily facing the entrance camera scanner or turn up display brightness for optimal capture.</span>
+          </div>
+
+          <div class="flex space-x-2">
+            <button id="modal-download-btn" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-colors">
+              Download PNG
+            </button>
+            <button id="modal-close-btn" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Gate Check-in Simulator Modal -->
+      <div id="checkin-test-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl space-y-4 border border-slate-200">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 font-mono">GATE KIOSK TEST SIMULATOR</span>
+              <h3 class="text-base font-black text-slate-900">Simulate Event Entrance Scan</h3>
+            </div>
+            <button id="close-test-modal-btn" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
+          </div>
+
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Test scanning this membership card QR code against the live gate accreditation database for any active symposium or workshop.
+          </p>
+
+          <div class="space-y-3 text-xs">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Select Event to Check In To:</label>
+              <select id="sim-event-select" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold text-slate-800">
+                ${upcomingEvents.map(e => `
+                  <option value="${e.id}">${e.title} (${e.date})</option>
+                `).join('')}
+              </select>
+            </div>
+
+            <div id="sim-result-box" class="hidden p-3.5 rounded-2xl text-xs space-y-1"></div>
+
+            <button id="execute-sim-checkin-btn" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs shadow-md transition-colors flex items-center justify-center space-x-1.5">
+              <span>📷</span>
+              <span>Execute Gate Scan & Verify Roster</span>
             </button>
           </div>
         </div>
@@ -361,309 +427,345 @@ export function renderMembershipCardView(params = {}) {
   `;
 }
 
-export function attachMembershipCardEvents(params = {}) {
+export function attachMembershipCardEvents() {
   const user = getCurrentUser() || {};
   const db = getDB();
-  const allClubs = db.clubs || [];
-  
   const rollNumber = user.rollNo || user.facultyId || "22A31A0501";
-  const department = user.department || "Computer Science & Engineering";
-  const memberId = user.membershipId || `PEC-MEM-2026-${(department.substring(0,3)).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
-  const passId = user.passId || `PEC-PASS-2026-${rollNumber.replace(/[^A-Z0-9]/gi, '')}`;
+  const memberId = user.membershipId || `PEC-MEM-2026-${(user.department || 'CSE').toUpperCase()}-${rollNumber.slice(-4) || '8492'}`;
 
-  const badgeCard = document.getElementById("digital-badge-card");
-  const qrBox = document.getElementById("badge-qr-canvas-box");
-  const clubSelect = document.getElementById("badge-club-select");
-  const tierSelect = document.getElementById("badge-tier-select");
+  let selectedClub = (user.clubs || []).map(id => db.clubs.find(c => c.id === id)).filter(Boolean)[0] || db.clubs[0] || {
+    id: "I4-08",
+    name: "AI&ML Turing Club",
+    shortName: "Turing AI",
+    domain: "Artificial Intelligence & Robotics"
+  };
 
-  // Helper to generate dynamic QR payload
-  function generateBadgeQR(clubObj, tierTitle) {
-    if (!qrBox || !window.QRCode) return;
-    qrBox.innerHTML = "";
+  let selectedEvent = null;
+  let passMode = "UNIVERSAL"; // UNIVERSAL or EVENT
 
-    const payload = JSON.stringify({
-      institution: "Pragati Engineering College (Autonomous)",
-      type: "DIGITAL_CLUB_MEMBER_BADGE",
-      passId: passId,
-      memberId: memberId,
-      studentName: user.name || "Student",
-      rollNo: rollNumber,
-      department: department,
-      clubId: clubObj.id,
-      clubName: clubObj.name,
-      badgeTier: tierTitle,
-      validUntil: user.validUntil || "30 JUNE 2028",
-      securitySignature: `sha256:0x${rollNumber}::PEC_CCTSC_2026`,
-      verifyUrl: `${window.location.origin}/#/verify?token=${passId}`
-    });
+  // Master Function: Regenerates and synchronizes all QR elements on page
+  const refreshAllQRCodes = () => {
+    const payload = generateMembershipQRPayload(user, selectedClub, selectedEvent);
+    const jsonString = JSON.stringify(payload, null, 2);
 
-    new window.QRCode(qrBox, {
-      text: payload,
-      width: 64,
-      height: 64,
-      colorDark: "#0f172a",
-      colorLight: "#ffffff",
-      correctLevel: window.QRCode.CorrectLevel?.H || 2
-    });
-
-    // Also populate modal large QR
-    const modalQr = document.getElementById("modal-large-qr-box");
-    if (modalQr) {
-      modalQr.innerHTML = "";
-      new window.QRCode(modalQr, {
-        text: payload,
-        width: 160,
-        height: 160,
-        colorDark: "#0f172a",
-        colorLight: "#ffffff",
-        correctLevel: window.QRCode.CorrectLevel?.H || 2
-      });
+    // 1. Render on Card Front QR Box
+    const cardQrBox = document.getElementById("card-qr-box");
+    if (cardQrBox) {
+      renderQRCodeToElement(cardQrBox, payload, { width: 56, height: 56 });
     }
-  }
 
-  // Initial QR render
-  const initialClub = allClubs.find(c => c.id === clubSelect?.value) || allClubs[0] || { id: "I4-08", name: "Google Developer Student Club" };
-  const initialTier = tierSelect?.value || "Active Student Member";
-  generateBadgeQR(initialClub, initialTier);
+    // 2. Render on Hub Section QR Box
+    const hubQrBox = document.getElementById("hub-qr-container");
+    if (hubQrBox) {
+      renderQRCodeToElement(hubQrBox, payload, { width: 140, height: 140 });
+    }
 
-  // 1. Interactive 3D Gyro / Cursor Physics for Holographic Card
-  let enable3DTilt = true;
-  const toggleTilt = document.getElementById("toggle-3d-tilt");
-  if (toggleTilt) {
-    toggleTilt.addEventListener("change", (e) => {
-      enable3DTilt = e.target.checked;
-      if (!enable3DTilt && badgeCard) {
-        badgeCard.style.transform = "none";
-      }
-    });
-  }
+    // 3. Render on Enlarge Modal QR Box
+    const modalQrBox = document.getElementById("modal-qr-container");
+    if (modalQrBox) {
+      renderQRCodeToElement(modalQrBox, payload, { width: 220, height: 220 });
+    }
 
-  if (badgeCard) {
-    const handleMove = (clientX, clientY) => {
-      if (!enable3DTilt) return;
-      const rect = badgeCard.getBoundingClientRect();
-      const x = clientX - rect.left;
-      const y = clientY - rect.top;
-      
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
-      
-      const rotateX = ((y - centerY) / centerY) * -12; // -12deg to +12deg
-      const rotateY = ((x - centerX) / centerX) * 12;
+    // 4. Update JSON Display
+    const jsonDisplay = document.getElementById("json-payload-display");
+    if (jsonDisplay) {
+      jsonDisplay.textContent = jsonString;
+    }
 
-      badgeCard.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.02, 1.02, 1.02)`;
+    // 5. Update Hash Display
+    const hubHash = document.getElementById("hub-token-hash");
+    if (hubHash) {
+      hubHash.textContent = payload.verificationHash;
+    }
+    const backHash = document.getElementById("back-hash-display");
+    if (backHash) {
+      backHash.textContent = payload.verificationHash;
+    }
 
-      // Move holographic gleam with cursor
-      const gleam = document.getElementById("badge-holo-gleam-layer");
-      if (gleam) {
-        const percentX = (x / rect.width) * 100;
-        gleam.style.transform = `translate(${percentX - 50}%, ${(y / rect.height) * 60 - 30}%) rotate(25deg)`;
-      }
-    };
-
-    badgeCard.addEventListener("mousemove", (e) => handleMove(e.clientX, e.clientY));
-    badgeCard.addEventListener("touchmove", (e) => {
-      if (e.touches && e.touches[0]) {
-        handleMove(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    });
-
-    badgeCard.addEventListener("mouseleave", () => {
-      if (enable3DTilt) {
-        badgeCard.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)";
-      }
-    });
-  }
-
-  // 2. Shimmer & Iridescent Toggles
-  const toggleShimmer = document.getElementById("toggle-holo-shimmer");
-  if (toggleShimmer) {
-    toggleShimmer.addEventListener("change", (e) => {
-      const shimmerLayer = document.getElementById("badge-holo-shimmer-layer");
-      const gleamLayer = document.getElementById("badge-holo-gleam-layer");
-      if (shimmerLayer) shimmerLayer.style.display = e.target.checked ? "block" : "none";
-      if (gleamLayer) gleamLayer.style.display = e.target.checked ? "block" : "none";
-    });
-  }
-
-  // 3. Theme Selector
-  document.querySelectorAll(".holo-theme-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const theme = btn.dataset.theme;
-      if (!badgeCard) return;
-
-      document.querySelectorAll(".holo-theme-btn").forEach(b => {
-        b.className = "holo-theme-btn flex-1 py-1.5 rounded-xl font-bold text-[10px] bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all";
-      });
-      btn.className = "holo-theme-btn flex-1 py-1.5 rounded-xl font-bold text-[10px] bg-blue-600 text-white shadow-xs transition-all";
-
-      // Reset theme classes
-      badgeCard.classList.remove(
-        "theme-sapphire-holo", "theme-obsidian-holo", "theme-emerald-holo",
-        "theme-crimson-holo", "theme-nebula-holo", "theme-prismatic-holo"
-      );
-
-      badgeCard.classList.add(`theme-${theme}-holo`);
-    });
-  });
-
-  // 4. Club Selector Dynamic Update
-  if (clubSelect) {
-    clubSelect.addEventListener("change", () => {
-      const chosen = allClubs.find(c => c.id === clubSelect.value);
-      if (!chosen) return;
-
-      const nameEl = document.getElementById("badge-club-name");
-      const iconEl = document.getElementById("badge-club-icon");
-      const backClubEl = document.getElementById("badge-back-club-name");
-      const modalClub = document.getElementById("modal-payload-club");
-
-      if (nameEl) nameEl.textContent = chosen.name;
-      if (iconEl) iconEl.textContent = chosen.icon || "🏛️";
-      if (backClubEl) backClubEl.textContent = chosen.name;
-      if (modalClub) modalClub.textContent = chosen.name;
-
-      generateBadgeQR(chosen, tierSelect?.value || "Active Student Member");
-      showToast("Badge Updated", `Loaded ${chosen.name} credentials.`, "info");
-    });
-  }
-
-  // 5. Tier / Designation Dynamic Update
-  if (tierSelect) {
-    tierSelect.addEventListener("change", () => {
-      const newTier = tierSelect.value;
-      const tierPill = document.getElementById("badge-tier-pill");
-      const backTier = document.getElementById("badge-back-tier");
-
-      if (tierPill) tierPill.innerHTML = `<span>✦ ${newTier}</span>`;
-      if (backTier) backTier.textContent = newTier;
-
-      const currClub = allClubs.find(c => c.id === clubSelect?.value) || allClubs[0];
-      generateBadgeQR(currClub, newTier);
-      showToast("Designation Updated", `Badge set to ${newTier}.`, "success");
-    });
-  }
-
-  // 6. Flip Badge Handler
-  const flipBtn = document.getElementById("flip-badge-btn");
-  const frontView = document.getElementById("badge-front-view");
-  const backView = document.getElementById("badge-back-view");
-  if (flipBtn && frontView && backView) {
-    flipBtn.addEventListener("click", () => {
-      const isFront = !frontView.classList.contains("hidden");
-      if (isFront) {
-        frontView.classList.add("hidden");
-        backView.classList.remove("hidden");
-      } else {
-        backView.classList.add("hidden");
-        frontView.classList.remove("hidden");
-      }
-    });
-  }
-
-  // 7. Save / Download Badge as High-Res PNG Image
-  const downloadBtn = document.getElementById("download-badge-png-btn");
-  if (downloadBtn && badgeCard) {
-    downloadBtn.addEventListener("click", async () => {
-      showToast("Generating Badge...", "Capturing holographic foil badge image...", "info");
-      
-      const currClub = allClubs.find(c => c.id === clubSelect?.value) || allClubs[0];
-      const filename = `PEC-DIGITAL-BADGE-${rollNumber}-${(currClub.code || currClub.id || 'CCTSC').replace(/[^a-zA-Z0-9]/g, '')}.png`;
-
-      // Use HTML2Canvas if available
-      if (window.html2canvas) {
-        try {
-          // Temporarily ensure 3D transform is neutral during rasterization
-          const prevTransform = badgeCard.style.transform;
-          badgeCard.style.transform = "none";
-
-          const canvas = await window.html2canvas(badgeCard, {
-            scale: 2.5,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: null,
-            logging: false
-          });
-
-          badgeCard.style.transform = prevTransform;
-
-          const imageUri = canvas.toDataURL("image/png");
-          const link = document.createElement("a");
-          link.download = filename;
-          link.href = imageUri;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-
-          showToast("Badge Saved!", `Downloaded ${filename} successfully.`, "success");
-          return;
-        } catch (err) {
-          console.warn("[Badge Export] HTML2Canvas failed, falling back to QR pass:", err);
-        }
-      }
-
-      // Fallback: Download QR Pass
-      const qrCanvas = qrBox?.querySelector("canvas") || qrBox?.querySelector("img");
-      if (qrCanvas) {
-        const link = document.createElement("a");
-        link.download = `PEC-QR-PASS-${rollNumber}.png`;
-        link.href = qrCanvas.src || qrCanvas.toDataURL("image/png");
-        link.click();
-        showToast("QR Pass Saved", "Downloaded digital QR pass.", "success");
-      }
-    });
-  }
-
-  // 8. Download QR Pass Standalone
-  const downloadQrBtn = document.getElementById("download-qr-btn");
-  const modalDownloadQrBtn = document.getElementById("modal-download-qr-btn");
-  const handleQrDownload = () => {
-    const qrCanvas = qrBox?.querySelector("canvas") || qrBox?.querySelector("img");
-    if (qrCanvas) {
-      const link = document.createElement("a");
-      link.download = `PEC-QR-GATE-PASS-${rollNumber}.png`;
-      link.href = qrCanvas.src || qrCanvas.toDataURL("image/png");
-      link.click();
-      showToast("QR Pass Downloaded", "Saved high-resolution QR token.", "success");
+    // 6. Update Pass Scope Display
+    const passScopeDisplay = document.getElementById("hub-pass-scope");
+    const badgePassMode = document.getElementById("badge-pass-mode-indicator");
+    if (selectedEvent) {
+      if (passScopeDisplay) passScopeDisplay.textContent = `Event Pass: ${selectedEvent.title}`;
+      if (badgePassMode) badgePassMode.textContent = `⚡ Fast Pass: ${selectedEvent.title.slice(0, 24)}...`;
+    } else {
+      if (passScopeDisplay) passScopeDisplay.textContent = "Universal Access (All 35 Societies)";
+      if (badgePassMode) badgePassMode.textContent = "⚡ Pass: Universal Gate Access";
     }
   };
-  if (downloadQrBtn) downloadQrBtn.addEventListener("click", handleQrDownload);
-  if (modalDownloadQrBtn) modalDownloadQrBtn.addEventListener("click", handleQrDownload);
 
-  // 9. Print Official Badge
-  const printBtn = document.getElementById("print-badge-btn");
+  // Initial render
+  refreshAllQRCodes();
+
+  // Flip Card Handler
+  const flipBtn = document.getElementById("flip-card-btn");
+  const cardFront = document.getElementById("card-front");
+  const cardBack = document.getElementById("card-back");
+  if (flipBtn && cardFront && cardBack) {
+    flipBtn.addEventListener("click", () => {
+      const isFront = !cardFront.classList.contains("hidden");
+      if (isFront) {
+        cardFront.classList.add("hidden");
+        cardBack.classList.remove("hidden");
+      } else {
+        cardBack.classList.add("hidden");
+        cardFront.classList.remove("hidden");
+      }
+    });
+  }
+
+  // Print Badge
+  const printBtn = document.getElementById("print-card-btn");
   if (printBtn) {
     printBtn.addEventListener("click", () => window.print());
   }
 
-  // 10. Copy Token
-  const copyBtn = document.getElementById("copy-token-btn");
+  // Copy Member ID
+  const copyBtn = document.getElementById("copy-memid-btn");
   if (copyBtn) {
     copyBtn.addEventListener("click", () => {
-      const token = copyBtn.dataset.token || passId;
+      const id = copyBtn.dataset.memid || memberId;
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(token).then(() => {
-          showToast("Token Copied", `Gate Pass ID '${token}' copied to clipboard!`, "success");
+        navigator.clipboard.writeText(id).then(() => {
+          showToast("ID Copied", `Membership AID '${id}' copied to clipboard!`, "success");
         });
       } else {
-        showToast("Gate Pass ID", token, "info");
+        showToast("Membership AID", id, "info");
       }
     });
   }
 
-  // 11. QR Inspector Modal
-  const qrWrapper = document.getElementById("badge-qr-wrapper");
-  const qrModal = document.getElementById("qr-inspector-modal");
-  const closeQrModalBtn = document.getElementById("close-qr-modal-btn");
-
-  if (qrWrapper && qrModal) {
-    qrWrapper.addEventListener("click", () => {
-      qrModal.classList.remove("hidden");
+  // Copy JSON Payload
+  const copyJsonBtn = document.getElementById("copy-json-payload-btn");
+  if (copyJsonBtn) {
+    copyJsonBtn.addEventListener("click", () => {
+      const payload = generateMembershipQRPayload(user, selectedClub, selectedEvent);
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(JSON.stringify(payload, null, 2)).then(() => {
+          showToast("Payload Copied", "Scannable QR payload JSON copied to clipboard.", "success");
+        });
+      }
     });
   }
-  if (closeQrModalBtn && qrModal) {
-    closeQrModalBtn.addEventListener("click", () => {
-      qrModal.classList.add("hidden");
+
+  // Club Badge Switcher
+  document.querySelectorAll(".club-badge-select").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".club-badge-select").forEach(b => {
+        b.className = "club-badge-select px-3 py-1.5 rounded-xl font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all";
+      });
+      btn.className = "club-badge-select px-3 py-1.5 rounded-xl font-bold bg-blue-600 text-white shadow-xs transition-all";
+      
+      const clubId = btn.dataset.clubid;
+      const clubName = btn.dataset.clubname;
+      const domain = btn.dataset.domain;
+      
+      selectedClub = {
+        id: clubId,
+        name: clubName,
+        shortName: clubName.slice(0, 14),
+        domain: domain
+      };
+
+      const displayElem = document.getElementById("badge-club-display");
+      if (displayElem) {
+        displayElem.innerText = `🏛️ ${clubName}`;
+      }
+
+      refreshAllQRCodes();
+      showToast("Society Affiliation Updated", `Smart QR Pass updated for ${clubName}`, "info");
     });
+  });
+
+  // Pass Mode Switcher
+  const modeUniversalBtn = document.getElementById("mode-universal-btn");
+  const modeEventBtn = document.getElementById("mode-event-btn");
+  const eventSelect = document.getElementById("pass-target-event-select");
+
+  if (modeUniversalBtn && modeEventBtn) {
+    modeUniversalBtn.addEventListener("click", () => {
+      passMode = "UNIVERSAL";
+      selectedEvent = null;
+      if (eventSelect) eventSelect.value = "";
+      modeUniversalBtn.className = "px-3 py-1 rounded-lg bg-white text-blue-700 shadow-xs transition-all";
+      modeEventBtn.className = "px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition-all";
+      refreshAllQRCodes();
+      showToast("Universal Pass Active", "QR code is set for unrestricted entry across all 35 societies.", "info");
+    });
+
+    modeEventBtn.addEventListener("click", () => {
+      passMode = "EVENT";
+      modeEventBtn.className = "px-3 py-1 rounded-lg bg-white text-blue-700 shadow-xs transition-all";
+      modeUniversalBtn.className = "px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition-all";
+      if (eventSelect && db.events && db.events.length > 0) {
+        eventSelect.value = db.events[0].id;
+        selectedEvent = db.events[0];
+      }
+      refreshAllQRCodes();
+      showToast("Event Fast Pass Active", `QR code bound to ${selectedEvent?.title || 'Selected Event'}.`, "info");
+    });
+  }
+
+  // Event Target Selector Change
+  if (eventSelect) {
+    eventSelect.addEventListener("change", () => {
+      const evtId = eventSelect.value;
+      if (evtId) {
+        selectedEvent = db.events.find(e => e.id === evtId);
+        passMode = "EVENT";
+        if (modeEventBtn && modeUniversalBtn) {
+          modeEventBtn.className = "px-3 py-1 rounded-lg bg-white text-blue-700 shadow-xs transition-all";
+          modeUniversalBtn.className = "px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition-all";
+        }
+      } else {
+        selectedEvent = null;
+        passMode = "UNIVERSAL";
+        if (modeEventBtn && modeUniversalBtn) {
+          modeUniversalBtn.className = "px-3 py-1 rounded-lg bg-white text-blue-700 shadow-xs transition-all";
+          modeEventBtn.className = "px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition-all";
+        }
+      }
+      refreshAllQRCodes();
+    });
+  }
+
+  // Enlarge QR Modal Handlers
+  const enlargeModal = document.getElementById("enlarge-qr-modal");
+  const openEnlargeBtn = document.getElementById("open-qr-modal-btn");
+  const hubEnlargeBtn = document.getElementById("hub-enlarge-qr-btn");
+  const cardQrBox = document.getElementById("card-qr-box");
+  const closeEnlargeBtn = document.getElementById("close-enlarge-modal-btn");
+  const modalCloseBtn = document.getElementById("modal-close-btn");
+
+  const openEnlarge = () => {
+    if (enlargeModal) {
+      enlargeModal.classList.remove("hidden");
+      refreshAllQRCodes();
+    }
+  };
+
+  const closeEnlarge = () => {
+    if (enlargeModal) enlargeModal.classList.add("hidden");
+  };
+
+  if (openEnlargeBtn) openEnlargeBtn.addEventListener("click", openEnlarge);
+  if (hubEnlargeBtn) hubEnlargeBtn.addEventListener("click", openEnlarge);
+  if (cardQrBox) cardQrBox.addEventListener("click", openEnlarge);
+  if (closeEnlargeBtn) closeEnlargeBtn.addEventListener("click", closeEnlarge);
+  if (modalCloseBtn) modalCloseBtn.addEventListener("click", closeEnlarge);
+  if (enlargeModal) {
+    enlargeModal.addEventListener("click", (e) => {
+      if (e.target === enlargeModal) closeEnlarge();
+    });
+  }
+
+  // Download QR Code Handlers
+  const downloadBtn = document.getElementById("download-qr-btn");
+  const hubDownloadBtn = document.getElementById("hub-download-qr-btn");
+  const modalDownloadBtn = document.getElementById("modal-download-btn");
+
+  const handleDownload = () => {
+    const hubContainer = document.getElementById("hub-qr-container") || document.getElementById("modal-qr-container");
+    const success = downloadQRCodeAsImage(hubContainer, `PEC-MEMBERSHIP-QR-${rollNumber}.png`);
+    if (success) {
+      showToast("Download Complete", `Student Membership QR saved as PEC-MEMBERSHIP-QR-${rollNumber}.png`, "success");
+    } else {
+      showToast("Download Initialized", "QR image downloaded to your device.", "info");
+    }
+  };
+
+  if (downloadBtn) downloadBtn.addEventListener("click", handleDownload);
+  if (hubDownloadBtn) hubDownloadBtn.addEventListener("click", handleDownload);
+  if (modalDownloadBtn) modalDownloadBtn.addEventListener("click", handleDownload);
+
+  // Live Gate Check-in Simulator Handlers
+  const testModal = document.getElementById("checkin-test-modal");
+  const openTestBtn = document.getElementById("test-checkin-btn");
+  const closeTestBtn = document.getElementById("close-test-modal-btn");
+  const executeSimBtn = document.getElementById("execute-sim-checkin-btn");
+  const simSelect = document.getElementById("sim-event-select");
+  const simResultBox = document.getElementById("sim-result-box");
+
+  if (openTestBtn && testModal) {
+    openTestBtn.addEventListener("click", () => {
+      if (simResultBox) {
+        simResultBox.classList.add("hidden");
+        simResultBox.innerHTML = "";
+      }
+      testModal.classList.remove("hidden");
+    });
+
+    if (closeTestBtn) {
+      closeTestBtn.addEventListener("click", () => testModal.classList.add("hidden"));
+    }
+
+    testModal.addEventListener("click", (e) => {
+      if (e.target === testModal) testModal.classList.add("hidden");
+    });
+
+    if (executeSimBtn && simSelect) {
+      executeSimBtn.addEventListener("click", () => {
+        const freshDb = getDB();
+        const eventId = simSelect.value;
+        const targetEvent = freshDb.events.find(e => e.id === eventId);
+        if (!targetEvent) return;
+
+        if (!targetEvent.registrations) targetEvent.registrations = [];
+        let reg = targetEvent.registrations.find(r => 
+          r.rollNo?.toUpperCase() === rollNumber.toUpperCase() || 
+          r.studentId === user.id
+        );
+
+        if (reg && reg.checkedIn) {
+          simResultBox.className = "p-3.5 rounded-2xl text-xs space-y-1 bg-amber-50 border border-amber-200 text-amber-900";
+          simResultBox.innerHTML = `
+            <div class="font-bold flex items-center space-x-1">
+              <span>⚠️</span>
+              <span>Duplicate Gate Scan Detected!</span>
+            </div>
+            <p class="text-[11px]">Student <strong>${user.name}</strong> (${rollNumber}) was already checked in at <strong>${reg.checkinTime || '09:30 AM'}</strong>.</p>
+          `;
+          simResultBox.classList.remove("hidden");
+          showToast("Duplicate Gate Scan", "Student is already checked in for this event.", "warning");
+          return;
+        }
+
+        const checkinTime = new Date().toLocaleTimeString();
+
+        if (reg) {
+          reg.checkedIn = true;
+          reg.checkinTime = checkinTime;
+          reg.verificationMethod = "Student Membership Card QR Scan";
+        } else {
+          // Auto-register walk-in student member
+          reg = {
+            studentId: user.id || "std-101",
+            studentName: user.name,
+            rollNo: rollNumber,
+            department: user.department || "CSE",
+            ticketId: `TCK-MEM-${rollNumber.slice(-4) || '8492'}`,
+            registeredAt: new Date().toISOString().split("T")[0],
+            checkedIn: true,
+            checkinTime: checkinTime,
+            verificationMethod: "Student Membership Card QR Scan"
+          };
+          targetEvent.registrations.push(reg);
+        }
+
+        saveDB(freshDb);
+        logAudit("Gate Kiosk", "Attendee Checked-in (QR Scan)", `${targetEvent.title} - ${user.name}`, `Membership: ${memberId}`);
+
+        simResultBox.className = "p-3.5 rounded-2xl text-xs space-y-1 bg-emerald-50 border border-emerald-200 text-emerald-900";
+        simResultBox.innerHTML = `
+          <div class="font-bold flex items-center space-x-1">
+            <span>✓</span>
+            <span>Gate Access Granted & Verified!</span>
+          </div>
+          <p class="text-[11px]">Delegate <strong>${user.name}</strong> (${rollNumber}) verified via Student Membership Card QR code for <strong>${targetEvent.title}</strong> at <strong>${checkinTime}</strong>.</p>
+        `;
+        simResultBox.classList.remove("hidden");
+        showToast("Gate Verified ✓", `${user.name} checked in successfully to ${targetEvent.title}!`, "success");
+      });
+    }
   }
 }

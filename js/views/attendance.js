@@ -12,7 +12,7 @@ export function renderAttendanceView() {
   const currentEvent = activeEvents[0];
   const registrations = currentEvent?.registrations || [];
   const checkedInCount = registrations.filter(r => r.checkedIn).length;
-  const isFacultyOrAdmin = ["Faculty Coordinator", "Department Admin", "Director (Academics)", "Club Admin"].includes(user.role);
+  const isFacultyOrAdmin = ["Faculty Coordinator", "Department Admin", "Super Admin", "Club Admin"].includes(user.role);
 
   return `
     <div class="space-y-6 pb-16">
@@ -30,10 +30,6 @@ export function renderAttendanceView() {
 
         <!-- Event Selector & Online / Offline Toggle -->
         <div class="flex flex-wrap items-center gap-2">
-          <a href="#/attendance-scanner" class="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center space-x-1.5">
-            <span>📷 Club Badge Scanner</span>
-          </a>
-
           <div class="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm text-xs">
             <span id="network-status-indicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
             <span id="network-status-text" class="font-bold text-slate-700">Online Mode</span>
@@ -51,45 +47,29 @@ export function renderAttendanceView() {
       <!-- Kiosk Scanner & Manual Input Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <!-- Interactive QR Scanner Simulation & Live Camera Viewfinder -->
+        <!-- Interactive QR Scanner Simulation -->
         <div class="bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-xl space-y-4">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Optical QR Scanner</span>
-            <span id="scanner-live-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Ready</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Optical Scanner Simulator</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Active</span>
           </div>
           
-          <!-- Live Camera Video Mount / Visual Target -->
-          <div class="relative min-h-[200px] rounded-2xl border-2 border-dashed border-slate-700 bg-slate-950/80 flex flex-col items-center justify-center p-3 text-center overflow-hidden">
-            <div id="qr-camera-reader" class="w-full h-full rounded-xl overflow-hidden hidden"></div>
-            
-            <div id="camera-idle-placeholder" class="flex flex-col items-center justify-center py-4">
-              <div class="w-20 h-20 border-2 border-blue-500/80 rounded-2xl relative flex items-center justify-center animate-pulse bg-blue-950/30">
-                <div class="w-full h-0.5 bg-blue-400 absolute top-1/2 -translate-y-1/2 shadow-[0_0_8px_#3b82f6]"></div>
-                <span class="text-3xl">📷</span>
-              </div>
-              <p class="text-[11px] text-slate-300 font-medium mt-3">Aim camera at Student Digital ID or Pass QR</p>
-              <p class="text-[9px] text-slate-500 font-mono">Supports Digital ID, Pass ID, and JSON Payloads</p>
+          <div class="relative h-48 rounded-2xl border-2 border-dashed border-slate-700 bg-slate-950/60 flex flex-col items-center justify-center p-4 text-center overflow-hidden">
+            <div class="w-24 h-24 border-2 border-blue-500 rounded-xl relative flex items-center justify-center animate-pulse">
+              <div class="w-full h-0.5 bg-blue-400 absolute top-1/2 -translate-y-1/2 shadow-[0_0_8px_#3b82f6]"></div>
+              <span class="text-2xl">📷</span>
             </div>
+            <p class="text-[11px] text-slate-400 mt-3">Ready to scan student ticket QR pass or barcode</p>
           </div>
 
-          <!-- Controls for Camera / Image / Simulation -->
           <div class="space-y-2">
-            <div class="grid grid-cols-2 gap-2">
-              <button id="start-camera-scan-btn" class="py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center space-x-1.5 cursor-pointer">
-                <span>🎥</span>
-                <span id="camera-btn-text">Start Camera</span>
-              </button>
-              <label for="qr-file-input" class="py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center space-x-1.5 cursor-pointer text-center">
-                <span>📁</span>
-                <span>Scan Image File</span>
-                <input type="file" id="qr-file-input" accept="image/*" class="hidden" />
-              </label>
-            </div>
-
-            <button id="simulate-scan-btn" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer">
-              <span>⚡ Simulate Quick Scan (Unchecked Attendee)</span>
+            <button id="simulate-scan-btn" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center space-x-2">
+              <span>⚡ Simulate Camera Scan (Unchecked Attendee)</span>
             </button>
-            <button id="simulate-dup-scan-btn" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center space-x-2 cursor-pointer">
+            <button id="simulate-member-qr-btn" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center space-x-2">
+              <span>💳 Scan Student Membership Card QR</span>
+            </button>
+            <button id="simulate-dup-scan-btn" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center space-x-2">
               <span>⚠️ Test Duplicate Scan Detection</span>
             </button>
           </div>
@@ -375,38 +355,6 @@ function renderAttendanceRows(registrations, event) {
 export function attachAttendanceEvents() {
   const select = document.getElementById("kiosk-event-select");
   let isOffline = false;
-  let html5QrScanner = null;
-  let isCameraScanning = false;
-
-  // Sound feedback synthesizer
-  const playSound = (type = "success") => {
-    try {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-
-      if (type === "success") {
-        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.1); // A5
-        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.35);
-      } else {
-        osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(220, audioCtx.currentTime);
-        osc.frequency.setValueAtTime(160, audioCtx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.4);
-      }
-    } catch (e) {
-      // Audio context might be restricted before user gesture
-    }
-  };
 
   const updateStats = (registrations) => {
     const checked = (registrations || []).filter(r => r.checkedIn).length;
@@ -424,66 +372,62 @@ export function attachAttendanceEvents() {
     if (elCount) elCount.innerText = total;
   };
 
-  const checkinTicket = async (query) => {
-    if (!query) return;
+  const checkinTicket = (query, optionalPayload = null) => {
+    if (!query && !optionalPayload) return;
     const db = getDB();
     const eventId = select?.value || db.events[0]?.id;
     const event = db.events.find(e => e.id === eventId);
     if (!event) return;
 
-    // Try backend organizer-checkin API first if online
-    let backendResult = null;
-    if (!isOffline) {
+    let targetRoll = null;
+    let targetTicket = null;
+    let targetMemId = null;
+    let parsedStudentName = null;
+    let parsedDept = null;
+    let isMembershipQR = false;
+
+    // Check if query is a JSON string from Membership QR
+    if (typeof query === "string" && query.trim().startsWith("{")) {
       try {
-        const res = await fetch("/api/attendance/organizer-checkin", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            eventId,
-            qrData: query,
-            organizerEmail: getCurrentUser()?.email || "admin@pragati.ac.in",
-            gateId: "GATE-01"
-          })
-        });
-        backendResult = await res.json();
-      } catch (err) {
-        console.warn("Backend checkin request failed, falling back to local DB sync:", err);
+        const parsed = JSON.parse(query);
+        targetRoll = parsed.rollNo;
+        targetMemId = parsed.membershipId;
+        parsedStudentName = parsed.name;
+        parsedDept = parsed.department;
+        isMembershipQR = true;
+      } catch (e) {
+        // Fall back to standard string query
       }
     }
 
-    // If backend returned duplicate
-    if (backendResult && backendResult.duplicate) {
-      playSound("error");
-      showToast(
-        "⚠️ DUPLICATE SCAN ALERT!", 
-        backendResult.message || `Student was ALREADY checked in! Double entry prevented!`, 
-        "error"
-      );
-      return;
+    if (!targetRoll && typeof query === "string") {
+      const q = query.trim();
+      targetRoll = q;
+      targetTicket = q;
+      targetMemId = q;
     }
 
-    // Local DB resolution & state management
-    let q = query.trim();
-    let parsedData = null;
-    try {
-      if (q.startsWith("{")) {
-        parsedData = JSON.parse(q);
-      }
-    } catch (e) {}
+    if (optionalPayload) {
+      targetRoll = optionalPayload.rollNo || targetRoll;
+      targetMemId = optionalPayload.membershipId || targetMemId;
+      parsedStudentName = optionalPayload.name || parsedStudentName;
+      parsedDept = optionalPayload.department || parsedDept;
+      isMembershipQR = true;
+    }
 
-    const rollQuery = (parsedData?.roll || parsedData?.rollNo || parsedData?.studentRoll || parsedData?.passId || q).toUpperCase();
-    const ticketQuery = (parsedData?.ticketId || parsedData?.id || parsedData?.passId || q).toUpperCase();
+    const normRoll = targetRoll ? targetRoll.toUpperCase() : "";
+    const normTicket = targetTicket ? targetTicket.toUpperCase() : "";
+    const normMem = targetMemId ? targetMemId.toUpperCase() : "";
 
-    const reg = event.registrations?.find(r => 
-      r.ticketId?.toUpperCase() === ticketQuery || 
-      r.rollNo?.toUpperCase() === rollQuery ||
-      r.rollNo?.toUpperCase() === q.toUpperCase() ||
-      r.ticketId?.toUpperCase() === q.toUpperCase()
+    let reg = event.registrations?.find(r => 
+      (normTicket && r.ticketId?.toUpperCase() === normTicket) || 
+      (normRoll && r.rollNo?.toUpperCase() === normRoll) ||
+      (normMem && r.ticketId?.toUpperCase() === normMem)
     );
 
     if (reg) {
-      if (reg.checkedIn && (!backendResult || !backendResult.success)) {
-        playSound("error");
+      if (reg.checkedIn) {
+        // Instant duplicate detection alert
         showToast(
           "⚠️ DUPLICATE SCAN ALERT!", 
           `Student ${reg.studentName} (${reg.rollNo}) was ALREADY checked in at ${reg.checkinTime || 'Gate 1'}. Double entry prevented!`, 
@@ -499,15 +443,14 @@ export function attachAttendanceEvents() {
         localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
         reg.checkedIn = true;
         reg.checkinTime = new Date().toLocaleTimeString();
-        playSound("success");
         showToast("Offline Check-in Cached", `${reg.studentName} logged to local storage queue.`, "info");
         updateQueueDisplay();
       } else {
         reg.checkedIn = true;
-        reg.checkinTime = backendResult?.record?.checkin_time || new Date().toLocaleTimeString();
+        reg.checkinTime = new Date().toLocaleTimeString();
+        reg.verificationMethod = isMembershipQR ? "Student Membership Card QR Scan" : "Live Optical Gate Scan";
         saveDB(db);
-        logAudit("Gate Kiosk", "Attendee Checked-in", `${event.title} - ${reg.studentName}`, `Pass: ${reg.ticketId}`);
-        playSound("success");
+        logAudit("Gate Kiosk", "Attendee Checked-in", `${event.title} - ${reg.studentName}`, `Pass: ${reg.ticketId} ${isMembershipQR ? '(Membership AID)' : ''}`);
         showToast("Gate Verified ✓", `${reg.studentName} (${reg.rollNo}) checked in successfully!`, "success");
       }
 
@@ -515,35 +458,32 @@ export function attachAttendanceEvents() {
       if (tbody) tbody.innerHTML = renderAttendanceRows(event.registrations, event);
       updateStats(event.registrations);
       attachRowEvents();
+    } else if (isMembershipQR && (parsedStudentName || normRoll)) {
+      // Auto-register authorized student member delegate walk-in
+      if (!event.registrations) event.registrations = [];
+      const newReg = {
+        studentId: "mem-" + (normRoll || Date.now()),
+        studentName: parsedStudentName || `Student (${normRoll})`,
+        rollNo: normRoll || "22A31A0501",
+        email: `${(normRoll || 'student').toLowerCase()}@pragati.ac.in`,
+        department: parsedDept || "CSE",
+        ticketId: `TCK-MEM-${(normRoll || '101').slice(-4)}`,
+        registeredAt: new Date().toISOString().split("T")[0],
+        checkedIn: true,
+        checkinTime: new Date().toLocaleTimeString(),
+        verificationMethod: "Student Membership Card QR Scan"
+      };
+      event.registrations.push(newReg);
+      saveDB(db);
+      logAudit("Gate Kiosk", "Member Delegate Check-in", `${event.title} - ${newReg.studentName}`, `Membership AID Verified`);
+      showToast("Member Gate Verified ✓", `${newReg.studentName} (${newReg.rollNo}) admitted via Student Membership QR!`, "success");
+
+      const tbody = document.getElementById("attendance-table-body");
+      if (tbody) tbody.innerHTML = renderAttendanceRows(event.registrations, event);
+      updateStats(event.registrations);
+      attachRowEvents();
     } else {
-      // If student is found in general DB users but not in this event yet, add them as walk-in / verified
-      const userInDb = (db.users || []).find(u => u.rollNo?.toUpperCase() === rollQuery || u.rollNo?.toUpperCase() === q.toUpperCase());
-      if (userInDb) {
-        if (!event.registrations) event.registrations = [];
-        const newReg = {
-          studentId: userInDb.id || "gen-" + Date.now(),
-          studentName: userInDb.name,
-          rollNo: userInDb.rollNo,
-          email: userInDb.email,
-          department: userInDb.department || "CSE",
-          ticketId: `TCK-${(userInDb.department || 'CSE').toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`,
-          registeredAt: new Date().toISOString().split("T")[0],
-          checkedIn: true,
-          checkinTime: new Date().toLocaleTimeString()
-        };
-        event.registrations.push(newReg);
-        event.registeredCount = (event.registeredCount || 0) + 1;
-        saveDB(db);
-        playSound("success");
-        showToast("Student Verified & Checked In ✓", `${userInDb.name} (${userInDb.rollNo}) auto-admitted to event!`, "success");
-        const tbody = document.getElementById("attendance-table-body");
-        if (tbody) tbody.innerHTML = renderAttendanceRows(event.registrations, event);
-        updateStats(event.registrations);
-        attachRowEvents();
-      } else {
-        playSound("error");
-        showToast("Access Denied", `No registered ticket or student found for "${query}"!`, "error");
-      }
+      showToast("Access Denied", `No registered ticket or student found for "${query}"!`, "error");
     }
   };
 
@@ -560,83 +500,6 @@ export function attachAttendanceEvents() {
       }
     }
   };
-
-  // 1. Live Camera Scanner initialization
-  const startCameraBtn = document.getElementById("start-camera-scan-btn");
-  const cameraReader = document.getElementById("qr-camera-reader");
-  const cameraPlaceholder = document.getElementById("camera-idle-placeholder");
-  const cameraBtnText = document.getElementById("camera-btn-text");
-  const scannerLiveBadge = document.getElementById("scanner-live-badge");
-
-  if (startCameraBtn && window.Html5Qrcode) {
-    startCameraBtn.addEventListener("click", async () => {
-      if (isCameraScanning) {
-        // Stop Camera
-        if (html5QrScanner) {
-          try {
-            await html5QrScanner.stop();
-            html5QrScanner.clear();
-          } catch (e) {}
-        }
-        isCameraScanning = false;
-        if (cameraReader) cameraReader.classList.add("hidden");
-        if (cameraPlaceholder) cameraPlaceholder.classList.remove("hidden");
-        if (cameraBtnText) cameraBtnText.innerText = "Start Camera";
-        if (scannerLiveBadge) {
-          scannerLiveBadge.innerText = "Ready";
-          scannerLiveBadge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40";
-        }
-      } else {
-        // Start Camera
-        try {
-          if (!html5QrScanner) {
-            html5QrScanner = new window.Html5Qrcode("qr-camera-reader");
-          }
-          if (cameraReader) cameraReader.classList.remove("hidden");
-          if (cameraPlaceholder) cameraPlaceholder.classList.add("hidden");
-
-          const qrCodeSuccessCallback = (decodedText) => {
-            checkinTicket(decodedText);
-          };
-
-          const config = { fps: 10, qrbox: { width: 200, height: 200 } };
-          await html5QrScanner.start({ facingMode: "environment" }, config, qrCodeSuccessCallback);
-
-          isCameraScanning = true;
-          if (cameraBtnText) cameraBtnText.innerText = "Stop Camera";
-          if (scannerLiveBadge) {
-            scannerLiveBadge.innerText = "Camera Live";
-            scannerLiveBadge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse";
-          }
-          showToast("Camera Active", "Point at student QR badge or pass to scan.", "info");
-        } catch (err) {
-          console.error("Camera scanner error:", err);
-          showToast("Camera Notice", "Unable to access camera or permission denied. You can use 'Scan Image File' or simulation buttons.", "warning");
-          if (cameraReader) cameraReader.classList.add("hidden");
-          if (cameraPlaceholder) cameraPlaceholder.classList.remove("hidden");
-        }
-      }
-    });
-  }
-
-  // 2. Scan Image File via Html5Qrcode
-  const fileInput = document.getElementById("qr-file-input");
-  if (fileInput && window.Html5Qrcode) {
-    fileInput.addEventListener("change", async (e) => {
-      if (e.target.files && e.target.files.length > 0) {
-        const imageFile = e.target.files[0];
-        try {
-          const qrScanner = new window.Html5Qrcode("qr-camera-reader");
-          const decodedText = await qrScanner.scanFile(imageFile, true);
-          checkinTicket(decodedText);
-          fileInput.value = "";
-        } catch (err) {
-          showToast("QR Scan Failed", "Could not detect a valid QR code in the selected image.", "error");
-          fileInput.value = "";
-        }
-      }
-    });
-  }
 
   // Event Change
   if (select) {
@@ -729,6 +592,29 @@ export function attachAttendanceEvents() {
       } else {
         showToast("All registered students for this event are already checked in!", "info");
       }
+    });
+  }
+
+  // Simulate Student Membership Card QR Scan
+  const simulateMemberQRBtn = document.getElementById("simulate-member-qr-btn");
+  if (simulateMemberQRBtn) {
+    simulateMemberQRBtn.addEventListener("click", () => {
+      const user = getCurrentUser() || {};
+      const rollNo = user.rollNo || "22CS101";
+      const sampleMembershipPayload = {
+        protocol: "PEC_CCTSC_GATE_PASS_V2",
+        type: "STUDENT_MEMBERSHIP_CHECKIN",
+        membershipId: user.membershipId || `PEC-MEM-2026-CSE-${rollNo.slice(-4)}`,
+        studentId: user.id || "std-101",
+        rollNo: rollNo,
+        name: user.name || "Aarav Sharma",
+        department: user.department || "CSE",
+        academicYear: user.year || "3rd Year",
+        clubName: "AI&ML Turing Club",
+        validUntil: "30 JUNE 2027",
+        verificationHash: `0x8f4a3c19${rollNo.toLowerCase()}`
+      };
+      checkinTicket(JSON.stringify(sampleMembershipPayload), sampleMembershipPayload);
     });
   }
 
@@ -919,16 +805,29 @@ export function attachAttendanceEvents() {
 
         const newCert = {
           id: certId,
+          certificateId: certId,
           title: `Certificate of Participation - ${eventName}`,
           recipientName: studentName,
+          student_name: studentName,
+          studentName: studentName,
           recipientRoll: rollNo,
+          roll_no: rollNo,
+          rollNo: rollNo,
+          student_id: studentId,
+          studentId: studentId,
           recipientEmail: `${rollNo.toLowerCase()}@pragati.ac.in`,
           department,
           eventName,
+          event_name: eventName,
+          awardType: "Certificate of Participation & Technical Completion",
+          certificate_type: "Certificate of Participation",
           category: "Course Completion",
           institution: "Pragati University / Pragati Engineering College (Autonomous)",
           issued_by: "Pragati University Central Council of Technical Societies (CCTSC)",
           issueDate: new Date().toISOString().split("T")[0],
+          issued_date: new Date().toISOString().split("T")[0],
+          qrHash: verificationHash,
+          qr_hash: verificationHash,
           verificationHash,
           status: "Verified & Active"
         };

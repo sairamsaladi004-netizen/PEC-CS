@@ -3,8 +3,6 @@ import { getDB, saveDB, apiRequest, logAudit } from '../db.js';
 import { showToast } from '../components/toast.js';
 import { ROLES, normalizeRole } from '../rbac.js';
 import { renderAccessDenied, attachAccessDeniedEvents } from '../components/accessDenied.js';
-import { renderAttendanceBarChart, renderEngagementDonutChart } from '../components/d3Visualizers.js';
-import { PermissionGuard, renderApprovalsGuard, renderAnalyticsGuard } from '../components/permissionGuard.js';
 import {
   getCoordinatorIntelligenceOverview,
   getEventParticipationPrediction,
@@ -90,7 +88,7 @@ export function renderCoordinatorPortalView(subSection = "dashboard") {
       </div>
 
       <!-- Navigation Tabs for Coordinator Portal -->
-      <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 border-b border-slate-200 text-xs font-bold">
+      <div class="flex items-center flex-wrap gap-1.5 pb-1 border-b border-slate-200 text-xs font-bold">
         <a href="#/coordinator/dashboard" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}">
           📊 Console
         </a>
@@ -115,9 +113,6 @@ export function renderCoordinatorPortalView(subSection = "dashboard") {
         </a>
         <a href="#/coordinator/certificates" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap ${activeTab === 'certificates' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}">
           🎓 Issue Certificates (${clubCertificates.length})
-        </a>
-        <a href="#/coordinator/resources" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap ${activeTab === 'resources' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}">
-          📚 Resources (${clubResources.length})
         </a>
         <a href="#/coordinator/reports" class="px-4 py-2 rounded-xl transition-all whitespace-nowrap ${activeTab === 'reports' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}">
           📄 Activity Reports (${clubReports.length})
@@ -1247,44 +1242,6 @@ function renderCoordinatorTabContent(tab, ctx) {
         </div>
       `;
 
-    case "resources":
-      return `
-        <div class="space-y-6">
-          <div class="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h2 class="text-lg font-bold text-slate-900">Technical Learning Repositories & Guides</h2>
-              <p class="text-xs text-slate-500">Provide students with verified curricula, project starter kits, and lab exercises.</p>
-            </div>
-            <button onclick="alert('Resource Upload Wizard: Supported formats include PDF, Jupyter Notebook (.ipynb), and GitHub repository links.')" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold shadow-md transition-all">
-              + Add Technical Resource
-            </button>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            ${(clubResources.length > 0 ? clubResources : [
-              { title: "Edge AI & Jetson Nano Deployment Handbook", domain: "AI / Robotics", author: "Faculty Coordinator", format: "PDF Guide", size: "4.2 MB", downloads: 48 },
-              { title: "Qiskit Quantum Circuit Simulator Laboratory Notes", domain: "Quantum Tech", author: "CCTSC", format: "IPYNB Notebook", size: "1.8 MB", downloads: 35 },
-              { title: "Autonomous LoRaWAN Smart City Architecture Blueprint", domain: "IoT / Embedded", author: "Core Lead", format: "CAD / Code", size: "12.5 MB", downloads: 62 }
-            ]).map(res => `
-              <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between space-y-4">
-                <div>
-                  <div class="flex items-center justify-between text-[10px] text-purple-700 font-bold uppercase mb-2">
-                    <span>${res.domain || 'Technical Handbook'}</span>
-                    <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">${res.format || 'PDF'}</span>
-                  </div>
-                  <h3 class="text-sm font-bold text-slate-900 line-clamp-2">${res.title}</h3>
-                  <p class="text-xs text-slate-500 mt-1">Author: ${res.author || 'Coordinator'}</p>
-                </div>
-                <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span class="text-slate-400 font-mono text-[10px]">${res.downloads || 24} downloads</span>
-                  <a href="#/lms" class="text-purple-600 font-bold hover:underline">Access LMS Portal ↗</a>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
-
     case "reports":
       return `
         <div class="space-y-6">
@@ -1464,116 +1421,6 @@ function renderCoordinatorTabContent(tab, ctx) {
             </div>
           </div>
 
-          <!-- D3 Visualizations: Real-Time Event Attendance & Member Engagement -->
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <!-- Real-Time Event Attendance Distribution (D3 Bar Chart) -->
-            <div class="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
-              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div class="flex items-center space-x-2">
-                  <span class="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-sm font-bold border border-purple-200">📊</span>
-                  <div>
-                    <h3 class="text-sm font-black text-slate-900">Real-Time Event Attendance & Turnout Trajectory</h3>
-                    <p class="text-[11px] text-slate-500">Comparing RSVP digital passes vs verified QR scan check-ins</p>
-                  </div>
-                </div>
-                <div class="flex items-center space-x-3 text-[10px] font-bold">
-                  <span class="flex items-center space-x-1 text-slate-500"><span class="w-2.5 h-2.5 rounded-full bg-purple-200 inline-block"></span><span>Passes</span></span>
-                  <span class="flex items-center space-x-1 text-emerald-600"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span><span>Verified</span></span>
-                </div>
-              </div>
-
-              <!-- D3 Chart Mount Container -->
-              <div id="coord-attendance-d3-chart" class="w-full min-h-[220px]"></div>
-            </div>
-
-            <!-- Member Engagement Distribution (D3 Donut Chart) -->
-            <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4 flex flex-col justify-between">
-              <div class="border-b border-slate-100 pb-3">
-                <div class="flex items-center space-x-2">
-                  <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-sm font-bold border border-emerald-200">👥</span>
-                  <div>
-                    <h3 class="text-sm font-black text-slate-900">Member Health Breakdown</h3>
-                    <p class="text-[11px] text-slate-500">Participation telemetry distribution</p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- D3 Donut Mount Container -->
-              <div id="coord-engagement-d3-donut" class="w-full min-h-[160px] flex items-center justify-center"></div>
-
-              <!-- Legend -->
-              <div class="grid grid-cols-2 gap-2 text-[10px] font-semibold pt-2 border-t border-slate-100">
-                <div class="flex items-center space-x-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><span class="text-slate-600">Exemplary</span></div>
-                <div class="flex items-center space-x-1.5"><span class="w-2 h-2 rounded-full bg-indigo-500"></span><span class="text-slate-600">Active</span></div>
-                <div class="flex items-center space-x-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span><span class="text-slate-600">Moderate</span></div>
-                <div class="flex items-center space-x-1.5"><span class="w-2 h-2 rounded-full bg-rose-500"></span><span class="text-slate-600">At-Risk</span></div>
-              </div>
-            </div>
-
-          </div>
-
-          <!-- Advanced Faculty Analytics Section (Trends & Domain Insights) -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-            
-            <!-- Strategic Insights -->
-            <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs">
-              <div class="flex items-center space-x-2 mb-4 border-b border-slate-100 pb-3">
-                <span class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center text-sm font-bold border border-indigo-200">💡</span>
-                <div>
-                  <h3 class="text-sm font-black text-slate-900">Strategic Insights</h3>
-                  <p class="text-[11px] text-slate-500">Automated structural guidance for chapter growth</p>
-                </div>
-              </div>
-              <div class="space-y-3">
-                ${(insights || [
-                  { title: 'Certification Lag', description: 'Members completing workshops are not receiving certificates within 48 hrs.', type: 'warning' },
-                  { title: 'Project Output', description: 'High attendance, but minimal project submissions. Consider a hackathon.', type: 'info' }
-                ]).map(insight => `
-                  <div class="flex items-start space-x-3 p-3 rounded-xl ${insight.type === 'warning' ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-100'} border">
-                    <span class="text-lg">${insight.type === 'warning' ? '⚠️' : 'ℹ️'}</span>
-                    <div>
-                      <div class="text-xs font-bold text-slate-900">${insight.title}</div>
-                      <div class="text-[10px] text-slate-600 mt-0.5">${insight.description}</div>
-                    </div>
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-
-            <!-- Inter-Club Performance Benchmark -->
-            <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs">
-              <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                <div class="flex items-center space-x-2">
-                  <span class="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center text-sm font-bold border border-blue-200">📈</span>
-                  <div>
-                    <h3 class="text-sm font-black text-slate-900">Inter-Club Benchmark</h3>
-                    <p class="text-[11px] text-slate-500">Relative rank among Pragati chapters</p>
-                  </div>
-                </div>
-              </div>
-              <div class="space-y-4">
-                ${(clubComparison || [
-                  { rank: 1, name: 'I4-08 (AI&ML)', score: 92 },
-                  { rank: 2, name: 'I4-07 (Cyber)', score: 85 },
-                  { rank: 3, name: 'I4-06 (Robotics)', score: 78 }
-                ]).slice(0, 4).map(c => `
-                  <div class="flex items-center justify-between text-xs">
-                    <div class="flex items-center space-x-3">
-                      <span class="font-bold text-slate-400 w-4">#${c.rank}</span>
-                      <span class="${c.name.includes(primaryClub?.id) ? 'font-bold text-purple-700' : 'text-slate-700 font-medium'}">${c.name}</span>
-                    </div>
-                    <div class="w-24 bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                      <div class="${c.name.includes(primaryClub?.id) ? 'bg-purple-600' : 'bg-slate-400'} h-1.5 rounded-full" style="width: ${c.score}%"></div>
-                    </div>
-                    <span class="font-mono font-bold text-slate-500 w-6 text-right">${c.score}</span>
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-
-          </div>
-
           <!-- Pending Action Alert Box -->
           ${pendingMemberships.length > 0 ? `
             <div class="bg-amber-50 rounded-2xl p-4 border border-amber-200 flex items-center justify-between">
@@ -1617,52 +1464,6 @@ function renderCoordinatorTabContent(tab, ctx) {
 
 export function attachCoordinatorPortalEvents() {
   attachAccessDeniedEvents();
-
-  // Initialize D3 Charts if containers are present
-  const attendanceChartContainer = document.getElementById("coord-attendance-d3-chart");
-  const engagementDonutContainer = document.getElementById("coord-engagement-d3-donut");
-
-  if (attendanceChartContainer || engagementDonutContainer) {
-    const user = getCurrentUser() || {};
-    const db = getDB();
-    const assignedClubIds = user.assignedClubs || (user.clubId ? [user.clubId] : ["I4-08"]);
-    const clubEvents = (db.events || []).filter(e => assignedClubIds.includes(e.club_id) || assignedClubIds.includes(e.clubId));
-
-    if (attendanceChartContainer) {
-      const eventChartData = clubEvents.slice(0, 5).map(e => {
-        const regs = (db.event_registrations || []).filter(r => r.event_id === e.id).length || e.registered_count || 35;
-        const atts = (db.attendance || []).filter(a => a.event_id === e.id).length || Math.round(regs * 0.85);
-        return {
-          title: e.title,
-          registered: regs,
-          attended: atts
-        };
-      });
-
-      if (eventChartData.length === 0) {
-        eventChartData.push(
-          { title: "Generative AI Bootcamp", registered: 45, attended: 42 },
-          { title: "LLM Hackathon 2026", registered: 60, attended: 54 },
-          { title: "Kaggle Hands-On", registered: 38, attended: 32 }
-        );
-      }
-
-      renderAttendanceBarChart("coord-attendance-d3-chart", eventChartData);
-    }
-
-    if (engagementDonutContainer) {
-      const clubMemberships = (db.club_memberships || []).filter(m => assignedClubIds.includes(m.club_id));
-      const total = clubMemberships.length || 18;
-      const donutData = [
-        { label: "Exemplary", value: Math.max(1, Math.round(total * 0.45)) },
-        { label: "Active", value: Math.max(1, Math.round(total * 0.35)) },
-        { label: "Moderate", value: Math.max(1, Math.round(total * 0.15)) },
-        { label: "At-Risk", value: Math.max(0, Math.round(total * 0.05)) }
-      ];
-      renderEngagementDonutChart("coord-engagement-d3-donut", donutData);
-    }
-  }
-
   // Event Creation Modal
   const createModal = document.getElementById("create-event-modal");
   const openCreateBtn = document.getElementById("coord-create-event-btn");

@@ -28,9 +28,9 @@ const dirsToCopy = ['css', 'js', 'data'];
 for (const dir of dirsToCopy) {
   const src = path.join(__dirname, dir);
   const dest = path.join(publicDir, dir);
-  if (fs.existsSync(src)) {
+  if (fs.existsSync(src) && !fs.existsSync(dest)) {
     try {
-      fs.cpSync(src, dest, { recursive: true, force: true });
+      fs.cpSync(src, dest, { recursive: true });
     } catch (e) {
       console.warn(`[Build] Notice: cpSync for ${dir} skipped:`, e.message);
     }

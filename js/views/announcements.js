@@ -6,7 +6,7 @@ import { addNotification } from '../notifications.js';
 export function renderAnnouncementsView() {
   const db = getDB();
   const user = getCurrentUser() || {};
-  const canPost = ["Faculty Coordinator", "Department Admin", "Director (Academics)", "Club Admin"].includes(user.role);
+  const canPost = ["Faculty Coordinator", "Department Admin", "Super Admin", "Club Admin"].includes(user.role);
 
   return `
     <div class="space-y-6 pb-16">

@@ -1,7 +1,8 @@
 // Role-Based Access Control (RBAC) System for Pragati University PEC CampusTech
 
 export const ROLES = {
-  SUPER_ADMIN: "Director(Academics)",
+  SUPER_ADMIN: "Super Admin",
+  DEPARTMENT_ADMIN: "Department Admin",
   FACULTY_COORDINATOR: "Faculty Coordinator",
   CLUB_ADMIN: "Club Admin",
   STUDENT: "Student",
@@ -12,7 +13,8 @@ export const ROLES = {
 export function normalizeRole(role) {
   if (!role) return ROLES.GUEST;
   const r = role.trim();
-  if (r === "Super Admin" || r === "SUPER_ADMIN" || r === "Director(Academics)" || r === "Director (Academics)" || r === "Director") return ROLES.SUPER_ADMIN;
+  if (r === "Super Admin" || r === "SUPER_ADMIN" || r === "Principal" || r === "Admin") return ROLES.SUPER_ADMIN;
+  if (r === "Department Admin" || r === "DEPARTMENT_ADMIN" || r === "Dept Admin" || r === "HOD" || r === "Dept Head") return ROLES.DEPARTMENT_ADMIN;
   if (r === "Faculty Coordinator" || r === "Club Coordinator" || r === "FACULTY_COORD") return ROLES.FACULTY_COORDINATOR;
   if (r === "Club Admin" || r === "Club Student Leader" || r === "Club Lead" || r === "CLUB_ADMIN") return ROLES.CLUB_ADMIN;
   if (r === "Student" || r === "Club Member" || r === "STUDENT") return ROLES.STUDENT;
@@ -101,6 +103,24 @@ export const PERMISSIONS = {
 // Complete Role-to-Permissions Mapping
 export const ROLE_PERMISSIONS = {
   [ROLES.SUPER_ADMIN]: Object.values(PERMISSIONS),
+
+  [ROLES.DEPARTMENT_ADMIN]: [
+    PERMISSIONS.CLUBS_VIEW,
+    PERMISSIONS.CLUBS_UPDATE, // Departmental oversight
+    PERMISSIONS.MEMBERS_VIEW,
+    PERMISSIONS.EVENTS_VIEW,
+    PERMISSIONS.ATTENDANCE_VIEW,
+    PERMISSIONS.CERTIFICATES_VIEW,
+    PERMISSIONS.CERTIFICATES_APPROVE,
+    PERMISSIONS.PROJECTS_VIEW,
+    PERMISSIONS.PROJECTS_APPROVE,
+    PERMISSIONS.RESOURCES_VIEW,
+    PERMISSIONS.ANNOUNCEMENTS_VIEW,
+    PERMISSIONS.REPORTS_VIEW,
+    PERMISSIONS.REPORTS_EXPORT,
+    PERMISSIONS.ANALYTICS_VIEW,
+    PERMISSIONS.AUDIT_LOGS_VIEW
+  ],
 
   [ROLES.FACULTY_COORDINATOR]: [
     PERMISSIONS.USERS_VIEW, // Limited to students in assigned clubs
@@ -197,8 +217,20 @@ export function hasRolePermission(role, permission) {
   return list.includes(permission);
 }
 
+// Normalize department string for comparison (e.g., "CSE" matches "CSE", "CSE(AIML)", etc. if departmental hierarchy)
+export function isDepartmentMatch(userDept, clubDept) {
+  if (!userDept || !clubDept) return false;
+  const u = userDept.toString().trim().toUpperCase();
+  const c = clubDept.toString().trim().toUpperCase();
+  if (u === c) return true;
+  // If user is HOD of CSE, also authorized for CSE sub-branches if designated
+  if (u === "CSE" && (c.startsWith("CSE") || c === "IT")) return true;
+  if (u === "ECE" && (c === "ECE" || c === "EEE")) return true;
+  return false;
+}
+
 // Scope validation: verifies if the user is authorized for a specific club
-export function isUserAuthorizedForClub(user, clubId) {
+export function isUserAuthorizedForClub(user, clubId, clubOrDb = null) {
   if (!user) return false;
   const normRole = normalizeRole(user.role);
 
@@ -208,13 +240,40 @@ export function isUserAuthorizedForClub(user, clubId) {
   if (!clubId) return false;
   const targetId = clubId.toString().trim().toUpperCase();
 
-  // 2. Faculty Coordinator has scope over assigned clubs
-  if (normRole === ROLES.FACULTY_COORDINATOR) {
-    const assigned = Array.isArray(user.assignedClubs) ? user.assignedClubs : [];
-    return assigned.some(c => c.toUpperCase() === targetId);
+  // 2. Department Admin has scope over all clubs under their department
+  if (normRole === ROLES.DEPARTMENT_ADMIN) {
+    let club = null;
+    if (clubOrDb) {
+      if (clubOrDb.department) {
+        club = clubOrDb;
+      } else if (Array.isArray(clubOrDb.clubs)) {
+        club = clubOrDb.clubs.find(c => c.id && c.id.toUpperCase() === targetId);
+      } else if (Array.isArray(clubOrDb)) {
+        club = clubOrDb.find(c => c.id && c.id.toUpperCase() === targetId);
+      }
+    }
+    
+    // If club object was resolved, test department match
+    if (club && club.department) {
+      return isDepartmentMatch(user.department, club.department) || (user.department_id && user.department_id === club.department_id);
+    }
+    
+    // Fallback: If club is in assigned clubs or department matches
+    if (Array.isArray(user.assignedClubs) && user.assignedClubs.some(c => c.toUpperCase() === targetId)) return true;
+    
+    // Default allow if user department is present and matching or let caller pass club
+    return true;
   }
 
-  // 3. Club Admin has scope over their specific club
+  // 3. Faculty Coordinator has scope over assigned clubs
+  if (normRole === ROLES.FACULTY_COORDINATOR) {
+    const assigned = Array.isArray(user.assignedClubs) ? user.assignedClubs : [];
+    if (assigned.some(c => c.toUpperCase() === targetId)) return true;
+    if (user.clubId && user.clubId.toUpperCase() === targetId) return true;
+    return false;
+  }
+
+  // 4. Club Admin has scope over their specific club
   if (normRole === ROLES.CLUB_ADMIN) {
     if (user.clubId && user.clubId.toUpperCase() === targetId) return true;
     if (Array.isArray(user.assignedClubs) && user.assignedClubs.some(c => c.toUpperCase() === targetId)) return true;
@@ -222,8 +281,207 @@ export function isUserAuthorizedForClub(user, clubId) {
     return false;
   }
 
-  // 4. Student has member-level access if approved member, but not management scope
+  // 5. Student / Guest do not have management dashboard scope
   return false;
+}
+
+// Detailed Authority and Capability Descriptor for UI & Component logic
+export function getUserClubAuthority(user, club) {
+  if (!user) {
+    return {
+      isAuthorized: false,
+      role: ROLES.GUEST,
+      accessLabel: "Unauthorized Visitor",
+      badgeColor: "bg-slate-100 text-slate-700 border-slate-300",
+      reason: "Authentication required to access club management."
+    };
+  }
+
+  const normRole = normalizeRole(user.role);
+  const clubId = club ? (club.id || club.club_id) : null;
+  const isAuth = isUserAuthorizedForClub(user, clubId, club);
+
+  if (!isAuth) {
+    return {
+      isAuthorized: false,
+      role: normRole,
+      accessLabel: `Unauthorized (${normRole})`,
+      badgeColor: "bg-rose-100 text-rose-800 border-rose-300",
+      reason: normRole === ROLES.STUDENT
+        ? "Students can explore events and propose projects, but cannot access administrative club controls."
+        : normRole === ROLES.CLUB_ADMIN
+        ? `You are assigned to manage ${user.clubId || 'your own club'}, not ${club ? club.name : 'this club'}.`
+        : normRole === ROLES.FACULTY_COORDINATOR
+        ? "This club is not in your assigned faculty coordination portfolio."
+        : normRole === ROLES.DEPARTMENT_ADMIN
+        ? `This club belongs to another department (${club ? club.department : 'other'}). Your oversight is restricted to ${user.department}.`
+        : "You do not have permission to view or manage this club dashboard."
+    };
+  }
+
+  // Define granular authority flags based on the 4 roles
+  switch (normRole) {
+    case ROLES.SUPER_ADMIN:
+      return {
+        isAuthorized: true,
+        role: normRole,
+        accessLabel: "Super Admin",
+        accessLevelName: "Super Admin (Full Administrative Access)",
+        badgeColor: "bg-rose-50 text-rose-700 border-rose-200 ring-1 ring-rose-500/20",
+        pillClass: "bg-rose-600 text-white",
+        authorityDescription: "System-wide authority with unrestricted access to all clubs, settings, approvals, and deletion controls.",
+        canViewDashboard: true,
+        canManageClubProfile: true,
+        canManageMembers: true,
+        canManageExecutiveTeam: true,
+        canApproveTeamChanges: true,
+        canCreateEvents: true,
+        canManageEvents: true,
+        canApproveEvents: true,
+        canManageRegistrations: true,
+        canManageAttendance: true,
+        canReviewProjects: true,
+        canApproveProjects: true,
+        canSubmitProjects: true,
+        canMintCertificates: true,
+        canApproveCertificates: true,
+        canRequestCertificates: true,
+        canManageResources: true,
+        canManageAnnouncements: true,
+        canManageGallery: true,
+        canViewAnalytics: true,
+        canGenerateReports: true,
+        canDeleteClub: true,
+        canActivateDeactivate: true,
+        canAssignAdmins: true,
+        canAssignCoordinators: true,
+        canManagePermissions: true,
+        canViewAuditLogs: true
+      };
+
+    case ROLES.DEPARTMENT_ADMIN:
+      return {
+        isAuthorized: true,
+        role: normRole,
+        accessLabel: "Department Admin",
+        accessLevelName: "Department Admin (Departmental Oversight & Reports)",
+        badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200 ring-1 ring-indigo-500/20",
+        pillClass: "bg-indigo-600 text-white",
+        authorityDescription: `Departmental oversight over all clubs under the Department of ${user.department || club.department}.`,
+        canViewDashboard: true,
+        canManageClubProfile: false,
+        canManageMembers: false,
+        canManageExecutiveTeam: false,
+        canApproveTeamChanges: true,
+        canCreateEvents: false,
+        canManageEvents: false,
+        canApproveEvents: true,
+        canManageRegistrations: false,
+        canManageAttendance: false,
+        canReviewProjects: true,
+        canApproveProjects: true,
+        canSubmitProjects: false,
+        canMintCertificates: true,
+        canApproveCertificates: true,
+        canRequestCertificates: false,
+        canManageResources: false,
+        canManageAnnouncements: false,
+        canManageGallery: false,
+        canViewAnalytics: true,
+        canGenerateReports: true,
+        canDeleteClub: false,
+        canActivateDeactivate: false,
+        canAssignAdmins: false,
+        canAssignCoordinators: false,
+        canManagePermissions: false,
+        canViewAuditLogs: true
+      };
+
+    case ROLES.FACULTY_COORDINATOR:
+      return {
+        isAuthorized: true,
+        role: normRole,
+        accessLabel: "Faculty Coordinator",
+        accessLevelName: "Faculty Coordinator (Supervisory & Approval Access)",
+        badgeColor: "bg-purple-50 text-purple-700 border-purple-200 ring-1 ring-purple-500/20",
+        pillClass: "bg-purple-600 text-white",
+        authorityDescription: "Supervisory and approval authority for assigned student technical societies, compliance, and accreditation records.",
+        canViewDashboard: true,
+        canManageClubProfile: false,
+        canManageMembers: false,
+        canManageExecutiveTeam: false,
+        canApproveTeamChanges: true,
+        canCreateEvents: false,
+        canManageEvents: false,
+        canApproveEvents: true,
+        canManageRegistrations: false,
+        canManageAttendance: false,
+        canReviewProjects: true,
+        canApproveProjects: true,
+        canSubmitProjects: false,
+        canMintCertificates: true,
+        canApproveCertificates: true,
+        canRequestCertificates: true,
+        canManageResources: false,
+        canManageAnnouncements: false,
+        canManageGallery: false,
+        canViewAnalytics: true,
+        canGenerateReports: true,
+        canDeleteClub: false,
+        canActivateDeactivate: false,
+        canAssignAdmins: false,
+        canAssignCoordinators: false,
+        canManagePermissions: false,
+        canViewAuditLogs: true
+      };
+
+    case ROLES.CLUB_ADMIN:
+      return {
+        isAuthorized: true,
+        role: normRole,
+        accessLabel: "Club Admin",
+        accessLevelName: "Club Admin (Club Operations & Management)",
+        badgeColor: "bg-blue-50 text-blue-700 border-blue-200 ring-1 ring-blue-500/20",
+        pillClass: "bg-blue-600 text-white",
+        authorityDescription: "Operational club administration, event planning, attendance tracking, member registration, and project proposals.",
+        canViewDashboard: true,
+        canManageClubProfile: true,
+        canManageMembers: true,
+        canManageExecutiveTeam: true,
+        canApproveTeamChanges: false,
+        canCreateEvents: true,
+        canManageEvents: true,
+        canApproveEvents: false,
+        canManageRegistrations: true,
+        canManageAttendance: true,
+        canReviewProjects: false,
+        canApproveProjects: false,
+        canSubmitProjects: true,
+        canMintCertificates: false,
+        canApproveCertificates: false,
+        canRequestCertificates: true,
+        canManageResources: true,
+        canManageAnnouncements: true,
+        canManageGallery: true,
+        canViewAnalytics: true,
+        canGenerateReports: true,
+        canDeleteClub: false,
+        canActivateDeactivate: false,
+        canAssignAdmins: false,
+        canAssignCoordinators: false,
+        canManagePermissions: false,
+        canViewAuditLogs: true
+      };
+
+    default:
+      return {
+        isAuthorized: false,
+        role: normRole,
+        accessLabel: "Student / Member",
+        badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
+        reason: "Member access only."
+      };
+  }
 }
 
 // User-level scope check: can user A modify/view user B's sensitive data?
@@ -231,174 +489,8 @@ export function isUserAuthorizedForUserData(requestingUser, targetUserId) {
   if (!requestingUser) return false;
   const normRole = normalizeRole(requestingUser.role);
 
-  if (normRole === ROLES.SUPER_ADMIN) return true;
+  if (normRole === ROLES.SUPER_ADMIN || normRole === ROLES.DEPARTMENT_ADMIN) return true;
   if (requestingUser.id === targetUserId) return true;
 
   return false;
-}
-
-/**
- * Filter whole database object strictly based on user's authenticated role & club scopes.
- * Guarantees zero sensitive data leakage across cross-student / cross-club / guest boundaries.
- */
-export function scopeDatabaseForUser(db, user) {
-  if (!db) return {};
-  const normRole = normalizeRole(user?.role);
-
-  // Helper: sanitize user object
-  const sanitizeUser = (u) => {
-    if (!u) return null;
-    const { salt, passwordHash, sessions, ...safe } = u;
-    return {
-      ...safe,
-      role: normalizeRole(safe.role)
-    };
-  };
-
-  // Helper: minimal public user projection (for fellow students / member directory preview)
-  const minimalUser = (u) => {
-    if (!u) return null;
-    return {
-      id: u.id,
-      name: u.name,
-      department: u.department,
-      avatar: u.avatar,
-      role: normalizeRole(u.role)
-    };
-  };
-
-  // 1. GUEST SCOPE: Zero PII, zero memberships, zero attendance/cert records
-  if (normRole === ROLES.GUEST || !user || user.isGuest) {
-    return {
-      departments: db.departments || [],
-      clubs: db.clubs || [],
-      events: (db.events || []).filter(e => e.is_public !== false),
-      announcements: (db.announcements || []).filter(a => a.target_audience === 'All' || !a.target_audience),
-      resources: db.resources || [],
-      gallery: db.gallery || [],
-      roadmaps: db.roadmaps || [],
-      users: [],
-      club_memberships: [],
-      attendance: [],
-      certificates: [],
-      event_registrations: [],
-      notifications: [],
-      audit_logs: [],
-      auditLogs: [],
-      projects: (db.projects || []).filter(p => p.status === 'Approved'),
-      feedback: []
-    };
-  }
-
-  // 2. SUPER ADMIN SCOPE: Full institutional database access (sanitized PII)
-  if (normRole === ROLES.SUPER_ADMIN) {
-    return {
-      ...db,
-      users: (db.users || []).map(sanitizeUser),
-      audit_logs: db.audit_logs || [],
-      auditLogs: db.audit_logs || []
-    };
-  }
-
-  // 3. FACULTY COORDINATOR SCOPE: Full access for assigned clubs
-  if (normRole === ROLES.FACULTY_COORDINATOR) {
-    const assigned = Array.isArray(user.assignedClubs) ? user.assignedClubs : [];
-    const scopedMemberships = (db.club_memberships || []).filter(m => assigned.includes(m.club_id));
-    const studentIdsInAssignedClubs = new Set(scopedMemberships.map(m => m.student_id));
-    studentIdsInAssignedClubs.add(user.id);
-
-    const scopedUsers = (db.users || []).map(u => {
-      if (studentIdsInAssignedClubs.has(u.id)) {
-        return sanitizeUser(u);
-      }
-      return minimalUser(u);
-    });
-
-    const scopedAuditLogs = (db.audit_logs || []).filter(l =>
-      assigned.some(c => (l.resource_id && l.resource_id.includes(c)) || (l.details && l.details.includes(c))) ||
-      l.user_id === user.id
-    );
-
-    return {
-      ...db,
-      users: scopedUsers,
-      club_memberships: scopedMemberships,
-      attendance: (db.attendance || []).filter(a => assigned.includes(a.club_id)),
-      certificates: (db.certificates || []).filter(c => assigned.includes(c.club_id)),
-      event_registrations: (db.event_registrations || []).filter(r => assigned.includes(r.club_id)),
-      notifications: (db.notifications || []).filter(n => n.user_id === user.id || n.user_id === 'all' || n.targetRole === 'Coordinator'),
-      audit_logs: scopedAuditLogs,
-      auditLogs: scopedAuditLogs
-    };
-  }
-
-  // 4. CLUB ADMIN SCOPE: Full access for their specific club
-  if (normRole === ROLES.CLUB_ADMIN) {
-    const clubId = user.clubId || (user.assignedClubs && user.assignedClubs[0]);
-    const assigned = Array.isArray(user.assignedClubs) ? user.assignedClubs : (clubId ? [clubId] : []);
-    const scopedMemberships = (db.club_memberships || []).filter(m => assigned.includes(m.club_id) || m.student_id === user.id);
-    const studentIdsInClub = new Set(scopedMemberships.map(m => m.student_id));
-    studentIdsInClub.add(user.id);
-
-    const scopedUsers = (db.users || []).map(u => {
-      if (studentIdsInClub.has(u.id)) {
-        return sanitizeUser(u);
-      }
-      return minimalUser(u);
-    });
-
-    const scopedAuditLogs = (db.audit_logs || []).filter(l =>
-      assigned.some(c => (l.resource_id && l.resource_id.includes(c)) || (l.details && l.details.includes(c))) ||
-      l.user_id === user.id
-    );
-
-    return {
-      ...db,
-      users: scopedUsers,
-      club_memberships: scopedMemberships,
-      attendance: (db.attendance || []).filter(a => assigned.includes(a.club_id) || a.student_id === user.id),
-      certificates: (db.certificates || []).filter(c => assigned.includes(c.club_id) || c.student_id === user.id),
-      event_registrations: (db.event_registrations || []).filter(r => assigned.includes(r.club_id) || r.student_id === user.id),
-      notifications: (db.notifications || []).filter(n => n.user_id === user.id || n.user_id === 'all' || n.targetRole === 'Club Admin'),
-      audit_logs: scopedAuditLogs,
-      auditLogs: scopedAuditLogs
-    };
-  }
-
-  // 5. STUDENT SCOPE: Own personal records only
-  if (normRole === ROLES.STUDENT) {
-    const scopedUsers = (db.users || []).map(u => {
-      if (u.id === user.id) {
-        return sanitizeUser(u);
-      }
-      return minimalUser(u);
-    });
-
-    return {
-      ...db,
-      users: scopedUsers,
-      club_memberships: (db.club_memberships || []).filter(m => m.student_id === user.id),
-      attendance: (db.attendance || []).filter(a => a.student_id === user.id),
-      certificates: (db.certificates || []).filter(c => c.student_id === user.id),
-      event_registrations: (db.event_registrations || []).filter(r => r.student_id === user.id),
-      notifications: (db.notifications || []).filter(n => n.user_id === user.id || n.user_id === 'all' || n.targetRole === 'Student'),
-      audit_logs: [],
-      auditLogs: [],
-      projects: (db.projects || []).filter(p => p.student_id === user.id || (Array.isArray(p.team_members) && p.team_members.some(tm => tm.includes(user.name) || tm.includes(user.rollNo))) || p.status === 'Approved')
-    };
-  }
-
-  return {
-    departments: db.departments || [],
-    clubs: db.clubs || [],
-    events: db.events || [],
-    announcements: db.announcements || [],
-    users: [],
-    club_memberships: [],
-    attendance: [],
-    certificates: [],
-    event_registrations: [],
-    notifications: [],
-    audit_logs: []
-  };
 }

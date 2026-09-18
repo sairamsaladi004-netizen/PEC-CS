@@ -8,12 +8,9 @@ export function renderVerificationView(params = {}) {
   if (searchHash) {
     matchedCert = db.certificates.find(c => 
       (c.qrHash && c.qrHash.toLowerCase() === searchHash.toLowerCase()) || 
-      (c.qr_hash && c.qr_hash.toLowerCase() === searchHash.toLowerCase()) || 
       (c.verificationHash && c.verificationHash.toLowerCase() === searchHash.toLowerCase()) ||
       (c.id && c.id.toLowerCase() === searchHash.toLowerCase()) ||
-      (c.certificateId && c.certificateId.toLowerCase() === searchHash.toLowerCase()) ||
       (c.recipientRoll && c.recipientRoll.toLowerCase() === searchHash.toLowerCase()) ||
-      (c.roll_no && c.roll_no.toLowerCase() === searchHash.toLowerCase()) ||
       (c.rollNo && c.rollNo.toLowerCase() === searchHash.toLowerCase())
     );
   }
@@ -70,25 +67,25 @@ export function renderVerificationView(params = {}) {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div>
                     <span class="text-slate-400 font-mono block text-[10px] uppercase">Recipient Student</span>
-                    <span class="text-base font-black text-slate-900">${matchedCert.recipientName || matchedCert.student_name || matchedCert.studentName || 'Aarav Sharma'}</span>
-                    <span class="block text-slate-500 font-mono font-bold mt-0.5">Roll No: ${matchedCert.recipientRoll || matchedCert.roll_no || matchedCert.rollNo || '22CS101'}</span>
+                    <span class="text-base font-black text-slate-900">${matchedCert.recipientName || matchedCert.studentName}</span>
+                    <span class="block text-slate-500 font-mono font-bold mt-0.5">Roll No: ${matchedCert.recipientRoll || matchedCert.rollNo || '22CS101'}</span>
                   </div>
                   <div>
                     <span class="text-slate-400 font-mono block text-[10px] uppercase">Award / Recognition</span>
-                    <span class="text-base font-black text-amber-600">${matchedCert.awardType || matchedCert.certificate_type || matchedCert.category || 'Accredited Certificate'}</span>
-                    <span class="block text-slate-500 font-mono mt-0.5">Issued: ${matchedCert.issueDate || matchedCert.issued_date || '2026-09-02'}</span>
+                    <span class="text-base font-black text-amber-600">${matchedCert.awardType || matchedCert.category || 'Accredited Certificate'}</span>
+                    <span class="block text-slate-500 font-mono mt-0.5">Issued: ${matchedCert.issueDate}</span>
                   </div>
                 </div>
 
                 <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
                   <span class="text-slate-400 font-mono text-[10px] uppercase">Accredited Activity</span>
-                  <div class="text-sm font-bold text-slate-900">${matchedCert.eventName || matchedCert.event_name || matchedCert.title}</div>
+                  <div class="text-sm font-bold text-slate-900">${matchedCert.eventName || matchedCert.title}</div>
                   <div class="text-slate-500">Conforming to NBA Criteria 9 co-curricular technical benchmark</div>
                 </div>
 
                 <div class="p-3 rounded-xl bg-slate-900 text-slate-300 font-mono text-[10px] break-all">
                   <div class="text-slate-500 text-[9px] uppercase">SHA-256 Tamper-Proof Cryptographic Hash</div>
-                  ${matchedCert.qrHash || matchedCert.qr_hash || matchedCert.verificationHash || matchedCert.id}
+                  ${matchedCert.qrHash}
                 </div>
               </div>
 
@@ -117,11 +114,11 @@ export function renderVerificationView(params = {}) {
               ${db.certificates.map(c => `
                 <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-blue-50 transition-colors border border-slate-200">
                   <div>
-                    <span class="font-bold text-slate-900">${c.recipientName || c.student_name || c.studentName || 'Aarav Sharma'}</span>
+                    <span class="font-bold text-slate-900">${c.studentName}</span>
                     <span class="text-slate-400 font-mono ml-2">(${c.id})</span>
-                    <div class="text-[11px] text-slate-500">${c.eventName || c.event_name || c.title}</div>
+                    <div class="text-[11px] text-slate-500">${c.eventName}</div>
                   </div>
-                  <a href="#/verify?hash=${c.qrHash || c.qr_hash || c.verificationHash || c.id}" class="text-xs font-bold text-blue-600 hover:text-blue-800">
+                  <a href="#/verify?hash=${c.qrHash}" class="text-xs font-bold text-blue-600 hover:text-blue-800">
                     Verify Proof →
                   </a>
                 </div>

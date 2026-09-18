@@ -232,33 +232,16 @@ export function attachAuthModalEvents() {
   // Sign In Form
   const loginForm = document.getElementById("college-login-form");
   if (loginForm) {
-    loginForm.addEventListener("submit", async (e) => {
+    loginForm.addEventListener("submit", (e) => {
       e.preventDefault();
       const identifier = document.getElementById("login-identifier")?.value;
       const password = document.getElementById("login-password")?.value;
-      
-      const submitBtn = loginForm.querySelector("button[type='submit']");
-      const originalText = submitBtn ? submitBtn.innerHTML : "Sign In";
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = "Authenticating with Supabase...";
-      }
-
-      try {
-        const res = await loginUser(identifier, password);
-        if (res.success) {
-          showToast("Signed In Successfully", `Welcome back, ${res.user.name} (${res.user.role})`, "success");
-          closeModal();
-        } else {
-          showToast("Authentication Failed", res.message || "Invalid credentials", "error");
-        }
-      } catch (err) {
-        showToast("Login Error", err.message || "Unable to sign in.", "error");
-      } finally {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = originalText;
-        }
+      const res = loginUser(identifier, password);
+      if (res.success) {
+        showToast("Signed In", `Welcome back, ${res.user.name} (${res.user.role})`, "success");
+        closeModal();
+      } else {
+        showToast("Authentication Failed", res.message, "error");
       }
     });
   }
@@ -266,7 +249,7 @@ export function attachAuthModalEvents() {
   // Register Form
   const regForm = document.getElementById("student-register-form");
   if (regForm) {
-    regForm.addEventListener("submit", async (e) => {
+    regForm.addEventListener("submit", (e) => {
       e.preventDefault();
       const name = document.getElementById("reg-name")?.value;
       const rollNo = document.getElementById("reg-roll")?.value;
@@ -276,47 +259,26 @@ export function attachAuthModalEvents() {
       const password = document.getElementById("reg-password")?.value;
       const skills = document.getElementById("reg-skills")?.value;
 
-      const submitBtn = regForm.querySelector("button[type='submit']");
-      const originalText = submitBtn ? submitBtn.innerHTML : "Generate Digital Student Identity";
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = "Registering with Supabase Auth...";
-      }
+      const newUser = registerStudent({
+        name,
+        rollNo,
+        department,
+        year,
+        email,
+        password,
+        skills,
+        emailVerified: true
+      });
 
-      try {
-        const res = await registerStudent({
-          name,
-          rollNo,
-          department,
-          year,
-          email,
-          password,
-          skills,
-          emailVerified: true
-        });
-
-        if (res.success) {
-          showToast("Student ID & Pass Active!", `Welcome ${res.user.name}! Pass ID ${res.passId || res.user.passId || 'Issued'} generated.`, "success");
-          closeModal();
-          window.location.hash = "#/student/profile";
-        } else {
-          showToast("Registration Failed", res.message || "Could not register account.", "error");
-        }
-      } catch (err) {
-        showToast("Registration Error", err.message || "Unable to register.", "error");
-      } finally {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = originalText;
-        }
-      }
+      showToast("Student ID Provisioned", `Welcome ${newUser.name}! ID Card ${newUser.membershipId} is active.`, "success");
+      closeModal();
     });
   }
 
   // Recovery Form
   const recoveryForm = document.getElementById("account-recovery-form");
   if (recoveryForm) {
-    recoveryForm.addEventListener("submit", async (e) => {
+    recoveryForm.addEventListener("submit", (e) => {
       e.preventDefault();
       const identifier = document.getElementById("recovery-identifier")?.value;
       const otp = document.getElementById("recovery-otp")?.value;
@@ -327,12 +289,12 @@ export function attachAuthModalEvents() {
         return;
       }
 
-      const res = await resetPassword(identifier, newPass);
+      const res = resetPassword(identifier, newPass);
       if (res.success) {
-        showToast("Password Reset", res.message || "Password updated successfully.", "success");
+        showToast("Password Reset", res.message, "success");
         closeModal();
       } else {
-        showToast("Recovery Failed", res.message || "Could not reset password.", "error");
+        showToast("Recovery Failed", res.message, "error");
       }
     });
   }

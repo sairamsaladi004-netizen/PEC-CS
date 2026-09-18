@@ -83,7 +83,7 @@ export function renderGuestDashboardView(params = {}) {
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           ${accounts.map(acc => {
-            const roleColor = (acc.role === "Super Admin" || acc.role === "Director(Academics)") 
+            const roleColor = acc.role === "Super Admin" 
               ? "border-rose-200 hover:border-rose-500 bg-rose-50/50" 
               : acc.role === "Faculty Coordinator"
               ? "border-purple-200 hover:border-purple-500 bg-purple-50/50"
@@ -98,7 +98,7 @@ export function renderGuestDashboardView(params = {}) {
                   <span class="text-[10px] font-mono font-bold uppercase text-slate-500">${acc.role}</span>
                 </div>
                 <div class="text-[11px] text-slate-500">
-                  ${(acc.role === 'Super Admin' || acc.role === 'Director(Academics)') ? 'IAM control, Audit logs & settings' : acc.role === 'Faculty Coordinator' ? 'Approve rosters, mint certificates' : acc.role === 'Club Admin' ? 'Manage chapter & events' : 'My passes, ID & attendance'}
+                  ${acc.role === 'Super Admin' ? 'IAM control, Audit logs & settings' : acc.role === 'Faculty Coordinator' ? 'Approve rosters, mint certificates' : acc.role === 'Club Admin' ? 'Manage chapter & events' : 'My passes, ID & attendance'}
                 </div>
                 <div class="text-[11px] font-bold text-blue-600 flex items-center space-x-1">
                   <span>Switch & Launch Portal</span>
@@ -178,10 +178,10 @@ export function renderGuestDashboardView(params = {}) {
 export function attachGuestDashboardEvents() {
   // Persona switch buttons
   document.querySelectorAll(".quick-persona-switch-btn").forEach(btn => {
-    btn.addEventListener("click", async () => {
+    btn.addEventListener("click", () => {
       const userId = btn.getAttribute("data-user-id");
       if (userId) {
-        await switchUser(userId);
+        switchUser(userId);
         showToast("Persona Switched", "Navigating to your role portal...", "success");
         setTimeout(() => window.location.reload(), 400);
       }

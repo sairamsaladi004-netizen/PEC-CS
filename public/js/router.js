@@ -1,6 +1,5 @@
-import { getCurrentUser } from './auth.js';
 import { renderNavbar, attachNavbarEvents } from './components/navbar.js';
-import { renderSearchModal, attachSearchModalEvents } from './components/searchModal.js';
+import { renderSearchModal } from './components/searchModal.js';
 import { renderAuthModal, attachAuthModalEvents } from './components/authModal.js';
 
 import { renderHomeView, attachHomeEvents } from './views/home.js';
@@ -10,7 +9,6 @@ import { renderAttendanceView, attachAttendanceEvents } from './views/attendance
 import { renderEventPosterView, attachEventPosterEvents } from './views/eventPoster.js';
 import { renderCertificatesView, attachCertificatesEvents } from './views/certificates.js';
 import { renderMembershipCardView, attachMembershipCardEvents } from './views/membershipCard.js';
-import { renderAttendanceScannerView, attachAttendanceScannerEvents } from './views/attendanceScanner.js';
 import { renderStudentProfileView, attachStudentProfileEvents } from './views/studentProfile.js';
 import { renderProjectsView, attachProjectsEvents } from './views/projects.js';
 import { renderLMSView, attachLMSEvents } from './views/lms.js';
@@ -24,18 +22,12 @@ import { renderVerificationView, attachVerificationEvents } from './views/verifi
 import { renderAdminView, attachAdminEvents } from './views/admin.js';
 import { renderClubAdminDashboardView, attachClubAdminDashboardEvents } from './views/clubAdminDashboard.js';
 import { renderAboutView, attachAboutEvents } from './views/about.js';
-import { renderLeaderboardView, attachLeaderboardEvents } from './views/leaderboard.js';
-import { renderCalendarView, attachCalendarViewEvents } from './views/calendar.js';
-import { renderQuizzesView, attachQuizzesEvents } from './views/quizzes.js';
-import { renderPracticeView, attachPracticeEvents } from './views/practice.js';
-import { renderStudyCirclesView, attachStudyCirclesEvents } from './views/studyCircles.js';
 
 // New Role-Specific Comprehensive Portals
 import { renderLoginView, attachLoginEvents } from './views/login.js';
 import { renderStudentDashboardView, attachStudentDashboardEvents } from './views/studentDashboard.js';
 import { renderCoordinatorPortalView, attachCoordinatorPortalEvents } from './views/coordinatorPortal.js';
 import { renderAdminPortalView, attachAdminPortalEvents } from './views/adminPortal.js';
-import { renderGuestDashboardView, attachGuestDashboardEvents } from './views/guestDashboard.js';
 
 export function parseHash() {
   const raw = window.location.hash || "#/";
@@ -55,23 +47,6 @@ export function handleRoute() {
   const appContainer = document.getElementById("app");
   if (!appContainer) return;
 
-  const user = getCurrentUser();
-  const isLoggedIn = user && !user.isGuest && user.id !== "guest-001";
-
-  // Helper to redirect to correct portal based on role
-  const redirectUserToPortal = (u) => {
-    const role = (u.role || "").toLowerCase();
-    if (role.includes("super admin") || role.includes("director")) {
-      window.location.hash = "#/admin/dashboard";
-    } else if (role.includes("faculty") || role.includes("coordinator")) {
-      window.location.hash = "#/coordinator/dashboard";
-    } else if (role.includes("club admin") || role.includes("leader")) {
-      window.location.hash = "#/club-dashboard";
-    } else {
-      window.location.hash = "#/student/dashboard";
-    }
-  };
-
   // Render Core Layout Shell
   appContainer.innerHTML = `
     <div class="min-h-screen flex flex-col bg-slate-50 text-slate-800">
@@ -87,7 +62,6 @@ export function handleRoute() {
 
   attachNavbarEvents();
   attachAuthModalEvents();
-  attachSearchModalEvents();
 
   const mountPoint = document.getElementById("view-container");
   if (!mountPoint) return;
@@ -97,10 +71,6 @@ export function handleRoute() {
 
   // 1. Dedicated Login Route
   if (route === "#/login") {
-    if (isLoggedIn) {
-      redirectUserToPortal(user);
-      return;
-    }
     mountPoint.innerHTML = renderLoginView();
     attachLoginEvents();
     return;
@@ -108,10 +78,6 @@ export function handleRoute() {
 
   // 2. Student Portal Routes
   if (route.startsWith("#/student")) {
-    if (!isLoggedIn) {
-      window.location.hash = "#/login";
-      return;
-    }
     const sub = route.replace("#/student/", "").replace("#/student", "");
     mountPoint.innerHTML = renderStudentDashboardView(sub || "dashboard");
     attachStudentDashboardEvents();
@@ -120,10 +86,6 @@ export function handleRoute() {
 
   // 3. Coordinator Portal Routes
   if (route.startsWith("#/coordinator")) {
-    if (!isLoggedIn) {
-      window.location.hash = "#/login";
-      return;
-    }
     const sub = route.replace("#/coordinator/", "").replace("#/coordinator", "");
     mountPoint.innerHTML = renderCoordinatorPortalView(sub || "dashboard");
     attachCoordinatorPortalEvents();
@@ -132,10 +94,6 @@ export function handleRoute() {
 
   // 4. Super Admin Portal Routes
   if (route.startsWith("#/admin")) {
-    if (!isLoggedIn) {
-      window.location.hash = "#/login";
-      return;
-    }
     const sub = route.replace("#/admin/", "").replace("#/admin", "");
     mountPoint.innerHTML = renderAdminPortalView(sub || "dashboard");
     attachAdminPortalEvents();
@@ -146,32 +104,6 @@ export function handleRoute() {
   switch (route) {
     case "#/":
     case "":
-      {
-        const user = getCurrentUser();
-        const isLoggedIn = user && !user.isGuest && user.id !== "guest-001";
-        if (!isLoggedIn) {
-          mountPoint.innerHTML = renderLoginView();
-          attachLoginEvents();
-        } else {
-          const role = (user.role || "").toLowerCase();
-          if (role.includes("super admin")) {
-            mountPoint.innerHTML = renderAdminPortalView("dashboard");
-            attachAdminPortalEvents();
-          } else if (role.includes("faculty") || role.includes("coordinator")) {
-            mountPoint.innerHTML = renderCoordinatorPortalView("dashboard");
-            attachCoordinatorPortalEvents();
-          } else if (role.includes("club admin") || role.includes("leader")) {
-            mountPoint.innerHTML = renderClubAdminDashboardView(params);
-            attachClubAdminDashboardEvents(params);
-          } else {
-            mountPoint.innerHTML = renderStudentDashboardView("dashboard");
-            attachStudentDashboardEvents();
-          }
-        }
-      }
-      break;
-
-    case "#/home":
       mountPoint.innerHTML = renderHomeView();
       attachHomeEvents();
       break;
@@ -182,28 +114,13 @@ export function handleRoute() {
       break;
 
     case "#/events":
-    case "#/event-dashboard":
       mountPoint.innerHTML = renderEventsView(params);
       attachEventsEvents(params);
-      break;
-
-    case "#/calendar":
-    case "#/event-calendar":
-      mountPoint.innerHTML = renderCalendarView();
-      attachCalendarViewEvents();
       break;
 
     case "#/attendance":
       mountPoint.innerHTML = renderAttendanceView(params);
       attachAttendanceEvents(params);
-      break;
-
-    case "#/scanner":
-    case "#/attendance-scanner":
-    case "#/badge-scanner":
-    case "#/club-admin/scanner":
-      mountPoint.innerHTML = renderAttendanceScannerView(params);
-      attachAttendanceScannerEvents(params);
       break;
 
     case "#/poster":
@@ -218,11 +135,8 @@ export function handleRoute() {
       break;
 
     case "#/membership-card":
-    case "#/badges":
-    case "#/badge-generator":
-    case "#/member-badge":
-      mountPoint.innerHTML = renderMembershipCardView(params);
-      attachMembershipCardEvents(params);
+      mountPoint.innerHTML = renderMembershipCardView();
+      attachMembershipCardEvents();
       break;
 
     case "#/student-profile":
@@ -231,10 +145,8 @@ export function handleRoute() {
       break;
 
     case "#/projects":
-    case "#/hackathon":
-    case "#/hackathons":
-      mountPoint.innerHTML = renderProjectsView(params);
-      attachProjectsEvents(params);
+      mountPoint.innerHTML = renderProjectsView();
+      attachProjectsEvents();
       break;
 
     case "#/lms":
@@ -267,22 +179,10 @@ export function handleRoute() {
       attachAnalyticsEvents();
       break;
 
-    case "#/leaderboard":
-    case "#/scores":
-      mountPoint.innerHTML = renderLeaderboardView();
-      attachLeaderboardEvents();
-      break;
-
     case "#/club-dashboard":
     case "#/club-analytics":
-      mountPoint.innerHTML = renderClubAdminDashboardView(params);
-      attachClubAdminDashboardEvents(params);
-      break;
-
-    case "#/guest":
-    case "#/guest-dashboard":
-      mountPoint.innerHTML = renderGuestDashboardView(params);
-      attachGuestDashboardEvents();
+      mountPoint.innerHTML = renderClubAdminDashboardView();
+      attachClubAdminDashboardEvents();
       break;
 
     case "#/reports":
@@ -299,25 +199,6 @@ export function handleRoute() {
     case "#/about":
       mountPoint.innerHTML = renderAboutView();
       attachAboutEvents();
-      break;
-
-    case "#/quizzes":
-    case "#/timed-quizzes":
-      mountPoint.innerHTML = renderQuizzesView();
-      attachQuizzesEvents();
-      break;
-
-    case "#/practice":
-    case "#/problem-sets":
-    case "#/compiler":
-      mountPoint.innerHTML = renderPracticeView();
-      attachPracticeEvents();
-      break;
-
-    case "#/study-circles":
-    case "#/peer-circles":
-      mountPoint.innerHTML = renderStudyCirclesView();
-      attachStudyCirclesEvents();
       break;
 
     default:
