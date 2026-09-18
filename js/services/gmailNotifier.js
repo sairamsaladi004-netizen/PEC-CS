@@ -139,9 +139,23 @@ export async function connectGmailOAuth() {
           resolve(cachedAccessToken);
         },
         error_callback: (err) => {
-          console.error('GSI Init Error:', err);
-          showToast('Authorization Cancelled', 'Google sign-in was closed or cancelled.', 'warning');
-          reject(err);
+          const isPopupClosed = err?.type === 'popup_closed' || 
+            err?.message === 'Popup window closed' || 
+            err === 'popup_closed' || 
+            (typeof err === 'string' && err.toLowerCase().includes('closed')) ||
+            (typeof err?.message === 'string' && err.message.toLowerCase().includes('closed'));
+
+          if (isPopupClosed) {
+            console.info('Google authorization popup was closed by user.');
+            showToast('Authorization Cancelled', 'Google sign-in window was closed.', 'info');
+            const cancelErr = new Error('Google sign-in popup was closed.');
+            cancelErr.isCancelled = true;
+            reject(cancelErr);
+          } else {
+            console.warn('Google Identity Services notice:', err?.message || err);
+            showToast('Authorization Notice', err?.message || 'Google sign-in was not completed.', 'warning');
+            reject(err);
+          }
         }
       });
 

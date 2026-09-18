@@ -225,7 +225,7 @@ export function renderCertificatesView(params = {}) {
                 <label class="block font-semibold text-slate-700">Custom Citation Paragraph (Leave blank to use auto-generated academic narrative)</label>
                 <button type="button" id="clear-citation-btn" class="text-[10px] text-blue-600 font-bold hover:underline">Use Auto-Generated</button>
               </div>
-              <textarea id="cust-citation" rows="2" placeholder="Auto-generated based on selected award designation and event details..." class="w-full p-2.5 rounded-xl border border-slate-200 font-serif focus:ring-2 focus:ring-blue-500 focus:outline-none">${cert.customCitation || ''}</textarea>
+              <textarea id="cust-citation" rows="2" placeholder="Auto-generated based on selected award designation and event details..." class="w-full p-2.5 rounded-xl border border-slate-200 font-serif focus:ring-2 focus:ring-blue-500 focus:outline-none">${normalizedCert.customCitation || ''}</textarea>
             </div>
 
             <!-- Save / Mint Actions for Coordinators -->
