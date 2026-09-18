@@ -641,6 +641,104 @@ apiRouter.post('/auth/reset-password', (req, res) => {
   res.json({ success: true, message: "Password updated successfully. You can now login with your new password." });
 });
 
+// 15b. GET /api/auth/supabase-config - Expose Supabase public URL and Anon Key
+apiRouter.get('/auth/supabase-config', (req, res) => {
+  const supabaseUrl = process.env.SUPABASE_URL || "https://cctsc-pragati.supabase.co";
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNjdHNjLXByYWdhdGkiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoyMDAwMDAwMDAwfQ.demo_key_for_preview";
+  const isConfigured = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
+
+  res.json({
+    success: true,
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
+    isConfigured,
+    provider: "google",
+    authDomain: "pragati.ac.in"
+  });
+});
+
+// 15c. POST /api/auth/supabase-sync - Synchronize Google OAuth user to institution database
+apiRouter.post('/auth/supabase-sync', (req, res) => {
+  const { id, email, name, avatar, role, department, year, rollNo } = req.body || {};
+
+  if (!email) {
+    return res.status(400).json({ success: false, message: "Email is required for Google OAuth synchronization." });
+  }
+
+  const db = getDB();
+  const cleanEmail = email.trim().toLowerCase();
+  let existing = (db.users || []).find(u => u.email && u.email.toLowerCase() === cleanEmail);
+
+  if (existing) {
+    existing.avatar = avatar || existing.avatar;
+    existing.emailVerified = true;
+    existing.authProvider = "Supabase Google OAuth";
+    if (name && (!existing.name || existing.name === "Student")) existing.name = name;
+    
+    recordAuditAction(
+      { user: existing, headers: req.headers, socket: req.socket },
+      "SUPABASE_GOOGLE_AUTH_LOGIN",
+      "auth",
+      existing.id,
+      `Signed in via Supabase Google OAuth: ${cleanEmail}`
+    );
+    saveDB(db);
+
+    return res.json({
+      success: true,
+      message: "Google Account authenticated successfully!",
+      user: sanitizeUser(existing),
+      isNew: false
+    });
+  }
+
+  // Create new verified Student account for this Google user
+  const newRoll = rollNo || `23A31A0${Math.floor(500 + Math.random() * 499)}`;
+  const dept = department || "CSE";
+  const salt = generateSalt();
+
+  const newUser = {
+    id: id || `std-sb-${Date.now()}`,
+    name: name || cleanEmail.split('@')[0].replace('.', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+    rollNo: newRoll,
+    email: cleanEmail,
+    role: role ? normalizeRole(role) : ROLES.STUDENT,
+    department: dept,
+    year: year || "2nd Year",
+    section: "A",
+    phone: "",
+    avatar: avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
+    skills: ["Python", "Cloud Computing", "AI Foundations"],
+    interests: ["Innovation", "Open Source"],
+    bio: "Undergraduate student at Pragati Engineering College authenticated via Google OAuth.",
+    salt,
+    passwordHash: hashPassword("GoogleAuth@2026", salt),
+    emailVerified: true,
+    authProvider: "Supabase Google OAuth",
+    membershipId: `PEC-MEM-2026-${dept}-${newRoll.slice(-4)}`,
+    validUntil: "30 June 2028",
+    isDemo: false
+  };
+
+  db.users.push(newUser);
+  recordAuditAction(
+    { user: newUser, headers: req.headers, socket: req.socket },
+    "SUPABASE_GOOGLE_AUTH_REGISTER",
+    "users",
+    newUser.id,
+    `New account registered via Supabase Google OAuth: ${cleanEmail} (Roll: ${newRoll})`
+  );
+  saveDB(db);
+
+  res.json({
+    success: true,
+    message: "Welcome to Pragati CampusTech! Your Google account is verified.",
+    user: sanitizeUser(newUser),
+    isNew: true
+  });
+});
+
+
 // 16. PUT /api/students/profile - Update own student profile (IDOR Protected)
 apiRouter.put('/students/profile', requireAuth, (req, res) => {
   const { userId, phone, avatar, skills, interests, bio } = req.body || {};

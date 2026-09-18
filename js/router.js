@@ -28,6 +28,7 @@ import { renderStudyCirclesView, attachStudyCirclesEvents } from './views/studyC
 
 // New Role-Specific Comprehensive Portals
 import { renderLoginView, attachLoginEvents } from './views/login.js';
+import { renderAuthCallbackView, attachAuthCallbackEvents } from './views/authCallback.js';
 import { renderStudentDashboardView, attachStudentDashboardEvents } from './views/studentDashboard.js';
 import { renderCoordinatorPortalView, attachCoordinatorPortalEvents } from './views/coordinatorPortal.js';
 import { renderDepartmentPortalView, attachDepartmentPortalEvents } from './views/departmentPortal.js';
@@ -74,10 +75,16 @@ export function handleRoute() {
   // Window scroll to top
   window.scrollTo({ top: 0, behavior: 'instant' });
 
-  // 1. Dedicated Login Route
+  // 1. Dedicated Login & OAuth Callback Routes
   if (route === "#/login") {
     mountPoint.innerHTML = renderLoginView();
     attachLoginEvents();
+    return;
+  }
+
+  if (route.startsWith("#/auth/callback") || route.startsWith("#/callback") || window.location.hash.includes("access_token=")) {
+    mountPoint.innerHTML = renderAuthCallbackView();
+    attachAuthCallbackEvents();
     return;
   }
 

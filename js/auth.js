@@ -1,6 +1,7 @@
 import { getDB, saveDB, logAudit, apiRequest } from './db.js';
 import { APP_CONFIG } from './config.js';
 import { ROLES, normalizeRole, hasRolePermission, isUserAuthorizedForClub } from './rbac.js';
+import { signOutSupabase } from './services/supabaseAuth.js';
 
 const ACTIVE_USER_KEY = "campustech_active_user_id";
 
@@ -208,6 +209,7 @@ export async function verifyEmailWithOTP(userId, otp) {
 
 // Logout
 export function logoutUser() {
+  signOutSupabase().catch(() => {});
   if (typeof localStorage !== 'undefined') {
     localStorage.removeItem(ACTIVE_USER_KEY);
   }
