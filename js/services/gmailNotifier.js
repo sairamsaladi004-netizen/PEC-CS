@@ -295,19 +295,35 @@ export function promptOriginMismatchResolutionModal({ error, onTokenEntered }) {
       </div>
 
       <!-- Root Cause Explanation -->
-      <div class="p-4 bg-amber-50/80 rounded-2xl border border-amber-200 text-xs text-amber-950 space-y-2">
+      <div class="p-4 bg-amber-50/80 rounded-2xl border border-amber-200 text-xs text-amber-950 space-y-3">
         <div class="font-bold flex items-center space-x-1.5 text-amber-900">
           <span>ℹ️</span>
-          <span>Why did Google display "Error 400: origin_mismatch"?</span>
+          <span>Google Cloud Console Configuration Guide</span>
         </div>
         <p class="text-[11px] leading-relaxed text-slate-700">
-          Google OAuth 2.0 strictly requires dynamic preview URLs to be registered under <strong>"Authorized JavaScript origins"</strong> in Google Cloud Console.
+          To authorize client ID <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-amber-300 font-bold text-amber-900">199619691962-je55rlmkvrshnnmmd8na9phtg8rkdlco.apps.googleusercontent.com</code>, add the following URLs to <strong>Authorized JavaScript origins</strong> in <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="text-blue-600 underline font-bold">Google Cloud Console → Credentials</a>:
         </p>
-        <div class="p-2.5 bg-white rounded-xl border border-amber-300 font-mono text-[11px] flex items-center justify-between">
-          <span class="truncate text-blue-700 font-bold">${currentOrigin}</span>
-          <button id="copy-origin-btn" class="ml-2 px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold whitespace-nowrap">
-            Copy Origin
-          </button>
+        
+        <div class="space-y-1.5">
+          <div class="p-2 bg-white rounded-xl border border-amber-300 font-mono text-[11px] flex items-center justify-between">
+            <div class="truncate text-blue-800 font-bold">
+              <span class="text-slate-400 text-[9px] block">Development Origin:</span>
+              https://ais-dev-g7mcq736b5wysc7rrepuq3-799970643440.asia-east1.run.app
+            </div>
+            <button onclick="navigator.clipboard.writeText('https://ais-dev-g7mcq736b5wysc7rrepuq3-799970643440.asia-east1.run.app')" class="ml-2 px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold whitespace-nowrap">
+              Copy Dev URL
+            </button>
+          </div>
+
+          <div class="p-2 bg-white rounded-xl border border-amber-300 font-mono text-[11px] flex items-center justify-between">
+            <div class="truncate text-indigo-800 font-bold">
+              <span class="text-slate-400 text-[9px] block">Shared / Production Origin:</span>
+              https://ais-pre-g7mcq736b5wysc7rrepuq3-799970643440.asia-east1.run.app
+            </div>
+            <button onclick="navigator.clipboard.writeText('https://ais-pre-g7mcq736b5wysc7rrepuq3-799970643440.asia-east1.run.app')" class="ml-2 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[10px] font-bold whitespace-nowrap">
+              Copy Prod URL
+            </button>
+          </div>
         </div>
       </div>
 
