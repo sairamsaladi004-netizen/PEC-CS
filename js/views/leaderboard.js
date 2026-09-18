@@ -1,9 +1,8 @@
 // Pragati Engineering College (PEC Autonomous) - CampusTech
-// Student Engagement Score Leaderboard powered by D3.js & Supabase DB Integration
+// Student Engagement Score Leaderboard powered by D3.js
 
 import { getCurrentUser } from '../auth.js';
 import { getDB, apiRequest } from '../db.js';
-import { getSupabaseClient } from '../supabaseClient.js';
 import { showToast } from '../components/toast.js';
 import { renderClubLeaderboardD3 } from '../components/d3Visualizers.js';
 
@@ -22,7 +21,7 @@ export function renderLeaderboardView() {
           <div>
             <div class="flex items-center space-x-2">
               <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase font-mono bg-amber-400 text-slate-950 tracking-wider">
-                SUPABASE LIVE INTEGRATION
+                ENGAGEMENT ANALYTICS
               </span>
               <span class="text-xs text-amber-200 font-bold font-mono">D3.js Interactive Scoring Engine</span>
             </div>

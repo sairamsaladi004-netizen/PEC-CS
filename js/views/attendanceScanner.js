@@ -1,9 +1,8 @@
 // Pragati Engineering College (PEC Autonomous) - CampusTech
-// High-Speed html5-qrcode Attendance Scanner Module for Club Admins with Supabase Synchronization
+// High-Speed html5-qrcode Attendance Scanner Module for Club Admins
 
 import { getCurrentUser } from '../auth.js';
 import { getDB, saveDB, logAudit, apiRequest } from '../db.js';
-import { getSupabaseClient, isSupabaseReady } from '../supabaseClient.js';
 import { showToast } from '../components/toast.js';
 import { ROLES, normalizeRole, isUserAuthorizedForClub } from '../rbac.js';
 import { renderAccessDenied, attachAccessDeniedEvents } from '../components/accessDenied.js';
@@ -65,9 +64,7 @@ export function renderAttendanceScannerView(params = {}) {
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <div class="flex items-center space-x-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
             <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider font-mono">Real-Time Optical Badge Scanner</span>
-            <span class="text-[10px] px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold font-mono">SUPABASE SYNC ENABLED</span>
           </div>
           <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1">Club Attendance & Badge Scanner</h1>
           <p class="text-xs sm:text-sm text-slate-500 mt-0.5">High-speed QR badge verification, duplicate prevention, and automated logging for <strong>${activeClub.name}</strong></p>
@@ -156,10 +153,6 @@ export function renderAttendanceScannerView(params = {}) {
           </div>
 
           <div class="flex items-center space-x-3">
-            <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold font-mono">
-              <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-              <span id="supabase-status-label">Supabase: Live Database Stream</span>
-            </div>
             <div id="offline-scanner-badge" class="hidden px-2.5 py-1 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold">
               <span>Offline Queue: <strong id="offline-scan-count">0</strong></span>
               <button id="sync-offline-scans-btn" class="ml-1 underline text-amber-900 font-black cursor-pointer">Sync</button>
@@ -606,31 +599,11 @@ export function attachAttendanceScannerEvents(params = {}) {
         if (hudYear) hudYear.textContent = `YEAR: ${attendee.year || '3rd Year'}`;
         if (hudNotice) {
           hudNotice.className = isVipTier ? "p-2.5 rounded-xl bg-amber-100 border border-amber-300 text-xs text-amber-950 font-semibold" : "p-2.5 rounded-xl bg-emerald-100 border border-emerald-300 text-xs text-emerald-950 font-semibold";
-          hudNotice.innerHTML = `✓ Admitted via ${gateId}. Cryptographic credentials synchronized with Supabase database.`;
+          hudNotice.innerHTML = `✓ Admitted via ${gateId}. Cryptographic credentials validated.`;
         }
 
         // Also push directly to Supabase client if configured in browser
-        const supabase = getSupabaseClient();
-        if (supabase) {
-          try {
-            await supabase.from('badge_scans').insert({
-              id: data.scanRecord?.id || `SCAN-${Date.now()}`,
-              club_id: clubId,
-              student_id: attendee.id,
-              student_name: attendee.name,
-              roll_no: attendee.rollNo,
-              department: attendee.department,
-              badge_tier: attendee.badgeTier,
-              gate_id: gateId,
-              session_type: sessionType,
-              date: new Date().toISOString().split('T')[0],
-              checkin_time: attendee.checkinTime,
-              scanned_by: `${currentUser.name} (${currentUser.role})`
-            });
-          } catch (supaErr) {
-            console.warn("[Supabase Direct Insert] Notice:", supaErr);
-          }
-        }
+        // (Supabase integration removed)
 
         // Update Roster Table Stream
         const freshDb = getDB();

@@ -3,6 +3,7 @@ import { getDB, apiRequest } from '../db.js';
 import { showToast } from '../components/toast.js';
 import { renderAttendanceTrendChartCard, initStudentAttendanceChart } from '../components/AttendanceTrendChart.js';
 import { renderPeerCircleChat, attachPeerCircleChatEvents } from '../components/peerCircleChat.js';
+import { initOnboardingTour } from '../components/onboardingTour.js';
 import {
   getStudentClubRecommendations,
   getEventParticipationPrediction,
@@ -1138,6 +1139,8 @@ function renderSubSectionContent(tab, ctx) {
 }
 
 export function attachStudentDashboardEvents() {
+  const user = getCurrentUser();
+  initOnboardingTour(user.role);
   attachPeerCircleChatEvents();
 
   const modal = document.getElementById("scan-qr-modal");
