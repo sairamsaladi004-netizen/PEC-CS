@@ -94,9 +94,25 @@ export function handleRoute() {
     return;
   }
 
-  // 3. Coordinator Portal Routes
-  if (route.startsWith("#/coordinator")) {
-    const sub = route.replace("#/coordinator/", "").replace("#/coordinator", "");
+  // 3. Coordinator & Faculty Portal Routes
+  if (
+    route.startsWith("#/coordinator") || 
+    route.startsWith("#/faculty") || 
+    route.startsWith("#/faculty-portal") || 
+    route.startsWith("#/faculty-dashboard") ||
+    route.startsWith("#/faculty-coordinator")
+  ) {
+    let sub = route
+      .replace("#/coordinator/", "")
+      .replace("#/coordinator", "")
+      .replace("#/faculty-portal/", "")
+      .replace("#/faculty-portal", "")
+      .replace("#/faculty-coordinator/", "")
+      .replace("#/faculty-coordinator", "")
+      .replace("#/faculty-dashboard/", "")
+      .replace("#/faculty-dashboard", "")
+      .replace("#/faculty/", "")
+      .replace("#/faculty", "");
     mountPoint.innerHTML = renderCoordinatorPortalView(sub || "dashboard", params);
     attachCoordinatorPortalEvents();
     return;

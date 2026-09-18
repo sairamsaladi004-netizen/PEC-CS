@@ -20,18 +20,28 @@ import {
 } from '../intelligenceEngine.js';
 
 export function renderCoordinatorPortalView(subSection = "dashboard") {
-  const user = getCurrentUser() || {};
-  const currentRole = normalizeRole(user.role);
+  const currentUser = getCurrentUser() || {};
+  const currentRole = normalizeRole(currentUser.role);
+  const db = getDB();
+
+  let user = currentUser;
+  let isSimulatedCoordinator = false;
 
   if (currentRole !== ROLES.FACULTY_COORDINATOR && currentRole !== ROLES.SUPER_ADMIN) {
-    return renderAccessDenied({
-      requiredRole: ROLES.FACULTY_COORDINATOR,
-      attemptedRoute: `#/coordinator/${subSection || 'dashboard'}`,
-      message: `Access denied. The Faculty Coordinator Portal requires <strong>Faculty Coordinator</strong> or <strong>Super Admin</strong> privileges. Your active persona is <strong>${currentRole}</strong>.`
-    });
+    isSimulatedCoordinator = true;
+    const facultyAccount = (db.users || []).find(u => normalizeRole(u.role) === ROLES.FACULTY_COORDINATOR) || {
+      id: "usr-coord-01",
+      name: "Dr. Radhika Sharma",
+      role: ROLES.FACULTY_COORDINATOR,
+      department: "CSE(AIML)",
+      facultyId: "FAC-CSE-AIML-01",
+      assignedClubs: ["I4-08"],
+      clubId: "I4-08",
+      avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80",
+      isDemo: true
+    };
+    user = facultyAccount;
   }
-
-  const db = getDB();
 
   // Find coordinator's assigned club(s)
   const assignedClubIds = user.assignedClubs || (user.clubId ? [user.clubId] : ["I4-08"]);
@@ -53,6 +63,28 @@ export function renderCoordinatorPortalView(subSection = "dashboard") {
   return `
     <div class="space-y-6">
       
+      ${isSimulatedCoordinator ? `
+        <!-- Quick Role Switcher Info Banner -->
+        <div class="bg-gradient-to-r from-purple-900 to-indigo-900 text-white rounded-2xl p-4 border border-purple-700 shadow-md flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div class="flex items-center space-x-3">
+            <span class="w-8 h-8 rounded-xl bg-purple-500/30 flex items-center justify-center text-lg border border-purple-400/40">🎓</span>
+            <div>
+              <div class="text-xs font-bold text-white flex items-center space-x-2">
+                <span>Faculty Coordinator Portal Demo Session</span>
+                <span class="px-2 py-0.2 rounded-full bg-purple-400/20 text-purple-200 text-[10px] font-mono border border-purple-400/30">Active View: ${user.name}</span>
+              </div>
+              <div class="text-[11px] text-purple-200">
+                You are currently viewing as <strong>${user.name}</strong> (${user.department} • ${user.facultyId}). Click switch to make this your active session.
+              </div>
+            </div>
+          </div>
+          <button id="quick-switch-faculty-btn" data-user-id="${user.id}" class="px-4 py-2 bg-white text-purple-950 hover:bg-purple-50 rounded-xl text-xs font-bold transition-all shadow-sm whitespace-nowrap cursor-pointer flex items-center space-x-1.5 shrink-0">
+            <span>Switch Session to ${user.name}</span>
+            <span>→</span>
+          </button>
+        </div>
+      ` : ''}
+
       <!-- Coordinator Header Card -->
       <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div class="flex items-center space-x-4">
@@ -1464,6 +1496,14 @@ function renderCoordinatorTabContent(tab, ctx) {
 
 export function attachCoordinatorPortalEvents() {
   attachAccessDeniedEvents();
+
+  const quickSwitchBtn = document.getElementById("quick-switch-faculty-btn");
+  quickSwitchBtn?.addEventListener("click", () => {
+    const userId = quickSwitchBtn.getAttribute("data-user-id") || "usr-coord-01";
+    switchUser(userId);
+    window.location.reload();
+  });
+
   // Event Creation Modal
   const createModal = document.getElementById("create-event-modal");
   const openCreateBtn = document.getElementById("coord-create-event-btn");

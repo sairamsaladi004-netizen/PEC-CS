@@ -229,6 +229,7 @@ export function renderDepartmentPortalView(subRoute = "dashboard", params = {}) 
 }
 
 export function attachDepartmentPortalEvents() {
+  attachAccessDeniedEvents();
   const currentUser = getCurrentUser() || {};
   const dept = currentUser.department || "CSE";
 
