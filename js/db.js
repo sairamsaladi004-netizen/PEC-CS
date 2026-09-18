@@ -1,5 +1,6 @@
 import { OFFICIAL_PEC_CLUBS } from "./officialClubs.js";
 import { INITIAL_RESOURCES } from "../data/resources.js";
+import { showToast } from './components/toast.js';
 
 export const DB_KEY = "campustech_pec_db_v3";
 
@@ -1355,47 +1356,18 @@ export function resetDB() {
 }
 
 export function logAudit(actor, action, target, details) {
-  let finalActor = actor;
-  let finalAction = action;
-  let finalTarget = target;
-  let finalDetails = details;
-
-  if (actor && typeof actor === "object" && !action && !target && !details) {
-    // Single object configuration style
-    finalAction = actor.action;
-    finalTarget = actor.target || actor.category || "General";
-    finalDetails = actor.details;
-    
-    try {
-      const activeId = typeof localStorage !== "undefined" ? localStorage.getItem("campustech_active_user_id") : null;
-      if (activeId) {
-        const db = getDB();
-        const user = (db.users || []).find(u => u.id === activeId);
-        if (user) {
-          finalActor = `${user.name} (${user.role})`;
-        } else {
-          finalActor = activeId;
-        }
-      } else {
-        finalActor = "System / Guest";
-      }
-    } catch (e) {
-      finalActor = "System";
-    }
-  }
-
   const db = getDB();
   const now = new Date();
   const timestamp = now.toISOString().replace("T", " ").substring(0, 19);
   const logEntry = {
     id: "log-" + Date.now(),
     timestamp,
-    actor: finalActor,
-    user: finalActor,
-    action: finalAction,
-    target: finalTarget,
-    affected_record: finalTarget,
-    details: finalDetails
+    actor,
+    user: actor,
+    action,
+    target,
+    affected_record: target,
+    details
   };
   if (!db.audit_logs) db.audit_logs = [];
   db.audit_logs.unshift(logEntry);
@@ -1490,11 +1462,30 @@ export async function apiRequest(endpoint, method = "GET", body = null) {
 
     // Handle 401 Unauthorized: clear invalid session token
     if (res.status === 401 && token) {
+      console.warn(`[API] 401 Unauthorized detected for endpoint ${endpoint}. Checking Supabase session...`);
+      
+      // Try to refresh Supabase session before logging out
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        try {
+          const { data: { session } } = await supabase.auth.refreshSession();
+          if (session?.access_token) {
+            console.log("[API] Supabase session refreshed successfully, retrying request.");
+            // Retry the request once with new token
+            return await apiRequest(endpoint, method, body);
+          }
+        } catch (e) {
+          console.error("[API] Failed to refresh Supabase session:", e);
+        }
+      }
+      
+      // If refresh failed, proceed with logout
       if (typeof localStorage !== 'undefined') {
         localStorage.removeItem("campustech_session_token");
         localStorage.removeItem("campustech_active_user_id");
       }
       if (typeof window !== 'undefined' && window.location.hash !== '#/login') {
+        showToast("Your session has expired. Please sign in again.", "error");
         window.dispatchEvent(new CustomEvent("auth-changed", { detail: null }));
         window.location.hash = "#/login";
       }

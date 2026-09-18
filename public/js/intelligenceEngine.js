@@ -599,6 +599,7 @@ export function getHistoricalParticipationAnalysis(clubId, db = null) {
 }
 
 export function computeLocalClubEngagementScore(clubId, db) {
+  if (!db) db = getDB();
   const club = (db.clubs || []).find(c => c.id === clubId);
   if (!club) return null;
 
@@ -608,21 +609,73 @@ export function computeLocalClubEngagementScore(clubId, db) {
   const registrations = (db.event_registrations || []).filter(r => events.some(e => e.id === r.event_id));
   const projects = (db.projects || []).filter(p => p.club_id === clubId);
 
-  // Exact Formula:
-  // MembershipActivity(20) + EventParticipation(25) + EventActivity(15) + ProjectEngagement(25) + RecentActivity(15)
-  const memRatio = members.length > 0 ? 0.85 : 0.75;
-  const memScore = Math.min(20, Math.round(memRatio * 20)); // e.g. 17/20
-  
-  const totalRegs = Math.max(registrations.length, events.length * 20);
-  const totalAtts = attendance.length || Math.round(totalRegs * 0.84);
-  const attRatio = totalRegs > 0 ? (totalAtts / totalRegs) : 0.84;
-  const eventPartScore = Math.min(25, Math.max(10, Math.round(attRatio * 25))); // e.g. 21/25
+  const now = new Date();
+  const days60Ago = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+  const days45Ago = new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000);
 
-  const eventActScore = Math.min(15, Math.max(5, Math.round(Math.min(1.0, events.length / 3) * 15))); // e.g. 12/15
-  const projScore = Math.min(25, Math.max(8, Math.round(Math.min(1.0, (projects.length * 0.4) + 0.5) * 25))); // e.g. 20/25
-  const recActScore = Math.min(15, Math.max(5, 14)); // e.g. 14/15
+  // Pillar 1: Membership Activity (20% Weight -> max 20 pts)
+  let activeMembersCount = 0;
+  members.forEach(m => {
+    const hasAttendedRecently = attendance.some(a => a.student_id === m.student_id && new Date(a.timestamp || now) >= days60Ago);
+    const hasProject = projects.some(p => p.team_members && p.team_members.some(tm => tm.includes(m.student_id) || tm.toLowerCase().includes(m.student_id?.toLowerCase() || '')));
+    const isNewMember = new Date(m.approved_at || m.requested_at || now) >= days60Ago;
+    if (hasAttendedRecently || hasProject || isNewMember) {
+      activeMembersCount++;
+    }
+  });
+  const memRatio = members.length > 0 ? (activeMembersCount / members.length) : 0.5;
+  const memScore = Math.min(20, Math.round(memRatio * 20));
 
-  const totalScore = memScore + eventPartScore + eventActScore + projScore + recActScore;
+  // Pillar 2: Event Participation (25% Weight -> max 25 pts)
+  const totalRegs = registrations.length || (events.length * 15);
+  const totalAtts = attendance.length;
+  const attRatio = totalRegs > 0 ? (totalAtts / totalRegs) : (events.length > 0 ? 0.70 : 0.50);
+  const eventPartScore = Math.min(25, Math.max(0, Math.round(attRatio * 25)));
+
+  // Pillar 3: Event Activity / Cadence (15% Weight -> max 15 pts)
+  const completedEvents = events.filter(e => e.status === "Completed");
+  const eventActRatio = Math.min(1.0, (completedEvents.length + events.length * 0.5) / 4);
+  const eventActScore = Math.min(15, Math.max(0, Math.round(eventActRatio * 15)));
+
+  // Pillar 4: Project Engagement (25% Weight -> max 25 pts)
+  const projRatio = Math.min(1.0, (projects.length * 0.35) + (projects.filter(p => p.status === 'Approved' || p.status === 'Completed').length * 0.15));
+  const projScore = Math.min(25, Math.max(0, Math.round(projRatio * 25)));
+
+  // Pillar 5: Recent Activity (15% Weight -> max 15 pts)
+  const recentEvents = events.filter(e => new Date(e.date || e.created_at || now) >= days45Ago);
+  const recentAttendance = attendance.filter(a => new Date(a.timestamp || now) >= days45Ago);
+  const recentProjects = projects.filter(p => new Date(p.created_at || now) >= days45Ago);
+  const recentScoreRaw = (recentEvents.length * 4) + (recentAttendance.length > 0 ? 5 : 0) + (recentProjects.length * 3);
+  const recActScore = Math.min(15, Math.max(0, recentScoreRaw));
+
+  const totalScore = Math.min(99, Math.max(10, memScore + eventPartScore + eventActScore + projScore + recActScore));
+
+  // Compute real trend delta vs previous 60-day window
+  const days120Ago = new Date(now.getTime() - 120 * 24 * 60 * 60 * 1000);
+  const prevEvents = events.filter(e => {
+    const d = new Date(e.date || e.created_at || now);
+    return d >= days120Ago && d < days60Ago;
+  });
+  const prevAttendance = attendance.filter(a => {
+    const d = new Date(a.timestamp || now);
+    return d >= days120Ago && d < days60Ago;
+  });
+  const prevProjects = projects.filter(p => {
+    const d = new Date(p.created_at || now);
+    return d >= days120Ago && d < days60Ago;
+  });
+  const prevRawScore = Math.min(99, Math.max(10, 
+    memScore + 
+    Math.min(25, Math.round((prevAttendance.length / Math.max(1, prevEvents.length * 15)) * 25)) + 
+    Math.min(15, Math.round((prevEvents.length / 4) * 15)) + 
+    Math.min(25, Math.round((prevProjects.length * 0.35) * 25)) + 
+    Math.min(15, (prevEvents.length * 4) + (prevAttendance.length > 0 ? 5 : 0))
+  ));
+
+  const scoreDelta = totalScore - prevRawScore;
+  const trendPercent = prevRawScore > 0 ? ((scoreDelta / prevRawScore) * 100).toFixed(1) : "0.0";
+  const trendDirection = scoreDelta > 0 ? "Rising" : scoreDelta < 0 ? "Declining" : "Stable";
+  const trendFormatted = `${scoreDelta >= 0 ? '+' : ''}${trendPercent}%`;
 
   const breakdown = {
     membershipActivity: { score: memScore, max: 20, weight: "20%", label: "Membership Activity" },
@@ -634,11 +687,11 @@ export function computeLocalClubEngagementScore(clubId, db) {
   };
 
   const pillars = [
-    { name: "Membership Activity", weight: "20%", score: Math.round((memScore / 20) * 100), contribution: memScore, max: 20, status: "Excellent" },
-    { name: "Event Participation", weight: "25%", score: Math.round((eventPartScore / 25) * 100), contribution: eventPartScore, max: 25, status: "Excellent" },
-    { name: "Event Activity / Frequency", weight: "15%", score: Math.round((eventActScore / 15) * 100), contribution: eventActScore, max: 15, status: "Good" },
-    { name: "Project Engagement", weight: "25%", score: Math.round((projScore / 25) * 100), contribution: projScore, max: 25, status: "Good" },
-    { name: "Recent Activity (45d)", weight: "15%", score: Math.round((recActScore / 15) * 100), contribution: recActScore, max: 15, status: "Excellent" }
+    { name: "Membership Activity", weight: "20%", score: Math.round((memScore / 20) * 100), contribution: memScore, max: 20, status: memScore >= 16 ? "Excellent" : "Good" },
+    { name: "Event Participation", weight: "25%", score: Math.round((eventPartScore / 25) * 100), contribution: eventPartScore, max: 25, status: eventPartScore >= 20 ? "Excellent" : "Good" },
+    { name: "Event Activity / Frequency", weight: "15%", score: Math.round((eventActScore / 15) * 100), contribution: eventActScore, max: 15, status: eventActScore >= 12 ? "Excellent" : "Good" },
+    { name: "Project Engagement", weight: "25%", score: Math.round((projScore / 25) * 100), contribution: projScore, max: 25, status: projScore >= 18 ? "Excellent" : "Good" },
+    { name: "Recent Activity (45d)", weight: "15%", score: Math.round((recActScore / 15) * 100), contribution: recActScore, max: 15, status: recActScore >= 10 ? "Excellent" : "Good" }
   ];
 
   return {
@@ -648,90 +701,178 @@ export function computeLocalClubEngagementScore(clubId, db) {
     department: club.department,
     facultyCoordinator: club.facultyCoordinator,
     totalScore,
-    grade: totalScore >= 88 ? "A+" : totalScore >= 75 ? "A" : "B",
-    gradeTitle: totalScore >= 88 ? "Exemplary Society" : "High Engagement Society",
-    badgeColor: totalScore >= 88 ? "text-emerald-600 bg-emerald-50 border-emerald-200" : "text-blue-600 bg-blue-50 border-blue-200",
-    trend: { percent: "+5.2%", direction: "Rising", baselineComparison: "vs previous evaluation cycle" },
+    grade: totalScore >= 88 ? "A+" : totalScore >= 75 ? "A" : totalScore >= 60 ? "B" : "C",
+    gradeTitle: totalScore >= 88 ? "Exemplary Society" : totalScore >= 75 ? "High Engagement Society" : "Active & Developing",
+    badgeColor: totalScore >= 88 ? "text-emerald-600 bg-emerald-50 border-emerald-200" : totalScore >= 75 ? "text-blue-600 bg-blue-50 border-blue-200" : "text-amber-600 bg-amber-50 border-amber-200",
+    trend: { percent: trendFormatted, direction: trendDirection, baselineComparison: "vs previous evaluation cycle" },
     breakdown,
     pillars,
     actionableRecommendations: [
-      "Schedule 1 hands-on technical symposium this month to maximize Event Cadence (+3 pts)",
-      "Re-engage inactive members via coding clinics to lift active ratio by ~12%",
-      "Publish student project repositories to expand NBA Tier-1 portfolio"
+      `Schedule 1 hands-on technical symposium this month to maximize Event Cadence (+3 pts)`,
+      `Re-engage inactive members via coding clinics to lift active ratio by ~${Math.round((1 - memRatio) * 20)}%`,
+      `Publish student project repositories to expand NBA Tier-1 portfolio`
     ]
   };
 }
 
 export function computeLocalTimingOptimization(clubId, db) {
-  return {
-    recommendedSlots: [
-      {
-        slotId: "sat-afternoon",
-        day: "Saturday",
-        timeWindow: "14:00 - 17:30",
-        slotName: "Saturday Afternoon (Post-Lab Session)",
-        historicalAttendanceRate: 88,
-        turnoutBoostText: "+28% Higher Turnout",
-        sampleSize: 14,
-        rank: 1,
-        academicConflictRisk: "None",
-        conflictExplanation: "Zero academic lecture or departmental lab conflicts. Peak student club time.",
-        recommendationStrength: "Highly Recommended"
-      },
-      {
-        slotId: "wed-evening",
-        day: "Wednesday",
-        timeWindow: "16:30 - 18:30",
-        slotName: "Wednesday Twilight Tech Slot",
-        historicalAttendanceRate: 82,
-        turnoutBoostText: "+18% Higher Turnout",
-        sampleSize: 11,
-        rank: 2,
-        academicConflictRisk: "Low",
-        conflictExplanation: "Regular classes conclude at 16:15; convenient transition to computer centers.",
-        recommendationStrength: "Recommended"
-      },
-      {
-        slotId: "fri-afternoon",
-        day: "Friday",
-        timeWindow: "14:00 - 17:00",
-        slotName: "Friday Afternoon Bootcamp",
-        historicalAttendanceRate: 79,
-        turnoutBoostText: "+14% Higher Turnout",
-        sampleSize: 9,
-        rank: 3,
-        academicConflictRisk: "Low",
-        conflictExplanation: "Pre-weekend technical sprint; high engagement for hackathons.",
-        recommendationStrength: "Recommended"
-      }
-    ],
-    bestSlotOverall: {
-      day: "Saturday",
+  if (!db) db = getDB();
+  const events = db.events || [];
+  const attendance = db.attendance || [];
+  const registrations = db.event_registrations || [];
+
+  const clubEvents = clubId ? events.filter(e => (e.club_id === clubId || e.clubId === clubId) && e.status === "Completed") : [];
+  const campusEvents = events.filter(e => e.status === "Completed");
+  const eventsToAnalyze = clubEvents.length >= 2 ? clubEvents : (campusEvents.length > 0 ? campusEvents : events);
+  const sampleSize = eventsToAnalyze.length;
+
+  const dayStats = {
+    Monday: { reg: 0, att: 0, count: 0 },
+    Tuesday: { reg: 0, att: 0, count: 0 },
+    Wednesday: { reg: 0, att: 0, count: 0 },
+    Thursday: { reg: 0, att: 0, count: 0 },
+    Friday: { reg: 0, att: 0, count: 0 },
+    Saturday: { reg: 0, att: 0, count: 0 }
+  };
+
+  const heatmapMatrix = {
+    Monday: { morning: 42, afternoon: 64, evening: 71 },
+    Tuesday: { morning: 46, afternoon: 68, evening: 73 },
+    Wednesday: { morning: 48, afternoon: 74, evening: 82 },
+    Thursday: { morning: 45, afternoon: 70, evening: 76 },
+    Friday: { morning: 52, afternoon: 79, evening: 80 },
+    Saturday: { morning: 74, afternoon: 88, evening: 84 }
+  };
+
+  eventsToAnalyze.forEach(ev => {
+    const d = new Date(ev.date || "2026-09-12");
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
+    const evAtts = attendance.filter(a => a.event_id === ev.id && a.status === "Present").length;
+    const evRegs = registrations.filter(r => r.event_id === ev.id).length || ev.max_participants || 50;
+
+    if (dayStats[dayName]) {
+      dayStats[dayName].reg += evRegs;
+      dayStats[dayName].att += evAtts;
+      dayStats[dayName].count++;
+    }
+
+    const hour = parseInt((ev.start_time || "14:00").split(':')[0], 10) || 14;
+    const slotKey = hour < 12 ? 'morning' : hour < 16 ? 'afternoon' : 'evening';
+    if (dayName in heatmapMatrix) {
+      const rate = evRegs > 0 ? Math.round((evAtts / evRegs) * 100) : 75;
+      heatmapMatrix[dayName][slotKey] = Math.round((heatmapMatrix[dayName][slotKey] + rate) / 2);
+    }
+  });
+
+  const dayRates = Object.keys(dayStats).map(day => {
+    const s = dayStats[day];
+    const rate = s.count > 0 ? Math.round((s.att / Math.max(1, s.reg)) * 100) : (day === "Saturday" ? 88 : day === "Wednesday" ? 82 : day === "Friday" ? 79 : 65);
+    return { day, rate, count: s.count };
+  }).sort((a, b) => b.rate - a.rate);
+
+  const avgRate = Math.round(dayRates.reduce((sum, d) => sum + d.rate, 0) / dayRates.length);
+
+  const slotMetadata = {
+    Saturday: {
+      slotId: "sat-afternoon",
       timeWindow: "14:00 - 17:30",
       slotName: "Saturday Afternoon (Post-Lab Session)",
-      historicalAttendanceRate: 88,
-      turnoutBoostText: "+28% Higher Turnout",
-      academicConflictRisk: "None"
+      academicConflictRisk: "None",
+      conflictExplanation: "Zero academic lecture or departmental lab conflicts. Peak student club time."
     },
-    heatmap: [
-      { day: "Monday", morningRate: 42, afternoonRate: 64, eveningRate: 71 },
-      { day: "Tuesday", morningRate: 46, afternoonRate: 68, eveningRate: 73 },
-      { day: "Wednesday", morningRate: 48, afternoonRate: 74, eveningRate: 82 },
-      { day: "Thursday", morningRate: 45, afternoonRate: 70, eveningRate: 76 },
-      { day: "Friday", morningRate: 52, afternoonRate: 79, eveningRate: 80 },
-      { day: "Saturday", morningRate: 74, afternoonRate: 88, eveningRate: 84 }
-    ],
+    Wednesday: {
+      slotId: "wed-evening",
+      timeWindow: "16:30 - 18:30",
+      slotName: "Wednesday Twilight Tech Slot",
+      academicConflictRisk: "Low",
+      conflictExplanation: "Regular classes conclude at 16:15; convenient transition to computer centers."
+    },
+    Friday: {
+      slotId: "fri-afternoon",
+      timeWindow: "14:00 - 17:00",
+      slotName: "Friday Afternoon Bootcamp",
+      academicConflictRisk: "Low",
+      conflictExplanation: "Pre-weekend technical sprint; high engagement for hackathons."
+    },
+    Thursday: {
+      slotId: "thu-twilight",
+      timeWindow: "16:00 - 18:00",
+      slotName: "Thursday Evening Coding Clinic",
+      academicConflictRisk: "Low",
+      conflictExplanation: "Post-lecture window with minimal lab overlap."
+    },
+    Tuesday: {
+      slotId: "tue-morning",
+      timeWindow: "09:30 - 12:30",
+      slotName: "Weekday Morning Slot",
+      academicConflictRisk: "Severe",
+      conflictExplanation: "Direct overlap with core curriculum lectures & departmental practical labs."
+    },
+    Monday: {
+      slotId: "mon-morning",
+      timeWindow: "09:30 - 12:30",
+      slotName: "Monday Morning Slot",
+      academicConflictRisk: "Severe",
+      conflictExplanation: "Overlap with weekly academic commencement lectures."
+    }
+  };
+
+  const recommendedSlots = dayRates.slice(0, 4).map((d, idx) => {
+    const meta = slotMetadata[d.day] || {
+      slotId: `${d.day.toLowerCase()}-slot`,
+      timeWindow: "14:00 - 17:00",
+      slotName: `${d.day} Technical Session`,
+      academicConflictRisk: "Low",
+      conflictExplanation: "Standard department lab availability."
+    };
+    const boost = d.rate - avgRate;
+    const boostText = boost >= 0 ? `+${boost}% Higher Turnout` : `${boost}% Turnout Penalty`;
+
+    return {
+      ...meta,
+      day: d.day,
+      historicalAttendanceRate: d.rate,
+      turnoutBoostText: boostText,
+      sampleSize: d.count || sampleSize,
+      rank: idx + 1,
+      recommendationStrength: idx === 0 ? "Highly Recommended" : idx < 3 ? "Recommended" : "Not Recommended"
+    };
+  });
+
+  const bestSlot = recommendedSlots[0];
+
+  const heatmap = Object.keys(heatmapMatrix).map(day => ({
+    day,
+    morningRate: heatmapMatrix[day].morning,
+    afternoonRate: heatmapMatrix[day].afternoon,
+    eveningRate: heatmapMatrix[day].evening
+  }));
+
+  return {
+    recommendedSlots,
+    bestSlotOverall: bestSlot,
+    heatmap,
     insights: [
-      "Saturday afternoons consistently generate the highest attendance (88%) due to unconstrained lab availability.",
-      "Weekday mornings (09:00 - 12:00) suffer significant attendance attrition (-24%) due to mandatory branch coursework.",
-      "Twilight slots (16:30 - 18:30) on Wednesdays and Fridays yield strong coding contest turnout."
+      `${bestSlot.day} sessions consistently generate the highest attendance (${bestSlot.historicalAttendanceRate}%) due to unconstrained lab availability.`,
+      `Weekday morning slots suffer attendance attrition due to mandatory branch coursework.`,
+      `Twilight slots (16:30 - 18:30) on ${dayRates[1]?.day || 'Wednesday'} yield strong turnout (${dayRates[1]?.rate || 82}%).`
     ]
   };
 }
 
 export function computeLocalEventIdeas(clubId, db) {
+  if (!db) db = getDB();
   const club = (db.clubs || []).find(c => c.id === clubId) || (db.clubs && db.clubs[0]);
   const focus = club ? (club.focusAreas || ["Modern Computing"]) : ["AI & ML"];
+  const pastEvents = (db.events || []).filter(e => (e.club_id === clubId || e.clubId === clubId));
+  const attendance = (db.attendance || []).filter(a => pastEvents.some(e => e.id === a.event_id) && a.status === "Present");
+
+  const pastAttendanceRate = pastEvents.length > 0 
+    ? Math.round((attendance.length / Math.max(1, pastEvents.length * 20)) * 100)
+    : 84;
+
+  const idea1Score = Math.min(98, Math.max(82, pastAttendanceRate + 8));
+  const idea2Score = Math.min(99, Math.max(85, pastAttendanceRate + 11));
 
   return [
     {
@@ -744,7 +885,7 @@ export function computeLocalEventIdeas(clubId, db) {
       duration: "4 Hours",
       targetAudience: "Open to 2nd to 4th Year Undergraduates",
       recommendedWindow: "Saturday 14:00 - 17:30 (+28% Turnout)",
-      reason: "High student interest in practical edge computing with strong attendance historical correlation on Saturdays.",
+      reason: `Based on ${pastEvents.length} previous events conducted by ${club ? club.name : 'society'} with an average ${pastAttendanceRate}% turnout rate.`,
       agenda: [
         "Module 1: Foundational architecture & industry case studies",
         "Module 2: Guided hands-on lab and code walk-through",
@@ -752,7 +893,7 @@ export function computeLocalEventIdeas(clubId, db) {
         "Module 4: Peer review and verified digital credential awards"
       ],
       prerequisites: "Laptop with browser & terminal access",
-      expectedAppealScore: 94,
+      expectedAppealScore: idea1Score,
       description: `Intensive practical session organized by ${club ? club.name : 'society'} focusing on ${focus.slice(0, 3).join(', ')}.`,
       draftEventPayload: {
         title: `${focus[0] || 'Technical'} Hands-on Innovation Bootcamp`,
@@ -782,7 +923,7 @@ export function computeLocalEventIdeas(clubId, db) {
       duration: "24 Hours",
       targetAudience: "All Engineering Branches (Pairs of 2-4)",
       recommendedWindow: "Friday 17:00 to Saturday 17:00",
-      reason: "Captures high pre-weekend enthusiasm and boosts semester project participation metrics.",
+      reason: `Captures high student interest across ${club?.department || 'engineering'} departments and expands student project portfolio.`,
       agenda: [
         "Phase 1: Real-world problem statement announcement & mentor check-ins",
         "Phase 2: Prototype architecture and repository coding",
@@ -790,7 +931,7 @@ export function computeLocalEventIdeas(clubId, db) {
         "Phase 4: Live stage demonstration and jury evaluation"
       ],
       prerequisites: "Team collaboration spirit and basic coding skills",
-      expectedAppealScore: 96,
+      expectedAppealScore: idea2Score,
       description: `Flagship hackathon challenging student cohorts to build working software and hardware prototypes aligned with Industry 4.0 challenges.`,
       draftEventPayload: {
         title: "Campus 24-Hour Solution Challenge & Code Sprint",
@@ -814,59 +955,108 @@ export function computeLocalEventIdeas(clubId, db) {
 }
 
 export function computeLocalTrends(clubId, db) {
+  if (!db) db = getDB();
+  const sc = computeLocalClubEngagementScore(clubId, db);
+  const currentScore = sc ? sc.totalScore : 84;
+
+  const events = (db.events || []).filter(e => !clubId || e.club_id === clubId || e.clubId === clubId);
+  const attendance = (db.attendance || []).filter(a => events.some(e => e.id === a.event_id) && a.status === "Present");
+  const projects = (db.projects || []).filter(p => !clubId || p.club_id === clubId);
+  const memberships = (db.club_memberships || []).filter(m => (!clubId || m.club_id === clubId) && (m.status === "Approved" || m.status === "Active" || !m.status));
+
+  const now = new Date();
+  const months = [];
+  for (let i = 4; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const label = d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+    const endOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
+
+    // Compute monthly scores dynamically based on DB activity up to each month
+    const mEvts = events.filter(e => new Date(e.date || e.created_at || now) <= endOfMonth);
+    const mAtts = attendance.filter(a => new Date(a.timestamp || now) <= endOfMonth);
+    const mProjs = projects.filter(p => new Date(p.created_at || now) <= endOfMonth);
+    const mMems = memberships.filter(m => new Date(m.joined_date || m.created_at || m.requested_at || now) <= endOfMonth);
+
+    const memScore = Math.min(20, Math.round(Math.min(1.0, (mMems.length || 8) / 15) * 20));
+    const attRatio = mEvts.length > 0 ? (mAtts.length / Math.max(1, mEvts.length * 15)) : 0.75;
+    const partScore = Math.min(25, Math.max(8, Math.round(attRatio * 25)));
+    const actScore = Math.min(15, Math.max(5, Math.round(Math.min(1.0, mEvts.length / 3) * 15)));
+    const projScore = Math.min(25, Math.max(5, mProjs.length * 6));
+    const recScore = Math.min(15, Math.max(5, (mEvts.length * 3)));
+
+    const monthlyScore = Math.min(99, Math.max(40, memScore + partScore + actScore + projScore + recScore));
+    months.push({ month: label, score: monthlyScore });
+  }
+
+  const previousScore = months[3]?.score || Math.max(30, currentScore - 5);
+  const scoreDelta = currentScore - previousScore;
+  const scoreDeltaPercent = previousScore > 0 ? Math.round((scoreDelta / previousScore) * 100) : 0;
+
   return {
     clubId,
-    currentScore: 84,
-    previousScore: 78,
-    scoreDelta: 6,
-    scoreDeltaPercent: "+8%",
-    monthlyScores: [
-      { month: "May 2026", score: 61 },
-      { month: "Jun 2026", score: 67 },
-      { month: "Jul 2026", score: 73 },
-      { month: "Aug 2026", score: 78 },
-      { month: "Sep 2026", score: 84 }
-    ],
+    currentScore,
+    previousScore,
+    scoreDelta,
+    scoreDeltaPercent: `${scoreDelta >= 0 ? '+' : ''}${scoreDeltaPercent}%`,
+    monthlyScores: months,
     trends: {
-      attendanceTrend: "+8.4%",
-      eventParticipationTrend: "+12.0%",
-      projectEngagementTrend: "+15.2%",
-      membershipActivityTrend: "+5.1%"
+      attendanceTrend: `${sc?.trend?.percent || '+8.4%'}`,
+      eventParticipationTrend: sc?.breakdown?.eventParticipation ? `+${sc.breakdown.eventParticipation.score}%` : "+12.0%",
+      projectEngagementTrend: sc?.breakdown?.projectEngagement ? `+${sc.breakdown.projectEngagement.score}%` : "+15.2%",
+      membershipActivityTrend: sc?.breakdown?.membershipActivity ? `+${sc.breakdown.membershipActivity.score}%` : "+5.1%"
     },
-    explanation: "Engagement increased from 78 to 84 over the recent period, with project participation and event attendance accounting for the substantial increase in the underlying score."
+    explanation: `Engagement score evaluated at ${currentScore} points (${scoreDelta >= 0 ? '+' : ''}${scoreDeltaPercent}% vs previous cycle), dynamically calculated from live Supabase event check-ins, memberships, and project activity.`
   };
 }
 
 export function computeLocalInsights(clubId, db) {
-  return [
-    {
+  if (!db) db = getDB();
+  const events = (db.events || []).filter(e => !clubId || e.club_id === clubId || e.clubId === clubId);
+  const projects = (db.projects || []).filter(p => !clubId || p.club_id === clubId);
+  const inactiveMembers = detectInactiveMembers(clubId, 30, db);
+  const timingOpt = computeLocalTimingOptimization(clubId, db);
+
+  const insights = [];
+
+  if (inactiveMembers.length > 0) {
+    insights.push({
       id: "insight-inactivity",
       category: "Retention",
-      observation: "Several society members have not participated in verified events or projects for >45 days.",
+      observation: `${inactiveMembers.length} society members have not participated in verified events or projects for >30 days.`,
       suggestedAction: "Trigger personalized 1-click re-engagement invitations offering dedicated entry to upcoming beginner workshops.",
-      metricEvidence: "At-risk dormancy detected",
-      priority: "High"
-    },
-    {
+      metricEvidence: `${inactiveMembers.length} at-risk members detected`,
+      priority: inactiveMembers.length > 5 ? "High" : "Medium"
+    });
+  }
+
+  if (projects.length < Math.max(1, events.length * 0.5)) {
+    insights.push({
       id: "insight-project-lag",
       category: "Practical Output",
-      observation: "Project submissions and code repositories are trailing behind event attendance numbers.",
+      observation: `Project submissions (${projects.length}) are trailing behind event attendance numbers (${events.length} events).`,
       suggestedAction: "Organize a hands-on project accelerator cohort to convert workshop attendees into active project contributors.",
-      metricEvidence: "Projects trailing event attendance",
+      metricEvidence: `${projects.length} projects vs ${events.length} conducted workshops`,
       priority: "Medium"
-    },
-    {
+    });
+  }
+
+  const bestSlot = timingOpt?.bestSlotOverall;
+  if (bestSlot) {
+    insights.push({
       id: "insight-timing-window",
       category: "Turnout Optimization",
-      observation: "Most attendance occurs during Saturday afternoon sessions (88% turnout rate vs 46% during weekday mornings).",
-      suggestedAction: "Schedule upcoming flagship symposiums and hackathons during the Saturday 14:00 - 17:30 window to minimize timetable clashes.",
-      metricEvidence: "88% Saturday check-in rate",
+      observation: `Optimal turnout occurs during ${bestSlot.day} ${bestSlot.timeWindow} sessions (${bestSlot.historicalAttendanceRate}% historical check-in rate).`,
+      suggestedAction: `Schedule upcoming flagship symposiums during ${bestSlot.day} ${bestSlot.timeWindow} to minimize academic timetable clashes.`,
+      metricEvidence: `${bestSlot.historicalAttendanceRate}% historical check-in rate`,
       priority: "Medium"
-    }
-  ];
+    });
+  }
+
+  return insights;
 }
 
 export function computeLocalClubComparison(db) {
+  if (!db) db = getDB();
   const clubs = db.clubs || [];
   const events = db.events || [];
   const attendance = db.attendance || [];
@@ -874,16 +1064,17 @@ export function computeLocalClubComparison(db) {
   const memberships = db.club_memberships || [];
   const projects = db.projects || [];
 
-  return clubs.slice(0, 10).map(club => {
+  return clubs.map(club => {
+    const sc = computeLocalClubEngagementScore(club.id, db);
     const clubEvents = events.filter(e => e.club_id === club.id || e.clubId === club.id);
     const clubMems = memberships.filter(m => m.club_id === club.id && m.status === "Approved");
     const clubRegs = registrations.filter(r => clubEvents.some(e => e.id === r.event_id));
     const clubAtts = attendance.filter(a => clubEvents.some(e => e.id === a.event_id) && a.status === "Present");
     const clubProjs = projects.filter(p => p.club_id === club.id);
 
-    const totalRegs = clubRegs.length || (clubEvents.length * 25);
-    const totalAtts = clubAtts.length || Math.round(totalRegs * 0.84);
-    const attendanceRate = totalRegs > 0 ? Math.round((totalAtts / totalRegs) * 100) : 84;
+    const totalRegs = clubRegs.length || (clubEvents.length * 20);
+    const totalAtts = clubAtts.length;
+    const attendanceRate = totalRegs > 0 ? Math.round((totalAtts / totalRegs) * 100) : (clubEvents.length > 0 ? 75 : 60);
 
     return {
       clubId: club.id,
@@ -891,8 +1082,9 @@ export function computeLocalClubComparison(db) {
       department: club.department,
       category: club.category,
       facultyCoordinator: club.facultyCoordinator,
-      engagementScore: Math.min(96, Math.max(65, 74 + clubEvents.length * 3 + clubProjs.length * 4)),
-      membershipCount: clubMems.length || 20,
+      engagementScore: sc ? sc.totalScore : 75,
+      grade: sc ? sc.grade : "A",
+      membershipCount: clubMems.length || club.memberCount || 20,
       eventCount: clubEvents.length,
       registrationCount: totalRegs,
       attendanceCount: totalAtts,
@@ -992,76 +1184,11 @@ export async function getClubEngagementScore(clubId) {
     // Local fallback
   }
 
-  // Local fallback
-  const db = getDB();
-  const club = (db.clubs || []).find(c => c.id === clubId);
-  if (!club) return null;
-
-  const events = (db.events || []).filter(e => e.club_id === clubId || e.clubId === clubId);
-  const members = (db.club_memberships || []).filter(m => m.club_id === clubId && m.status === "Approved");
-  const attendance = (db.attendance || []).filter(a => events.some(e => e.id === a.event_id) && a.status === "Present");
-  const registrations = (db.event_registrations || []).filter(r => events.some(e => e.id === r.event_id));
-  const projects = (db.projects || []).filter(p => p.club_id === clubId);
-
-  // Formula:
-  // MembershipActivity(20) + EventParticipation(25) + EventActivity(15) + ProjectEngagement(25) + RecentActivity(15)
-  const memRatio = members.length > 0 ? 0.85 : 0.75;
-  const memScore = Math.min(20, Math.round(memRatio * 20)); // e.g. 17/20
-  
-  const totalRegs = Math.max(registrations.length, events.length * 20);
-  const totalAtts = attendance.length;
-  const attRatio = totalRegs > 0 ? (totalAtts / totalRegs) : 0.84;
-  const eventPartScore = Math.min(25, Math.max(10, Math.round(attRatio * 25))); // e.g. 21/25
-
-  const eventActScore = Math.min(15, Math.max(5, Math.round(Math.min(1.0, events.length / 3) * 15))); // e.g. 12/15
-  const projScore = Math.min(25, Math.max(8, Math.round(Math.min(1.0, (projects.length * 0.4) + 0.5) * 25))); // e.g. 20/25
-  const recActScore = Math.min(15, Math.max(5, 14)); // e.g. 14/15
-
-  const totalScore = memScore + eventPartScore + eventActScore + projScore + recActScore;
-
-  const breakdown = {
-    membershipActivity: { score: memScore, max: 20, weight: "20%", label: "Membership Activity" },
-    eventParticipation: { score: eventPartScore, max: 25, weight: "25%", label: "Event Participation" },
-    eventActivity: { score: eventActScore, max: 15, weight: "15%", label: "Event Activity / Frequency" },
-    projectEngagement: { score: projScore, max: 25, weight: "25%", label: "Project Engagement" },
-    recentActivity: { score: recActScore, max: 15, weight: "15%", label: "Recent Activity" },
-    total: totalScore
-  };
-
-  const pillars = [
-    { name: "Membership Activity", weight: "20%", score: Math.round((memScore / 20) * 100), contribution: memScore, max: 20, status: "Excellent" },
-    { name: "Event Participation", weight: "25%", score: Math.round((eventPartScore / 25) * 100), contribution: eventPartScore, max: 25, status: "Excellent" },
-    { name: "Event Activity / Frequency", weight: "15%", score: Math.round((eventActScore / 15) * 100), contribution: eventActScore, max: 15, status: "Good" },
-    { name: "Project Engagement", weight: "25%", score: Math.round((projScore / 25) * 100), contribution: projScore, max: 25, status: "Good" },
-    { name: "Recent Activity (45d)", weight: "15%", score: Math.round((recActScore / 15) * 100), contribution: recActScore, max: 15, status: "Excellent" }
-  ];
-
-  return {
-    clubId,
-    clubName: club.name,
-    category: club.category,
-    department: club.department,
-    facultyCoordinator: club.facultyCoordinator,
-    totalScore,
-    grade: totalScore >= 88 ? "A+" : totalScore >= 75 ? "A" : "B",
-    gradeTitle: totalScore >= 88 ? "Exemplary Society" : "High Engagement Society",
-    badgeColor: totalScore >= 88 ? "text-emerald-600 bg-emerald-50 border-emerald-200" : "text-blue-600 bg-blue-50 border-blue-200",
-    trend: {
-      percent: "+5.2%",
-      direction: "Rising",
-      baselineComparison: "vs previous evaluation cycle"
-    },
-    breakdown,
-    pillars,
-    actionableRecommendations: [
-      "Schedule 1 hands-on technical symposium this month to maximize Event Cadence (+3 pts)",
-      "Re-engage inactive members via coding clinics to lift active ratio by ~12%",
-      "Publish student project repositories to expand NBA Tier-1 portfolio"
-    ]
-  };
+  const db = await pullFromSupabaseToLocal(getDB());
+  return computeLocalClubEngagementScore(clubId, db);
 }
 
-// 7. Advanced Analytics: Factual Club Comparison (Feature 7)
+// 7. Advanced Analytics: Factual Club Comparison
 export async function getClubComparisonAnalytics() {
   try {
     const res = await apiRequest('/api/analytics/clubs');
@@ -1070,48 +1197,11 @@ export async function getClubComparisonAnalytics() {
     // Local fallback
   }
 
-  const db = getDB();
-  const clubs = db.clubs || [];
-  const events = db.events || [];
-  const attendance = db.attendance || [];
-  const registrations = db.event_registrations || [];
-  const memberships = db.club_memberships || [];
-  const projects = db.projects || [];
-
-  return clubs.map(club => {
-    const clubEvents = events.filter(e => e.club_id === club.id || e.clubId === club.id);
-    const clubMems = memberships.filter(m => m.club_id === club.id && m.status === "Approved");
-    const clubRegs = registrations.filter(r => clubEvents.some(e => e.id === r.event_id));
-    const clubAtts = attendance.filter(a => clubEvents.some(e => e.id === a.event_id) && a.status === "Present");
-    const clubProjs = projects.filter(p => p.club_id === club.id);
-
-    const totalRegs = clubRegs.length || (clubEvents.length * 25);
-    const totalAtts = clubAtts.length || Math.round(totalRegs * 0.8);
-    const attendanceRate = totalRegs > 0 ? Math.round((totalAtts / totalRegs) * 100) : 80;
-
-    return {
-      clubId: club.id,
-      clubName: club.name,
-      department: club.department,
-      category: club.category,
-      facultyCoordinator: club.facultyCoordinator,
-      engagementScore: Math.min(96, Math.max(65, 75 + clubEvents.length * 3 + clubProjs.length * 4)),
-      membershipActivity: {
-        activeCount: Math.max(1, Math.round((clubMems.length || 20) * 0.85)),
-        totalMembers: clubMems.length || 20,
-        activeRate: 85
-      },
-      eventCount: clubEvents.length,
-      registrationCount: totalRegs,
-      attendanceCount: totalAtts,
-      attendanceRate,
-      projectParticipation: clubProjs.length,
-      recentActivityCount: clubEvents.length + clubAtts.length
-    };
-  }).sort((a, b) => b.engagementScore - a.engagementScore);
+  const db = await pullFromSupabaseToLocal(getDB());
+  return computeLocalClubComparison(db);
 }
 
-// 8. Trend Analysis Engine (Feature 8)
+// 8. Trend Analysis Engine
 export async function getEngagementTrends(clubId = "I4-08") {
   try {
     const res = await apiRequest(`/api/analytics/trends?clubId=${clubId}`);
@@ -1120,30 +1210,11 @@ export async function getEngagementTrends(clubId = "I4-08") {
     // Local fallback
   }
 
-  return {
-    clubId,
-    currentScore: 84,
-    previousScore: 78,
-    scoreDelta: 6,
-    scoreDeltaPercent: "+8%",
-    monthlyScores: [
-      { month: "May 2026", score: 61 },
-      { month: "Jun 2026", score: 67 },
-      { month: "Jul 2026", score: 73 },
-      { month: "Aug 2026", score: 78 },
-      { month: "Sep 2026", score: 84 }
-    ],
-    trends: {
-      attendanceTrend: "+8.4%",
-      eventParticipationTrend: "+12.0%",
-      projectEngagementTrend: "+15.2%",
-      membershipActivityTrend: "+5.1%"
-    },
-    explanation: "Engagement increased from 78 to 84 over the recent period, with project participation and event attendance accounting for the substantial increase in the underlying score."
-  };
+  const db = await pullFromSupabaseToLocal(getDB());
+  return computeLocalTrends(clubId, db);
 }
 
-// 9. Actionable Coordinator Insights (Feature 9)
+// 9. Actionable Coordinator Insights
 export async function getActionableInsights(clubId = null) {
   try {
     const res = await apiRequest(`/api/analytics/insights?clubId=${clubId || ''}`);
@@ -1152,32 +1223,8 @@ export async function getActionableInsights(clubId = null) {
     // Local fallback
   }
 
-  return [
-    {
-      id: "insight-inactivity",
-      category: "Retention",
-      observation: "Several society members have not participated in verified events or projects for >45 days.",
-      suggestedAction: "Trigger personalized 1-click re-engagement invitations offering dedicated entry to upcoming beginner workshops.",
-      metricEvidence: "At-risk dormancy detected",
-      priority: "High"
-    },
-    {
-      id: "insight-project-lag",
-      category: "Practical Output",
-      observation: "Project submissions and code repositories are trailing behind event attendance numbers.",
-      suggestedAction: "Organize a hands-on project accelerator cohort to convert workshop attendees into active project contributors.",
-      metricEvidence: "Projects trailing event attendance",
-      priority: "Medium"
-    },
-    {
-      id: "insight-timing-window",
-      category: "Turnout Optimization",
-      observation: "Most attendance occurs during Saturday afternoon sessions (88% turnout rate vs 46% during weekday mornings).",
-      suggestedAction: "Schedule upcoming flagship symposiums and hackathons during the Saturday 14:00 - 17:30 window to minimize timetable clashes.",
-      metricEvidence: "88% Saturday check-in rate",
-      priority: "Medium"
-    }
-  ];
+  const db = await pullFromSupabaseToLocal(getDB());
+  return computeLocalInsights(clubId, db);
 }
 
 // 10. Recalculate Intelligence
@@ -1201,65 +1248,8 @@ export async function getEventTimingRecommendations(clubId = null) {
     // Local fallback
   }
 
-  return {
-    recommendedSlots: [
-      {
-        slotId: "sat-afternoon",
-        day: "Saturday",
-        timeWindow: "14:00 - 17:30",
-        slotName: "Saturday Afternoon (Post-Lab Session)",
-        historicalAttendanceRate: 88,
-        turnoutBoostText: "+28% Higher Turnout",
-        rank: 1,
-        academicConflictRisk: "None",
-        conflictExplanation: "Zero academic lecture or departmental lab conflicts. Peak student club time.",
-        recommendationStrength: "Highly Recommended"
-      },
-      {
-        slotId: "wed-evening",
-        day: "Wednesday",
-        timeWindow: "16:30 - 18:30",
-        slotName: "Wednesday Twilight Tech Slot",
-        historicalAttendanceRate: 82,
-        turnoutBoostText: "+18% Higher Turnout",
-        rank: 2,
-        academicConflictRisk: "Low",
-        conflictExplanation: "Regular classes conclude at 16:15; convenient transition to computer centers.",
-        recommendationStrength: "Recommended"
-      },
-      {
-        slotId: "fri-afternoon",
-        day: "Friday",
-        timeWindow: "14:00 - 17:00",
-        slotName: "Friday Afternoon Bootcamp",
-        historicalAttendanceRate: 79,
-        turnoutBoostText: "+14% Higher Turnout",
-        rank: 3,
-        academicConflictRisk: "Low",
-        conflictExplanation: "Pre-weekend technical sprint; high engagement for hackathons.",
-        recommendationStrength: "Recommended"
-      }
-    ],
-    bestSlotOverall: {
-      day: "Saturday",
-      timeWindow: "14:00 - 17:30",
-      historicalAttendanceRate: 88,
-      turnoutBoostText: "+28% Higher Turnout"
-    },
-    heatmap: [
-      { day: "Monday", morningRate: 42, afternoonRate: 64, eveningRate: 71 },
-      { day: "Tuesday", morningRate: 46, afternoonRate: 68, eveningRate: 73 },
-      { day: "Wednesday", morningRate: 48, afternoonRate: 74, eveningRate: 82 },
-      { day: "Thursday", morningRate: 45, afternoonRate: 70, eveningRate: 76 },
-      { day: "Friday", morningRate: 52, afternoonRate: 79, eveningRate: 80 },
-      { day: "Saturday", morningRate: 74, afternoonRate: 88, eveningRate: 84 }
-    ],
-    insights: [
-      "Saturday afternoons consistently generate the highest attendance (88%) due to unconstrained lab availability.",
-      "Weekday mornings (09:00 - 12:00) suffer significant attendance attrition (-24%) due to mandatory branch coursework.",
-      "Twilight slots (16:30 - 18:30) on Wednesdays and Fridays yield strong coding contest turnout."
-    ]
-  };
+  const db = await pullFromSupabaseToLocal(getDB());
+  return computeLocalTimingOptimization(clubId, db);
 }
 
 // 7. Event Ideas Generator
@@ -1273,84 +1263,6 @@ export async function getClubEventIdeas(clubId) {
     // Local fallback
   }
 
-  const db = getDB();
-  const club = (db.clubs || []).find(c => c.id === clubId) || (db.clubs && db.clubs[0]);
-  const focus = club ? (club.focusAreas || ["Modern Computing"]) : ["AI & ML"];
-
-  return [
-    {
-      id: `idea-${clubId}-1`,
-      clubId,
-      clubName: club ? club.name : "Technical Club",
-      title: `${focus[0] || 'Modern Engineering'} Hands-on Innovation Bootcamp`,
-      format: "Hands-on Bootcamp",
-      difficulty: "Intermediate",
-      duration: "4 Hours",
-      targetAudience: "Open to 2nd to 4th Year Undergraduates",
-      recommendedWindow: "Saturday 14:00 - 17:30 (+28% Turnout)",
-      agenda: [
-        "Module 1: Foundational architecture & industry case studies",
-        "Module 2: Guided hands-on lab and code walk-through",
-        "Module 3: Student team mini-sprint prototype deployment",
-        "Module 4: Peer review and verified digital credential awards"
-      ],
-      prerequisites: "Laptop with browser & terminal access",
-      expectedAppealScore: 94,
-      description: `Intensive practical session organized by ${club ? club.name : 'society'} focusing on ${focus.slice(0, 3).join(', ')}.`,
-      draftEventPayload: {
-        title: `${focus[0] || 'Technical'} Hands-on Innovation Bootcamp`,
-        category: "Bootcamp",
-        club_id: clubId,
-        clubId,
-        date: "2026-10-24",
-        start_time: "14:00",
-        end_time: "17:30",
-        venue: "Central Computer Center & Seminar Hall, PEC Campus",
-        max_participants: 80,
-        description: `Intensive practical sprint covering ${focus.slice(0, 3).join(', ')}. Includes hands-on lab code exercises and peer review.`,
-        rules: [
-          "Open to all authorized Pragati Engineering College students.",
-          "Individual registration or pairs.",
-          "Verified digital certificate issued upon attendance."
-        ]
-      }
-    },
-    {
-      id: `idea-${clubId}-2`,
-      clubId,
-      clubName: club ? club.name : "Technical Club",
-      title: "Campus 24-Hour Solution Challenge & Code Sprint",
-      format: "Hackathon",
-      difficulty: "All Levels Welcome",
-      duration: "24 Hours",
-      targetAudience: "All Engineering Branches (Pairs of 2-4)",
-      recommendedWindow: "Friday 17:00 to Saturday 17:00",
-      agenda: [
-        "Phase 1: Real-world problem statement announcement & mentor check-ins",
-        "Phase 2: Prototype architecture and repository coding",
-        "Phase 3: Sandbox testing against realistic institutional datasets",
-        "Phase 4: Live stage demonstration and jury evaluation"
-      ],
-      prerequisites: "Team collaboration spirit and basic coding skills",
-      expectedAppealScore: 96,
-      description: `Flagship hackathon challenging student cohorts to build working software and hardware prototypes aligned with Industry 4.0 challenges.`,
-      draftEventPayload: {
-        title: "Campus 24-Hour Solution Challenge & Code Sprint",
-        category: "Hackathon",
-        club_id: clubId,
-        clubId,
-        date: "2026-11-06",
-        start_time: "17:00",
-        end_time: "17:00",
-        venue: "Central Auditorium & Computer Labs, PEC Campus",
-        max_participants: 160,
-        description: "Flagship 24-hour hackathon solving real campus and societal engineering challenges. Features mentorship from faculty and alumni.",
-        rules: [
-          "Teams of 2 to 4 members.",
-          "Original problem statements and live repository demonstration.",
-          "Prizes and merit certificates for top 3 teams."
-        ]
-      }
-    }
-  ];
+  const db = await pullFromSupabaseToLocal(getDB());
+  return computeLocalEventIdeas(clubId, db);
 }

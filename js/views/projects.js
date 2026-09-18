@@ -1,4 +1,4 @@
-import { getDB, apiRequest, saveDB, logAudit } from '../db.js';
+import { getDB, saveDB, logAudit } from '../db.js';
 import { getCurrentUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 
@@ -536,10 +536,8 @@ export function attachProjectsEvents(params = {}) {
       const db = getDB();
       const proj = db.projects.find(p => p.id === projId);
       if (proj) {
-        
         proj.upvotes = (proj.upvotes || 12) + 1;
-        apiRequest(`/api/projects/${projId}/upvote`, 'POST').catch(console.error);
-
+        saveDB(db);
         const countSpan = btn.querySelector(".upvote-count");
         if (countSpan) countSpan.innerText = proj.upvotes;
         showToast("Upvote Recorded", `Thank you for supporting ${proj.title}!`, "success");
@@ -594,10 +592,9 @@ export function attachProjectsEvents(params = {}) {
           facultyReview: null
         };
 
-        
         db.projects.unshift(newProj);
-        apiRequest('/api/projects/create', 'POST', newProj).catch(console.error);
-
+        saveDB(db);
+        logAudit(`${user.name} (${user.role})`, "Submitted Project", newProj.title, `Domain: ${newProj.domain}`);
         showToast("Project Submitted", "Submitted for faculty review and institutional endorsement!", "success");
         modal.classList.add("hidden");
         setTimeout(() => window.location.reload(), 300);
@@ -634,17 +631,16 @@ export function attachProjectsEvents(params = {}) {
       const proj = db.projects.find(p => p.id === projId);
 
       if (proj) {
-        
         proj.facultyReview = {
-          rating: parseFloat(rating),
-          remarks: feedback,
+          rating: parseFloat(document.getElementById("endorse-rating").value),
+          status: document.getElementById("endorse-status").value,
+          remarks: document.getElementById("endorse-remarks").value,
           reviewer: user.name,
-          status: "Institutionally Endorsed",
           reviewedAt: new Date().toISOString().split("T")[0]
         };
         proj.status = proj.facultyReview.status;
-        apiRequest(`/api/projects/${projId}/endorse`, 'POST', { rating, feedback }).catch(console.error);
-
+        saveDB(db);
+        logAudit(`${user.name} (${user.role})`, "Faculty Endorsement", proj.title, `Rating: ${proj.facultyReview.rating}/5.0`);
         showToast("Endorsement Ratified", `Faculty review recorded for ${proj.title}!`, "success");
         endorseModal.classList.add("hidden");
         setTimeout(() => window.location.reload(), 300);
@@ -735,11 +731,11 @@ export function attachProjectsEvents(params = {}) {
         if (idx === 0) entry.status = "Winner - 1st Place";
         else if (idx === 1) entry.status = "Runner Up - 2nd Place";
         else if (idx === 2) entry.status = "Special Jury Citation";
-        
         else entry.status = "Active Contender";
       });
-      apiRequest(`/api/hackathons/${hackathon.id}/register`, 'POST', { teamName, members, problemStatementId: psId }).catch(console.error);
 
+      saveDB(db);
+      logAudit(user.name || "Student", "Registered Hackathon Team", teamName, `Problem Statement: ${psId}`);
       showToast("Team Registered Successfully!", `${teamName} is now live on the hackathon leaderboard!`, "success");
       
       if (hackModal) hackModal.classList.add("hidden");
@@ -796,15 +792,11 @@ export function attachProjectsEvents(params = {}) {
             if (idx === 0) entry.status = "Winner - 1st Place";
             else if (idx === 1) entry.status = "Runner Up - 2nd Place";
             else if (idx === 2) entry.status = "Special Jury Citation";
-            
             else entry.status = "Active Contender";
           });
-          apiRequest(`/api/hackathons/${hackathon.id}/evaluate`, 'POST', { 
-            teamId: teamEntry.id, 
-            scores: { innovation: inno, technical: arch, impact: impl, presentation: pres }, 
-            feedback: remarks 
-          }).catch(console.error);
 
+          saveDB(db);
+          logAudit(user.name || "Faculty Jury", "Hackathon Rubric Evaluation", teamName, `Score: ${totalScore}/100`);
           showToast("Leaderboard Updated", `${teamName} evaluated with score of ${totalScore}/100!`, "success");
           
           if (judgeModal) judgeModal.classList.add("hidden");

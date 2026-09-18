@@ -2,11 +2,14 @@ export async function renderCertificate(element, options = {}) {
   const { action = 'download', scale = 3.0, filename = 'certificate.png' } = options;
 
   if (!element) {
-    throw new Error("No element provided to renderCertificate");
+    console.error("No element provided to renderCertificate");
+    return;
   }
 
   if (!window.html2canvas) {
-    throw new Error("html2canvas library is not loaded. Please ensure you have internet access and reload.");
+    console.error("html2canvas library is not loaded.");
+    alert("html2canvas library is not loaded. Please ensure you have internet access and reload.");
+    return;
   }
 
   try {
@@ -29,6 +32,6 @@ export async function renderCertificate(element, options = {}) {
     }
   } catch (error) {
     console.error("Error rendering or downloading certificate:", error);
-    throw new Error("Failed to render certificate as image: " + error.message);
+    alert("Failed to render certificate as image: " + error.message);
   }
 }

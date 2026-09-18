@@ -63,7 +63,7 @@ export function renderAdminView(params = {}) {
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div class="flex items-center space-x-2">
-            <span class="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-mono font-bold uppercase">Super Admin & Institutional Governance</span>
+            <span class="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-mono font-bold uppercase">Director (Academics) & Institutional Governance</span>
           </div>
           <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Council Governance Console</h1>
           <p class="text-xs sm:text-sm text-slate-500">Manage chapter life-cycles, audit budget claims, configure academic policies, and inspect immutable audit logs</p>

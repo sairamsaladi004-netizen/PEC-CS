@@ -1,23 +1,6 @@
-export function showToast(titleOrMessage, messageOrType, typeParam = "info") {
+export function showToast(message, type = "info") {
   const container = document.getElementById("toast-container");
   if (!container) return;
-
-  // Handle both (message, type) and (title, message, type) signatures
-  let title = "Notification";
-  let message = titleOrMessage;
-  let type = messageOrType || "info";
-
-  if (typeParam && ["success", "error", "warning", "info"].includes(typeParam)) {
-    // It was called as (title, message, type)
-    title = titleOrMessage;
-    message = messageOrType;
-    type = typeParam;
-  } else if (["success", "error", "warning", "info"].includes(messageOrType)) {
-    // It was called as (message, type)
-    title = messageOrType.charAt(0).toUpperCase() + messageOrType.slice(1);
-    message = titleOrMessage;
-    type = messageOrType;
-  }
 
   const toast = document.createElement("div");
   toast.className = `pointer-events-auto flex items-center justify-between p-4 rounded-2xl shadow-xl border text-xs font-semibold transition-all duration-300 transform translate-y-2 opacity-0 ${
@@ -31,14 +14,11 @@ export function showToast(titleOrMessage, messageOrType, typeParam = "info") {
   const iconColor = type === "success" ? "text-emerald-400" : type === "error" ? "text-rose-400" : "text-blue-400";
 
   toast.innerHTML = `
-    <div class="flex items-start space-x-2.5">
-      <span class="w-5 h-5 mt-0.5 rounded-full bg-white/10 flex items-center justify-center ${iconColor} font-bold text-[10px] shrink-0">${icon}</span>
-      <div class="flex flex-col">
-        <span class="font-bold text-slate-100">${title}</span>
-        <span class="text-[11px] text-slate-400 font-medium leading-tight mt-0.5">${message}</span>
-      </div>
+    <div class="flex items-center space-x-2.5">
+      <span class="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center ${iconColor} font-bold text-xs">${icon}</span>
+      <span>${message}</span>
     </div>
-    <button class="ml-4 text-slate-400 hover:text-white transition-colors shrink-0">✕</button>
+    <button class="ml-3 text-slate-400 hover:text-white transition-colors">✕</button>
   `;
 
   const closeBtn = toast.querySelector("button");

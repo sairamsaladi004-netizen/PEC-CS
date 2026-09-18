@@ -453,7 +453,7 @@ export function attachCertificatesEvents(params = {}) {
           filename: `PEC-CERTIFICATE-${certId || 'DIGITAL'}.png`
         });
       } else {
-        showToast("Could not locate active certificate component element to download.", "error");
+        showToast("Error", "Could not locate active certificate component element to download.", "error");
       }
     });
   }

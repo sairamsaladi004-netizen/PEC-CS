@@ -1,4 +1,4 @@
-import { getDB, apiRequest, saveDB, logAudit } from '../db.js';
+import { getDB, saveDB, logAudit, apiRequest } from '../db.js';
 import { getCurrentUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 import { ROLES, normalizeRole, isUserAuthorizedForClub } from '../rbac.js';
@@ -142,9 +142,6 @@ export function renderClubAdminDashboardView(params = {}) {
         </a>
         <a href="#/club-dashboard?id=${club.id}&tab=notices" class="px-4 py-2.5 rounded-xl transition-all whitespace-nowrap flex items-center space-x-1.5 ${activeTab === 'notices' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}">
           <span>📢</span><span>Notices</span>
-        </a>
-        <a href="#/club-dashboard?id=${club.id}&tab=insights" class="px-4 py-2.5 rounded-xl transition-all whitespace-nowrap flex items-center space-x-1.5 ${activeTab === 'insights' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}">
-          <span>📊</span><span>Members & Insights</span>
         </a>
       </div>
 
@@ -668,215 +665,6 @@ function renderClubTabContent(activeTab, club, db, currentUser, meta) {
         </div>
       `;
 
-    case "insights": {
-      // Find active club memberships
-      const memberships = (db.club_memberships || []).filter(m => (m.club_id === club.id || m.clubId === club.id) && m.status === 'Approved');
-      const feedback = (db.feedback || []).filter(f => f.clubId === club.id || f.club_id === club.id);
-      
-      // Seed some realistic feedback if empty to avoid a dry dashboard
-      const activeFeedback = feedback.length > 0 ? feedback : [
-        { studentName: "Ananya Rao", rollNo: "22A31A0502", rating: 5, eventTitle: "AI Studio Boot Camp", comments: "Outstanding hands-on session. The live coding demonstration of LLM fine-tuning was incredibly detailed and easy to follow." },
-        { studentName: "Ketan Varma", rollNo: "23A31A1208", rating: 4, eventTitle: "IoT & Smart Devices Workshop", comments: "Excellent hardware kits. It would be perfect if the labs had 30 minutes more for the final project integration." },
-        { studentName: "Siddharth Sen", rollNo: "21A31A0445", rating: 5, eventTitle: "React SPA masterclass", comments: "Perfect pacing and precise notes. The curriculum alignment with standard industry practices is highly appreciated!" }
-      ];
-
-      // Smart AI recommendation engine based on club domain
-      let aiAdvice = [];
-      if (club.name.toLowerCase().includes("artificial") || club.name.toLowerCase().includes("tech") || club.name.toLowerCase().includes("computer") || club.name.toLowerCase().includes("coding")) {
-        aiAdvice = [
-          { title: "Optimize Event Pacing", text: "Feedback shows 22% of CSE students requested more hands-on lab time. Reduce lecture portions by 15 minutes to allow longer sandboxed coding trials.", confidence: "94% Match" },
-          { title: "Introduce Edge AI & TinyML", text: "High interest detected in ECE/EEE cohorts (42% of recent event visitors). Launch a collaborative seminar with the IoT club on hardware deployment.", confidence: "89% Match" },
-          { title: "Diversify Learning Paths", text: "Core committee is CSE-heavy. Assign ECE leads to manage upcoming robot-navigation hackathons to balance departmental engagement.", confidence: "85% Match" }
-        ];
-      } else {
-        aiAdvice = [
-          { title: "Broaden Technical Offerings", text: "Registrations from sophomore years are currently leading. Integrate standard Python/SQL foundational sprints to support entry-level members.", confidence: "91% Match" },
-          { title: "Establish Alumni Mentorships", text: "Student feedback highlights requests for industry alignment. Invite recent club grads for weekend tech-resume workshops.", confidence: "87% Match" }
-        ];
-      }
-
-      return `
-        <div class="space-y-6 animate-fade-in">
-          
-          <!-- Top Row: Stats Overview & AI Recommendations Header -->
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <!-- Left 2/3: Engagement Analytics & Metrics -->
-            <div class="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
-              <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div>
-                  <h3 class="text-base font-black text-slate-900">Engagement & Quality Scorecards</h3>
-                  <p class="text-xs text-slate-500">Real-time aggregate analytics from student surveys and event registries.</p>
-                </div>
-                <span class="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold font-mono">
-                  Active Term: 2026
-                </span>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
-                  <span class="text-[10px] uppercase font-bold text-slate-400">Average Attendance Rate</span>
-                  <div class="text-2xl font-black text-slate-900">86.4%</div>
-                  <div class="text-[10px] text-emerald-600 font-bold">▲ 4.2% from last term</div>
-                </div>
-                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
-                  <span class="text-[10px] uppercase font-bold text-slate-400">Feedback Satisfaction</span>
-                  <div class="text-2xl font-black text-slate-900">4.82 / 5.0</div>
-                  <div class="text-[10px] text-blue-600 font-bold">Based on ${activeFeedback.length} submissions</div>
-                </div>
-                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
-                  <span class="text-[10px] uppercase font-bold text-slate-400">Total Active Roster</span>
-                  <div class="text-2xl font-black text-slate-900">${memberships.length || 28} Members</div>
-                  <div class="text-[10px] text-purple-600 font-bold">94% Retention score</div>
-                </div>
-              </div>
-
-              <!-- Mini visual chart with divs for department breakdown -->
-              <div class="space-y-2 pt-2">
-                <h4 class="text-xs font-bold text-slate-700">Roster Distribution by Department</h4>
-                <div class="flex h-3 rounded-full overflow-hidden bg-slate-100">
-                  <div class="bg-blue-600 w-[55%]" title="CSE: 55%"></div>
-                  <div class="bg-purple-600 w-[20%]" title="ECE: 20%"></div>
-                  <div class="bg-amber-500 w-[15%]" title="AIDS: 15%"></div>
-                  <div class="bg-emerald-500 w-[10%]" title="Others: 10%"></div>
-                </div>
-                <div class="flex flex-wrap items-center gap-4 text-[10px] text-slate-500 font-bold pt-1">
-                  <div class="flex items-center space-x-1">
-                    <span class="w-2 h-2 rounded-full bg-blue-600 inline-block"></span>
-                    <span>CSE (55%)</span>
-                  </div>
-                  <div class="flex items-center space-x-1">
-                    <span class="w-2 h-2 rounded-full bg-purple-600 inline-block"></span>
-                    <span>ECE (20%)</span>
-                  </div>
-                  <div class="flex items-center space-x-1">
-                    <span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
-                    <span>AIDS (15%)</span>
-                  </div>
-                  <div class="flex items-center space-x-1">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-                    <span>Others (10%)</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Right 1/3: AI Smart recommendations -->
-            <div class="bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-md text-white space-y-4">
-              <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-                <div class="flex items-center space-x-2">
-                  <span class="text-lg">🤖</span>
-                  <div>
-                    <h3 class="text-sm font-black text-slate-100">Gemini Executive Advisor</h3>
-                    <p class="text-[10px] text-slate-400">Autonomous recommendation engine</p>
-                  </div>
-                </div>
-                <button id="refresh-ai-recom-btn" class="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs transition-all cursor-pointer" title="Regenerate Advice">
-                  🔄
-                </button>
-              </div>
-
-              <div id="ai-recom-container" class="space-y-3">
-                ${aiAdvice.map(recom => `
-                  <div class="p-3 bg-slate-800/60 rounded-2xl border border-slate-800 hover:border-slate-700 transition-colors space-y-1">
-                    <div class="flex items-center justify-between">
-                      <h4 class="text-xs font-extrabold text-blue-400">${recom.title}</h4>
-                      <span class="text-[9px] bg-blue-900/40 text-blue-300 px-1.5 py-0.5 rounded-full font-bold font-mono">${recom.confidence}</span>
-                    </div>
-                    <p class="text-[10px] text-slate-300 leading-relaxed">${recom.text}</p>
-                  </div>
-                `).join('')}
-              </div>
-              <div class="text-[10px] text-slate-400 text-center pt-1 italic">
-                AI advisor is grounded to Pragati Engineering College syllabus standards.
-              </div>
-            </div>
-
-          </div>
-
-          <!-- Active Members List Table with on-the-fly Search bar -->
-          <div class="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
-            <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h3 class="text-sm font-black text-slate-900">Active Club Roster</h3>
-                <p class="text-xs text-slate-500">Search and manage active students enrolled under this chapter.</p>
-              </div>
-              <div>
-                <input type="text" id="roster-search-input" placeholder="Search by name, roll no, department..." class="px-4 py-2 bg-white rounded-xl border border-slate-200 text-xs w-full sm:w-64 shadow-xs focus:ring-1 focus:ring-blue-500 outline-hidden" />
-              </div>
-            </div>
-
-            <div class="overflow-x-auto">
-              <table class="w-full text-xs text-left">
-                <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 uppercase tracking-wider text-[10px]">
-                  <tr>
-                    <th class="p-4">Student Name</th>
-                    <th class="p-4">Roll Number</th>
-                    <th class="p-4">Department</th>
-                    <th class="p-4">Assigned Role</th>
-                    <th class="p-4">Admission Date</th>
-                    <th class="p-4 text-center">Status</th>
-                  </tr>
-                </thead>
-                <tbody id="roster-table-body" class="divide-y divide-slate-100 font-medium">
-                  ${memberships.length === 0 ? `
-                    <tr>
-                      <td colspan="6" class="p-8 text-center text-slate-400 font-bold">
-                        No active members enrolled yet. Ask your Faculty Coordinator to approve or enroll student memberships.
-                      </td>
-                    </tr>
-                  ` : memberships.map(mem => `
-                    <tr class="hover:bg-slate-50/50 transition-colors roster-row">
-                      <td class="p-4 font-bold text-slate-900 roster-name">${mem.studentName || 'Student Name'}</td>
-                      <td class="p-4 font-mono text-slate-600 roster-roll">${mem.student_id || mem.rollNo || '22A31A0501'}</td>
-                      <td class="p-4 text-slate-500 roster-dept">${mem.department || 'CSE'}</td>
-                      <td class="p-4"><span class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold">${mem.role || 'Member'}</span></td>
-                      <td class="p-4 text-slate-400">${mem.appliedDate ? mem.appliedDate.split('T')[0] : '2026-09-17'}</td>
-                      <td class="p-4 text-center"><span class="px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-100 rounded-lg text-[10px] font-bold uppercase">Approved</span></td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Feedback & Session Reviews Wall -->
-          <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div>
-                <h3 class="text-sm font-black text-slate-900">Student Feedback & Session Reviews</h3>
-                <p class="text-xs text-slate-500">Unfiltered remarks and learning quality assessment reports logged by participants.</p>
-              </div>
-              <span class="px-2.5 py-1 bg-purple-50 text-purple-700 border border-purple-200 rounded-xl text-xs font-bold">
-                Latest Survey Rallies
-              </span>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              ${activeFeedback.map(fb => `
-                <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between space-y-3">
-                  <div class="space-y-2">
-                    <div class="flex items-center justify-between">
-                      <span class="text-xs font-bold text-purple-600">${fb.eventTitle || 'Technical Event'}</span>
-                      <div class="flex items-center text-amber-500">
-                        ${Array.from({ length: fb.rating || 5 }).map(() => '★').join('')}
-                      </div>
-                    </div>
-                    <p class="text-xs text-slate-600 italic">"${fb.comments || fb.feedbackText}"</p>
-                  </div>
-                  <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                    <span>${fb.studentName || 'Anonymous Participant'}</span>
-                    <span>${fb.rollNo || ''}</span>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-
-        </div>
-      `;
-    }
-
     default: // "dashboard"
       return `
         <div class="space-y-6">
@@ -956,6 +744,38 @@ function renderClubTabContent(activeTab, club, db, currentUser, meta) {
             </div>
           ` : ''}
 
+          <!-- Chapter Tools & Operations -->
+          <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h2 class="text-base font-bold text-slate-900">Chapter Operations & Toolbelt</h2>
+                <p class="text-xs text-slate-500">Advanced tools for Club Admins</p>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+              <button type="button" id="export-club-members-btn" class="p-4 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-2xl flex flex-col items-center justify-center text-center transition-colors cursor-pointer space-y-2">
+                <span class="text-2xl">📥</span>
+                <span class="font-bold text-slate-700">Export Member CSV</span>
+              </button>
+              
+              <button type="button" onclick="alert('Feature coming in Round 3: Requesting budget augmentation...')" class="p-4 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 rounded-2xl flex flex-col items-center justify-center text-center transition-colors cursor-pointer space-y-2">
+                <span class="text-2xl">💰</span>
+                <span class="font-bold text-slate-700">Request Budget</span>
+              </button>
+              
+              <button type="button" onclick="alert('Generating AI Event Ideas for ${club.name}...')" class="p-4 bg-slate-50 hover:bg-purple-50 border border-slate-200 hover:border-purple-200 rounded-2xl flex flex-col items-center justify-center text-center transition-colors cursor-pointer space-y-2">
+                <span class="text-2xl">🤖</span>
+                <span class="font-bold text-slate-700">AI Event Blueprints</span>
+              </button>
+
+              <button type="button" onclick="alert('Managing Sub-Committees...')" class="p-4 bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-200 rounded-2xl flex flex-col items-center justify-center text-center transition-colors cursor-pointer space-y-2">
+                <span class="text-2xl">👥</span>
+                <span class="font-bold text-slate-700">Manage Sub-Committees</span>
+              </button>
+            </div>
+          </div>
+
           <!-- Upcoming Events Ledger -->
           <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -1006,11 +826,10 @@ export function attachClubAdminDashboardEvents(params = {}) {
       const db = getDB();
       const mem = (db.club_memberships || []).find(m => m.id === memId);
       if (mem) {
-        
         mem.status = "Approved";
         mem.approved_at = new Date().toISOString();
-        apiRequest('/api/memberships/review', 'POST', { membershipId: memId, action: 'approve' }).catch(console.error);
-
+        saveDB(db);
+        logAudit("Club Admin", "Approved Student Membership", mem.studentName || mem.student_id, `Club: ${mem.club_id}`);
         showToast("Membership Approved", "Student approved for club access!", "success");
         setTimeout(() => window.location.reload(), 300);
       }
@@ -1024,10 +843,9 @@ export function attachClubAdminDashboardEvents(params = {}) {
       const db = getDB();
       const mem = (db.club_memberships || []).find(m => m.id === memId);
       if (mem) {
-        
         mem.status = "Rejected";
-        apiRequest('/api/memberships/review', 'POST', { membershipId: memId, action: 'decline' }).catch(console.error);
-
+        saveDB(db);
+        logAudit("Club Admin", "Declined Student Membership", mem.studentName || mem.student_id, `Club: ${mem.club_id}`);
         showToast("Application Declined", "Student application declined.", "info");
         setTimeout(() => window.location.reload(), 300);
       }
@@ -1069,14 +887,18 @@ export function attachClubAdminDashboardEvents(params = {}) {
       const db = getDB();
       const user = getCurrentUser();
 
-      
-      apiRequest('/api/announcements/create', 'POST', {
+      db.announcements.unshift({
+        id: `ann-${Date.now().toString().slice(-4)}`,
         title,
-        content: message,
-        club_id: activeClub,
-        target_audience: "All Students"
-      }).catch(console.error);
-
+        content: body,
+        author: `${user.name} (Club Admin)`,
+        date: new Date().toISOString().split("T")[0],
+        targetRole: "Club Member",
+        priority: "High",
+        tags: ["Club Notice", "Delegates"]
+      });
+      saveDB(db);
+      logAudit(`${user.name} (${user.role})`, "Dispatched Club Notice", title, `Target: Members`);
       showToast("Notice Dispatched", "Notification sent to enrolled members.", "success");
       broadcastModal.classList.add("hidden");
       broadcastForm.reset();
@@ -1103,53 +925,44 @@ export function attachClubAdminDashboardEvents(params = {}) {
     });
   }
 
-  // --- ROSTER SEARCH FILTER ---
-  const searchInput = document.getElementById("roster-search-input");
-  searchInput?.addEventListener("input", (e) => {
-    const q = e.target.value.toLowerCase().trim();
-    document.querySelectorAll(".roster-row").forEach(row => {
-      const name = row.querySelector(".roster-name")?.textContent.toLowerCase() || "";
-      const roll = row.querySelector(".roster-roll")?.textContent.toLowerCase() || "";
-      const dept = row.querySelector(".roster-dept")?.textContent.toLowerCase() || "";
-      if (name.includes(q) || roll.includes(q) || dept.includes(q)) {
-        row.classList.remove("hidden");
-      } else {
-        row.classList.add("hidden");
+  // Export Member CSV
+  const exportBtn = document.getElementById("export-club-members-btn");
+  if (exportBtn) {
+    exportBtn.addEventListener("click", () => {
+      const db = getDB();
+      const user = getCurrentUser() || {};
+      const userClub = user.clubId || (user.assignedClubs && user.assignedClubs[0]) || "I4-08";
+      const clubId = params.id || userClub;
+      
+      const clubMembers = (db.club_memberships || []).filter(m => (m.club_id === clubId || m.clubId === clubId) && m.status === "Approved");
+      if (clubMembers.length === 0) {
+        showToast("Export Failed", "No approved members found for this club.", "error");
+        return;
       }
+      
+      const headers = ["Student Name", "Roll No", "Department", "Email", "Approved At"];
+      const rows = clubMembers.map(m => [
+        m.studentName || 'Unknown',
+        m.rollNo || m.student_id,
+        m.department || 'N/A',
+        m.email || 'N/A',
+        m.approved_at || new Date().toISOString()
+      ]);
+      
+      const csvContent = "data:text/csv;charset=utf-8," + 
+        headers.join(",") + "\n" + 
+        rows.map(e => e.map(cell => `"${cell}"`).join(",")).join("\n");
+        
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `club_members_${clubId}_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      logAudit(user.name, "Exported Club Members", clubId, `Exported ${clubMembers.length} members`);
+      showToast("Export Complete", `Successfully exported ${clubMembers.length} members.`, "success");
     });
-  });
-
-  // --- AI ADVISOR REFRESH ---
-  const refreshAiBtn = document.getElementById("refresh-ai-recom-btn");
-  const aiRecomContainer = document.getElementById("ai-recom-container");
-  refreshAiBtn?.addEventListener("click", () => {
-    refreshAiBtn.classList.add("animate-spin");
-    showToast("Analyzing Data", "Gemini is auditing student activity logs and event registers...", "info");
-    
-    setTimeout(() => {
-      refreshAiBtn.classList.remove("animate-spin");
-      if (aiRecomContainer) {
-        aiRecomContainer.innerHTML = `
-          <div class="p-3 bg-blue-900/40 rounded-2xl border border-blue-500/30 text-xs text-blue-200 animate-pulse text-center">
-            ✨ AI Insights Recalibrated Successfully!
-          </div>
-          <div class="p-3 bg-slate-800/60 rounded-2xl border border-slate-800 hover:border-slate-700 transition-colors space-y-1">
-            <div class="flex items-center justify-between">
-              <h4 class="text-xs font-extrabold text-blue-400">Boost Core Coding Attendance</h4>
-              <span class="text-[9px] bg-blue-900/40 text-blue-300 px-1.5 py-0.5 rounded-full font-bold font-mono">97% Match</span>
-            </div>
-            <p class="text-[10px] text-slate-300 leading-relaxed">Sophomore students registered an active 94% retention on Python labs. Prioritize early morning interactive coding workshops over afternoon slides.</p>
-          </div>
-          <div class="p-3 bg-slate-800/60 rounded-2xl border border-slate-800 hover:border-slate-700 transition-colors space-y-1">
-            <div class="flex items-center justify-between">
-              <h4 class="text-xs font-extrabold text-blue-400">Launch Cross-Disciplinary Hackathon</h4>
-              <span class="text-[9px] bg-blue-900/40 text-blue-300 px-1.5 py-0.5 rounded-full font-bold font-mono">91% Match</span>
-            </div>
-            <p class="text-[10px] text-slate-300 leading-relaxed">Integrate Web Dev layouts with core ECE sensor feeds. This attracts multi-department committees to expand roster reach.</p>
-          </div>
-        `;
-      }
-      showToast("Grounded Recalibration", "AI advisor metrics synchronized with latest student feedback!", "success");
-    }, 1500);
-  });
+  }
 }

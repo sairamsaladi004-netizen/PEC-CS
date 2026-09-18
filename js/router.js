@@ -336,6 +336,7 @@ export function handleRoute() {
 }
 
 function renderFooter() {
+  const user = getCurrentUser();
   return `
     <footer class="no-print bg-white border-t border-slate-200 mt-auto text-xs text-slate-500">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -356,7 +357,7 @@ function renderFooter() {
           <div class="space-y-2">
             <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Campus Portals</h4>
             <ul class="space-y-1.5 text-xs">
-              <li><a href="#/login" class="hover:text-blue-600 transition-colors">🔐 Sign In / Register</a></li>
+              ${!user ? `<li><a href="#/login" class="hover:text-blue-600 font-bold transition-colors">🔐 Sign In / Register</a></li>` : `<li><a href="#/logout" onclick="event.preventDefault(); window.dispatchEvent(new Event('logout'));" class="hover:text-rose-600 font-bold text-rose-500 transition-colors">🚪 Sign Out</a></li>`}
               <li><a href="#/student/dashboard" class="hover:text-blue-600 transition-colors">Student Portal</a></li>
               <li><a href="#/coordinator/dashboard" class="hover:text-blue-600 transition-colors">Faculty Coordinator Portal</a></li>
               <li><a href="#/admin/dashboard" class="hover:text-blue-600 transition-colors">Admin Governance Console</a></li>

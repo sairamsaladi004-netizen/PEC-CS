@@ -3,7 +3,7 @@ import { getCurrentUser, switchUser, getAllDemoAccounts } from '../auth.js';
 import { ROLES } from '../rbac.js';
 
 export function renderAccessDenied({
-  requiredRole = "Super Admin",
+  requiredRole = "Director (Academics)",
   requiredPermission = null,
   attemptedRoute = "",
   clubId = null,

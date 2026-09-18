@@ -20,7 +20,7 @@ export function renderNavbar() {
   };
 
   return `
-    <header class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-white">
+    <header class="no-print sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
           
@@ -53,6 +53,12 @@ export function renderNavbar() {
               <span class="w-1.5 h-1.5 rounded-full ${currentRole === ROLES.SUPER_ADMIN ? 'bg-rose-400' : currentRole === ROLES.FACULTY_COORDINATOR ? 'bg-purple-400' : currentRole === ROLES.CLUB_ADMIN ? 'bg-blue-400' : currentRole === ROLES.STUDENT ? 'bg-emerald-400' : 'bg-slate-400'}"></span>
               <span>${currentRole}</span>
             </div>
+
+            <!-- Supabase DB Status Trigger -->
+            <button id="open-supabase-modal-btn" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 text-xs flex items-center space-x-1.5 border border-emerald-700/60 transition-colors cursor-pointer" title="Supabase Database Management Console">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span class="hidden sm:inline font-bold">Supabase DB</span>
+            </button>
 
             <!-- Global Search Trigger -->
             <button id="nav-search-trigger" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center space-x-1.5 border border-slate-700/60 transition-colors">
@@ -100,18 +106,18 @@ export function renderNavbar() {
 
             <!-- Sign In / Sign Out & Profile Link -->
             ${currentRole === ROLES.GUEST ? `
-              <a href="#/login" class="px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md transition-colors flex items-center space-x-1 shrink-0">
+              <a href="#/login" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold shadow-md transition-colors flex items-center space-x-2 shrink-0">
                 <span>🔐</span>
-                <span class="inline">Sign In</span>
+                <span class="inline">Institutional Sign In</span>
               </a>
             ` : `
-              <div class="flex items-center space-x-1.5 shrink-0">
-                <button id="nav-logout-btn" class="px-2 sm:px-2.5 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/35 border border-rose-500/30 text-rose-300 hover:text-white text-xs font-bold transition-colors flex items-center space-x-1 cursor-pointer" title="Sign Out from Portal">
+              <div class="flex items-center space-x-2 shrink-0">
+                <button id="nav-logout-btn" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold shadow-md transition-colors flex items-center space-x-1.5 cursor-pointer" title="Sign Out from Portal">
                   <span>🚪</span>
                   <span class="hidden sm:inline">Sign Out</span>
                 </button>
-                <a href="#/student-profile" class="flex items-center pl-0.5 group shrink-0" title="Open Profile (${user.name})">
-                  <img src="${user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}" class="w-8 h-8 rounded-xl object-cover border border-blue-500/50 group-hover:ring-2 group-hover:ring-blue-400 transition-all" alt="${user.name}" />
+                <a href="#/student-profile" class="flex items-center pl-1 group shrink-0" title="Open Profile (${user.name})">
+                  <img src="${user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}" class="w-9 h-9 rounded-xl object-cover border-2 border-slate-700 group-hover:border-blue-500 transition-all shadow-sm" alt="${user.name}" />
                 </a>
               </div>
             `}
@@ -366,6 +372,15 @@ export function attachNavbarEvents() {
       if (!notifDropdown.contains(e.target) && !notifBtn.contains(e.target)) {
         notifDropdown.classList.add("hidden");
       }
+    });
+  }
+
+  // Supabase Console trigger
+  const sbBtn = document.getElementById("open-supabase-modal-btn");
+  if (sbBtn) {
+    sbBtn.addEventListener("click", () => {
+      const sbModal = document.getElementById("supabase-config-modal");
+      if (sbModal) sbModal.classList.remove("hidden");
     });
   }
 

@@ -46,19 +46,21 @@ export function renderStudentProfileView() {
                 </span>
               </div>
               <div class="text-xs text-slate-600 font-medium">
-                Roll No: <strong class="text-slate-900 font-mono">${rollNumber}</strong> • Dept: <strong class="text-slate-900">${user.department || 'CSE'}</strong> • Year: <strong class="text-slate-900">${user.year || '3rd Year'}</strong>
+                ${(user.role === 'Super Admin' || user.role === 'Director(Academics)' || user.role === 'Faculty Coordinator') 
+                  ? `Faculty ID: <strong class="text-slate-900 font-mono">${user.facultyId || 'FAC-PEC-001'}</strong> • Dept: <strong class="text-slate-900">${user.department || 'CSE'}</strong> • Designation: <strong class="text-slate-900">${user.designation || 'Faculty'}</strong>`
+                  : `Roll No: <strong class="text-slate-900 font-mono">${rollNumber}</strong> • Dept: <strong class="text-slate-900">${user.department || 'CSE'}</strong> • Year: <strong class="text-slate-900">${user.year || '3rd Year'}</strong>`
+                }
               </div>
               <div class="text-[11px] text-slate-500 font-mono">
-                Institutional AID: <span class="text-blue-600 font-bold">${memberId}</span> • Gate Pass ID: <span class="text-emerald-700 font-bold font-mono">${passId}</span>
+                ${(user.role === 'Super Admin' || user.role === 'Director(Academics)' || user.role === 'Faculty Coordinator')
+                  ? `Institutional AID: <span class="text-blue-600 font-bold">${memberId}</span>`
+                  : `Institutional AID: <span class="text-blue-600 font-bold">${memberId}</span> • Gate Pass ID: <span class="text-emerald-700 font-bold font-mono">${passId}</span>`
+                }
               </div>
             </div>
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
-            <button id="open-edit-profile-btn" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer">
-              <span>✏️</span>
-              <span>Edit Profile</span>
-            </button>
             <button id="open-ai-classification-modal-btn" class="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-500/20 transition-all flex items-center space-x-2 cursor-pointer">
               <span>⚡</span>
               <span>Run AI Profiler</span>
@@ -558,7 +560,7 @@ export function attachStudentProfileEvents() {
           filename: `PEC-PROFILE-CERTIFICATE-${rollNumber}.png`
         });
       } else {
-        showToast("Could not locate student profile component.", "error");
+        showToast("Error", "Could not locate student profile component.", "error");
       }
     });
   }
@@ -667,18 +669,12 @@ export function attachStudentProfileEvents() {
 
   // 5. AI Classification Modal
   const openModalBtn = document.getElementById("open-ai-classification-modal-btn");
-  const openEditProfileBtn = document.getElementById("open-edit-profile-btn");
   const modal = document.getElementById("ai-classification-modal");
   const closeModalBtn = document.getElementById("close-ai-classification-modal-btn");
   const form = document.getElementById("ai-classification-form");
 
-  if (modal) {
-    if (openModalBtn) {
-      openModalBtn.addEventListener("click", () => modal.classList.remove("hidden"));
-    }
-    if (openEditProfileBtn) {
-      openEditProfileBtn.addEventListener("click", () => modal.classList.remove("hidden"));
-    }
+  if (openModalBtn && modal) {
+    openModalBtn.addEventListener("click", () => modal.classList.remove("hidden"));
     if (closeModalBtn) closeModalBtn.addEventListener("click", () => modal.classList.add("hidden"));
     modal.addEventListener("click", (e) => {
       if (e.target === modal) modal.classList.add("hidden");

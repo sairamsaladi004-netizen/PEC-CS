@@ -35,8 +35,8 @@ export function renderCoordinatorPortalView(subSection = "dashboard") {
 
   const db = getDB();
 
-  // Find coordinator's assigned club(s) - Restricted to exactly one club as requested
-  const assignedClubIds = (user.assignedClubs && user.assignedClubs.length > 0) ? [user.assignedClubs[0]] : (user.clubId ? [user.clubId] : ["I4-08"]);
+  // Find coordinator's assigned club(s)
+  const assignedClubIds = user.assignedClubs || (user.clubId ? [user.clubId] : ["I4-08"]);
   const myClubs = (db.clubs || []).filter(c => assignedClubIds.includes(c.id));
   const primaryClub = myClubs[0] || (db.clubs && db.clubs[0]);
 
@@ -212,217 +212,12 @@ export function renderCoordinatorPortalView(subSection = "dashboard") {
         </div>
       </div>
 
-      <!-- Direct Add Student Member Modal -->
-      <div id="coord-add-member-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl space-y-4 text-xs">
-          <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-            <div>
-              <h3 class="text-base font-black text-slate-900">Direct Enroll Student</h3>
-              <p class="text-[10px] text-slate-500">Instantly add an approved student member to the active club roster.</p>
-            </div>
-            <button id="close-add-member-modal-btn" type="button" class="text-slate-400 hover:text-slate-700 text-lg">✕</button>
-          </div>
-
-          <form id="coord-add-member-form" class="space-y-3">
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Student Name</label>
-              <input type="text" id="cam-name" required placeholder="e.g. Ramesh Babu" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
-            </div>
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Roll Number</label>
-              <input type="text" id="cam-roll" required placeholder="e.g. 22A31A0589" class="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono uppercase" />
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Department</label>
-                <select id="cam-dept" class="w-full px-3 py-2 rounded-xl border border-slate-200">
-                  <option value="CSE">CSE</option>
-                  <option value="ECE">ECE</option>
-                  <option value="EEE">EEE</option>
-                  <option value="ME">ME</option>
-                  <option value="CE">CE</option>
-                  <option value="IT">IT</option>
-                  <option value="AIDS">AIDS</option>
-                </select>
-              </div>
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Role Type</label>
-                <select id="cam-role" class="w-full px-3 py-2 rounded-xl border border-slate-200">
-                  <option value="Member">Member</option>
-                  <option value="Core Committee">Core Committee</option>
-                  <option value="Treasurer">Treasurer</option>
-                  <option value="Co-lead">Co-lead</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="flex space-x-2 pt-2">
-              <button type="submit" class="flex-1 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold transition-all shadow-md">
-                Enroll Student
-              </button>
-              <button type="button" id="cancel-add-member-btn" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold">
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <!-- Create / Assign Club Admin Modal -->
-      <div id="coord-add-admin-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl space-y-4 text-xs">
-          <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-            <div>
-              <h3 class="text-base font-black text-slate-900">Create Club Admin</h3>
-              <p class="text-[10px] text-slate-500">Register a new Club Student Leader / Admin account with dashboard access.</p>
-            </div>
-            <button id="close-add-admin-modal-btn" type="button" class="text-slate-400 hover:text-slate-700 text-lg">✕</button>
-          </div>
-
-          <form id="coord-add-admin-form" class="space-y-3">
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Admin / Leader Name</label>
-              <input type="text" id="caa-name" required placeholder="e.g. Priya Patel" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
-            </div>
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Email (Sign-in Username)</label>
-              <input type="email" id="caa-email" required placeholder="e.g. priya.p@pragati.ac.in" class="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono" />
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Roll Number</label>
-                <input type="text" id="caa-roll" required placeholder="22A31A0518" class="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono uppercase" />
-              </div>
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Password</label>
-                <input type="password" id="caa-password" required placeholder="••••••••" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
-              </div>
-            </div>
-
-            <div class="flex space-x-2 pt-2">
-              <button type="submit" class="flex-1 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold transition-all shadow-md">
-                Create Admin Account
-              </button>
-              <button type="button" id="cancel-add-admin-btn" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold">
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <!-- Publish Announcement Modal -->
-      <div id="coord-add-announcement-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl space-y-4 text-xs">
-          <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-            <div>
-              <h3 class="text-base font-black text-slate-900">Broadcast Announcement</h3>
-              <p class="text-[10px] text-slate-500">Issue an official circular to all enrolled members immediately.</p>
-            </div>
-            <button id="close-add-announcement-modal-btn" type="button" class="text-slate-400 hover:text-slate-700 text-lg">✕</button>
-          </div>
-
-          <form id="coord-add-announcement-form" class="space-y-3">
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Circular Headline</label>
-              <input type="text" id="can-title" required placeholder="e.g. ML Hackathon Registration Deadline Extended" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Priority Level</label>
-                <select id="can-priority" class="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold">
-                  <option value="notice">Standard Notice</option>
-                  <option value="critical" class="text-rose-600 font-bold">Critical Alert ⚡</option>
-                  <option value="academic">Academic Circular</option>
-                </select>
-              </div>
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Target Audience</label>
-                <select id="can-target" class="w-full px-3 py-2 rounded-xl border border-slate-200">
-                  <option value="All Members">All Members</option>
-                  <option value="Core Committee">Core Committee Team</option>
-                  <option value="Event Registrants">Registered Attendees</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Message Content</label>
-              <textarea id="can-message" rows="4" required placeholder="Type details, venue, time, requirements..." class="w-full px-3 py-2 rounded-xl border border-slate-200"></textarea>
-            </div>
-
-            <div class="flex space-x-2 pt-2">
-              <button type="submit" class="flex-1 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold transition-all shadow-md">
-                Publish Circular
-              </button>
-              <button type="button" id="cancel-add-announcement-btn" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold">
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <!-- Publish Technical Resource Modal -->
-      <div id="coord-add-resource-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl space-y-4 text-xs">
-          <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-            <div>
-              <h3 class="text-base font-black text-slate-900">Add Learning Resource</h3>
-              <p class="text-[10px] text-slate-500">Publish Jupyter Notebooks, reference repositories, or study notes.</p>
-            </div>
-            <button id="close-add-resource-modal-btn" type="button" class="text-slate-400 hover:text-slate-700 text-lg">✕</button>
-          </div>
-
-          <form id="coord-add-resource-form" class="space-y-3">
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Resource Title</label>
-              <input type="text" id="car-title" required placeholder="e.g. PyTorch Fine-Tuning Tutorial Lab" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Resource Type</label>
-                <select id="car-type" class="w-full px-3 py-2 rounded-xl border border-slate-200">
-                  <option value="Jupyter Notebook (.ipynb)">Jupyter Notebook (.ipynb)</option>
-                  <option value="GitHub Repository">GitHub Repository</option>
-                  <option value="PDF Handbook">PDF Handbook</option>
-                  <option value="Slides (PPTX)">Slides (PPTX)</option>
-                </select>
-              </div>
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Topic Tag</label>
-                <input type="text" id="car-tag" required placeholder="e.g. Deep Learning" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
-              </div>
-            </div>
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Resource URL / Link</label>
-              <input type="url" id="car-url" required placeholder="e.g. https://github.com/..." class="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono" />
-            </div>
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Resource Description</label>
-              <textarea id="car-desc" rows="3" required placeholder="Provide brief summary of contents, prerequisites, and what students will learn..." class="w-full px-3 py-2 rounded-xl border border-slate-200"></textarea>
-            </div>
-
-            <div class="flex space-x-2 pt-2">
-              <button type="submit" class="flex-1 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold transition-all shadow-md">
-                Publish Resource
-              </button>
-              <button type="button" id="cancel-add-resource-btn" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold">
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
     </div>
   `;
 }
 
 function renderCoordinatorTabContent(tab, ctx) {
   const { user, db, primaryClub, myClubs, clubMemberships, pendingMemberships, approvedMemberships, clubEvents, clubResources, clubReports, clubCertificates } = ctx;
-
-  const clubEventIds = (clubEvents || []).map(e => e.id);
-  const clubRegistrations = (db.event_registrations || []).filter(r => clubEventIds.includes(r.event_id || r.eventId));
 
   switch (tab) {
     case "intelligence": {
@@ -741,7 +536,7 @@ function renderCoordinatorTabContent(tab, ctx) {
                   <div class="pt-3 border-t border-white/10 space-y-2 text-xs">
                     <div class="flex justify-between">
                       <span class="text-slate-300">Confidence Band:</span>
-                      <span class="font-mono text-white font-bold">${eventPred?.confidenceInterval?.minRate || 'N/A'}% – ${eventPred?.confidenceInterval?.maxRate || 'N/A'}%</span>
+                      <span class="font-mono text-white font-bold">${eventPred.confidenceInterval.minRate}% – ${eventPred.confidenceInterval.maxRate}%</span>
                     </div>
                     <div class="flex justify-between">
                       <span class="text-slate-300">High-Likelihood Pool:</span>
@@ -1065,18 +860,18 @@ function renderCoordinatorTabContent(tab, ctx) {
     case "members":
       return `
         <div class="space-y-6">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center justify-between">
             <div>
               <h2 class="text-lg font-bold text-slate-900">Student Membership Management</h2>
               <p class="text-xs text-slate-500">Review pending admission applications and govern active club roster.</p>
             </div>
             <div class="flex items-center space-x-2">
-              <button id="open-coord-add-member-btn" class="px-3.5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer">
-                + Enroll Student
-              </button>
-              <button id="open-coord-add-admin-btn" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer">
-                + Create Club Admin
-              </button>
+              <span class="px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold">
+                ${pendingMemberships.length} Pending Approvals
+              </span>
+              <span class="px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold">
+                ${approvedMemberships.length} Active Members
+              </span>
             </div>
           </div>
 
@@ -1460,7 +1255,7 @@ function renderCoordinatorTabContent(tab, ctx) {
               <h2 class="text-lg font-bold text-slate-900">Technical Learning Repositories & Guides</h2>
               <p class="text-xs text-slate-500">Provide students with verified curricula, project starter kits, and lab exercises.</p>
             </div>
-            <button id="open-coord-add-resource-btn" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer">
+            <button onclick="alert('Resource Upload Wizard: Supported formats include PDF, Jupyter Notebook (.ipynb), and GitHub repository links.')" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold shadow-md transition-all">
               + Add Technical Resource
             </button>
           </div>
@@ -1538,14 +1333,9 @@ function renderCoordinatorTabContent(tab, ctx) {
               <h2 class="text-lg font-bold text-slate-900">Club Circulars & Member Broadcasts</h2>
               <p class="text-xs text-slate-500">Issue notices, meeting schedules, and project milestone announcements.</p>
             </div>
-            <div class="flex items-center space-x-2">
-              <button id="open-coord-add-announcement-btn" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer">
-                📢 Publish Circular
-              </button>
-              <a href="#/announcements" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all">
-                Central Broadcast Wall →
-              </a>
-            </div>
+            <a href="#/announcements" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold shadow-md transition-all">
+              Central Broadcast Wall →
+            </a>
           </div>
 
           <div class="space-y-3">
@@ -1723,6 +1513,67 @@ function renderCoordinatorTabContent(tab, ctx) {
 
           </div>
 
+          <!-- Advanced Faculty Analytics Section (Trends & Domain Insights) -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            
+            <!-- Strategic Insights -->
+            <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs">
+              <div class="flex items-center space-x-2 mb-4 border-b border-slate-100 pb-3">
+                <span class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center text-sm font-bold border border-indigo-200">💡</span>
+                <div>
+                  <h3 class="text-sm font-black text-slate-900">Strategic Insights</h3>
+                  <p class="text-[11px] text-slate-500">Automated structural guidance for chapter growth</p>
+                </div>
+              </div>
+              <div class="space-y-3">
+                ${(insights || [
+                  { title: 'Certification Lag', description: 'Members completing workshops are not receiving certificates within 48 hrs.', type: 'warning' },
+                  { title: 'Project Output', description: 'High attendance, but minimal project submissions. Consider a hackathon.', type: 'info' }
+                ]).map(insight => `
+                  <div class="flex items-start space-x-3 p-3 rounded-xl ${insight.type === 'warning' ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-100'} border">
+                    <span class="text-lg">${insight.type === 'warning' ? '⚠️' : 'ℹ️'}</span>
+                    <div>
+                      <div class="text-xs font-bold text-slate-900">${insight.title}</div>
+                      <div class="text-[10px] text-slate-600 mt-0.5">${insight.description}</div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Inter-Club Performance Benchmark -->
+            <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                <div class="flex items-center space-x-2">
+                  <span class="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center text-sm font-bold border border-blue-200">📈</span>
+                  <div>
+                    <h3 class="text-sm font-black text-slate-900">Inter-Club Benchmark</h3>
+                    <p class="text-[11px] text-slate-500">Relative rank among Pragati chapters</p>
+                  </div>
+                </div>
+              </div>
+              <div class="space-y-4">
+                ${(clubComparison || [
+                  { rank: 1, name: 'I4-08 (AI&ML)', score: 92 },
+                  { rank: 2, name: 'I4-07 (Cyber)', score: 85 },
+                  { rank: 3, name: 'I4-06 (Robotics)', score: 78 }
+                ]).slice(0, 4).map(c => `
+                  <div class="flex items-center justify-between text-xs">
+                    <div class="flex items-center space-x-3">
+                      <span class="font-bold text-slate-400 w-4">#${c.rank}</span>
+                      <span class="${c.name.includes(primaryClub?.id) ? 'font-bold text-purple-700' : 'text-slate-700 font-medium'}">${c.name}</span>
+                    </div>
+                    <div class="w-24 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                      <div class="${c.name.includes(primaryClub?.id) ? 'bg-purple-600' : 'bg-slate-400'} h-1.5 rounded-full" style="width: ${c.score}%"></div>
+                    </div>
+                    <span class="font-mono font-bold text-slate-500 w-6 text-right">${c.score}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+          </div>
+
           <!-- Pending Action Alert Box -->
           ${pendingMemberships.length > 0 ? `
             <div class="bg-amber-50 rounded-2xl p-4 border border-amber-200 flex items-center justify-between">
@@ -1774,7 +1625,7 @@ export function attachCoordinatorPortalEvents() {
   if (attendanceChartContainer || engagementDonutContainer) {
     const user = getCurrentUser() || {};
     const db = getDB();
-    const assignedClubIds = (user.assignedClubs && user.assignedClubs.length > 0) ? [user.assignedClubs[0]] : (user.clubId ? [user.clubId] : ["I4-08"]);
+    const assignedClubIds = user.assignedClubs || (user.clubId ? [user.clubId] : ["I4-08"]);
     const clubEvents = (db.events || []).filter(e => assignedClubIds.includes(e.club_id) || assignedClubIds.includes(e.clubId));
 
     if (attendanceChartContainer) {
@@ -1899,7 +1750,7 @@ export function attachCoordinatorPortalEvents() {
           mem.approved_by = `${user.name} (${user.role})`;
           mem.remarks = "Application declined by faculty coordinator.";
         }
-        /* saveDB replaced by backend APIs */
+        saveDB(db);
       }
 
       logAudit(
@@ -2113,246 +1964,5 @@ export function attachCoordinatorPortalEvents() {
       modal?.classList.remove("hidden");
       modal?.scrollIntoView({ behavior: 'smooth' });
     });
-  });
-
-  // --- DIRECT ENROLL STUDENT HANDLERS ---
-  const addMemModal = document.getElementById("coord-add-member-modal");
-  const openAddMemBtn = document.getElementById("open-coord-add-member-btn");
-  const closeAddMemBtn = document.getElementById("close-add-member-modal-btn");
-  const cancelAddMemBtn = document.getElementById("cancel-add-member-btn");
-  const addMemForm = document.getElementById("coord-add-member-form");
-
-  openAddMemBtn?.addEventListener("click", () => {
-    addMemModal?.classList.remove("hidden");
-  });
-  const closeAddMemModal = () => addMemModal?.classList.add("hidden");
-  closeAddMemBtn?.addEventListener("click", closeAddMemModal);
-  cancelAddMemBtn?.addEventListener("click", closeAddMemModal);
-
-  addMemForm?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const name = document.getElementById("cam-name").value.trim();
-    const roll = document.getElementById("cam-roll").value.trim().toUpperCase();
-    const dept = document.getElementById("cam-dept").value;
-    const role = document.getElementById("cam-role").value;
-
-    const user = getCurrentUser() || {};
-    const clubId = (user.assignedClubs && user.assignedClubs.length > 0) ? user.assignedClubs[0] : (user.clubId || "I4-08");
-
-    const db = getDB();
-    const newMember = {
-      id: "mem-" + Date.now(),
-      club_id: clubId,
-      clubId: clubId,
-      studentName: name,
-      student_id: roll,
-      rollNo: roll,
-      department: dept,
-      role: role,
-      status: "Approved",
-      appliedDate: new Date().toISOString(),
-      requested_at: new Date().toISOString()
-    };
-
-    db.club_memberships = db.club_memberships || [];
-    db.club_memberships.push(newMember);
-    /* saveDB replaced by backend APIs */
-
-    logAudit({
-      action: "Enroll Member",
-      details: `Enrolled student ${name} (${roll}) directly into club ${clubId}`,
-      category: "Members"
-    });
-
-    showToast("Success", `Enrolled ${name} successfully into the club roster!`, "success");
-    closeAddMemModal();
-    addMemForm.reset();
-    window.location.reload();
-  });
-
-  // --- CREATE CLUB ADMIN HANDLERS ---
-  const addAdminModal = document.getElementById("coord-add-admin-modal");
-  const openAddAdminBtn = document.getElementById("open-coord-add-admin-btn");
-  const closeAddAdminBtn = document.getElementById("close-add-admin-modal-btn");
-  const cancelAddAdminBtn = document.getElementById("cancel-add-admin-btn");
-  const addAdminForm = document.getElementById("coord-add-admin-form");
-
-  openAddAdminBtn?.addEventListener("click", () => {
-    addAdminModal?.classList.remove("hidden");
-  });
-  const closeAddAdminModal = () => addAdminModal?.classList.add("hidden");
-  closeAddAdminBtn?.addEventListener("click", closeAddAdminModal);
-  cancelAddAdminBtn?.addEventListener("click", closeAddAdminModal);
-
-  addAdminForm?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const name = document.getElementById("caa-name").value.trim();
-    const email = document.getElementById("caa-email").value.trim();
-    const roll = document.getElementById("caa-roll").value.trim().toUpperCase();
-    const password = document.getElementById("caa-password").value;
-
-    const user = getCurrentUser() || {};
-    const clubId = (user.assignedClubs && user.assignedClubs.length > 0) ? user.assignedClubs[0] : (user.clubId || "I4-08");
-
-    const db = getDB();
-    
-    // Register the new user in the credentials table / users array
-    const newUserId = "user-" + Date.now();
-    const newUser = {
-      id: newUserId,
-      email: email,
-      password: password,
-      name: name,
-      role: "Club Admin",
-      clubId: clubId,
-      assignedClubs: [clubId],
-      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
-    };
-
-    db.users = db.users || [];
-    db.users.push(newUser);
-
-    // Also add to active club membership as a Student Lead!
-    const newMember = {
-      id: "mem-admin-" + Date.now(),
-      club_id: clubId,
-      clubId: clubId,
-      studentName: name,
-      student_id: roll,
-      rollNo: roll,
-      department: "CSE",
-      role: "Club Student Lead",
-      status: "Approved",
-      appliedDate: new Date().toISOString(),
-      requested_at: new Date().toISOString()
-    };
-    db.club_memberships = db.club_memberships || [];
-    db.club_memberships.push(newMember);
-
-    /* saveDB replaced by backend APIs */
-
-    logAudit({
-      action: "Create Admin",
-      details: `Created Club Admin user account for ${name} (${email}) for club ${clubId}`,
-      category: "Access"
-    });
-
-    showToast("Success", `Created Club Admin account for ${name} successfully!`, "success");
-    closeAddAdminModal();
-    addAdminForm.reset();
-    window.location.reload();
-  });
-
-  // --- PUBLISH ANNOUNCEMENT HANDLERS ---
-  const annModal = document.getElementById("coord-add-announcement-modal");
-  const openAnnBtn = document.getElementById("open-coord-add-announcement-btn");
-  const closeAnnBtn = document.getElementById("close-add-announcement-modal-btn");
-  const cancelAnnBtn = document.getElementById("cancel-add-announcement-btn");
-  const annForm = document.getElementById("coord-add-announcement-form");
-
-  openAnnBtn?.addEventListener("click", () => {
-    annModal?.classList.remove("hidden");
-  });
-  const closeAnnModal = () => annModal?.classList.add("hidden");
-  closeAnnBtn?.addEventListener("click", closeAnnModal);
-  cancelAnnBtn?.addEventListener("click", closeAnnModal);
-
-  annForm?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const title = document.getElementById("can-title").value.trim();
-    const priority = document.getElementById("can-priority").value;
-    const target = document.getElementById("can-target").value;
-    const content = document.getElementById("can-message").value.trim();
-
-    const user = getCurrentUser() || {};
-    const clubId = (user.assignedClubs && user.assignedClubs.length > 0) ? user.assignedClubs[0] : (user.clubId || "I4-08");
-
-    const db = getDB();
-    const club = (db.clubs || []).find(c => c.id === clubId) || { name: "CCTSC Coordinator" };
-
-    const newAnn = {
-      id: "ann-" + Date.now(),
-      title: title,
-      content: content,
-      message: content,
-      priority: priority,
-      targetRole: target,
-      target_audience: target,
-      date: new Date().toISOString().split("T")[0],
-      club_id: clubId,
-      clubId: clubId,
-      author: club.name
-    };
-
-    db.announcements = db.announcements || [];
-    db.announcements.unshift(newAnn);
-    /* saveDB replaced by backend APIs */
-
-    logAudit({
-      action: "Publish Notice",
-      details: `Published circular: ${title} to target: ${target}`,
-      category: "Announcements"
-    });
-
-    showToast("Success", "Notice published and dispatched to members!", "success");
-    closeAnnModal();
-    annForm.reset();
-    window.location.reload();
-  });
-
-  // --- PUBLISH LEARNING RESOURCE HANDLERS ---
-  const resModal = document.getElementById("coord-add-resource-modal");
-  const openResBtn = document.getElementById("open-coord-add-resource-btn");
-  const closeResBtn = document.getElementById("close-add-resource-modal-btn");
-  const cancelResBtn = document.getElementById("cancel-add-resource-btn");
-  const resForm = document.getElementById("coord-add-resource-form");
-
-  openResBtn?.addEventListener("click", () => {
-    resModal?.classList.remove("hidden");
-  });
-  const closeResModal = () => resModal?.classList.add("hidden");
-  closeResBtn?.addEventListener("click", closeResModal);
-  cancelResBtn?.addEventListener("click", closeResModal);
-
-  resForm?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const title = document.getElementById("car-title").value.trim();
-    const type = document.getElementById("car-type").value;
-    const tag = document.getElementById("car-tag").value.trim();
-    const url = document.getElementById("car-url").value.trim();
-    const desc = document.getElementById("car-desc").value.trim();
-
-    const user = getCurrentUser() || {};
-    const clubId = (user.assignedClubs && user.assignedClubs.length > 0) ? user.assignedClubs[0] : (user.clubId || "I4-08");
-
-    const db = getDB();
-    const newResource = {
-      id: "res-" + Date.now(),
-      title: title,
-      domain: tag,
-      format: type,
-      author: user.name || "Faculty Coordinator",
-      size: "2.5 MB",
-      downloads: 0,
-      url: url,
-      description: desc,
-      club_id: clubId,
-      clubId: clubId
-    };
-
-    db.resources = db.resources || [];
-    db.resources.unshift(newResource);
-    /* saveDB replaced by backend APIs */
-
-    logAudit({
-      action: "Upload Resource",
-      details: `Published learning resource: ${title} (${type})`,
-      category: "Resources"
-    });
-
-    showToast("Success", "Learning resource published to the students list!", "success");
-    closeResModal();
-    resForm.reset();
-    window.location.reload();
   });
 }

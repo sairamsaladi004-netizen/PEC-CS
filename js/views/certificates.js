@@ -32,13 +32,13 @@ export function renderCertificatesView(params = {}) {
         eventDates: "September 15-16, 2026",
         venue: "Central Auditorium & Turing AI Lab, Surampalem",
         awardType: "Certificate of Participation & Technical Completion",
-        template: params.template || "gold",
+        template: "gold",
         issueDate: "2026-09-17"
       });
 
   const normalizedCert = normalizeCertificateData({
     ...currentCert,
-    template: params.template || currentCert.template || "gold"
+    templateKey: params.template || (currentCert ? currentCert.template : "gold") || "gold"
   });
 
   // If in dedicated single-view or template mode
@@ -225,7 +225,7 @@ export function renderCertificatesView(params = {}) {
                 <label class="block font-semibold text-slate-700">Custom Citation Paragraph (Leave blank to use auto-generated academic narrative)</label>
                 <button type="button" id="clear-citation-btn" class="text-[10px] text-blue-600 font-bold hover:underline">Use Auto-Generated</button>
               </div>
-              <textarea id="cust-citation" rows="2" placeholder="Auto-generated based on selected award designation and event details..." class="w-full p-2.5 rounded-xl border border-slate-200 font-serif focus:ring-2 focus:ring-blue-500 focus:outline-none">${cert.customCitation || ''}</textarea>
+              <textarea id="cust-citation" rows="2" placeholder="Auto-generated based on selected award designation and event details..." class="w-full p-2.5 rounded-xl border border-slate-200 font-serif focus:ring-2 focus:ring-blue-500 focus:outline-none">${normalizedCert.customCitation || ''}</textarea>
             </div>
 
             <!-- Save / Mint Actions for Coordinators -->
@@ -453,7 +453,7 @@ export function attachCertificatesEvents(params = {}) {
           filename: `PEC-CERTIFICATE-${certId || 'DIGITAL'}.png`
         });
       } else {
-        showToast("Could not locate active certificate component element to download.", "error");
+        showToast("Error", "Could not locate active certificate component element to download.", "error");
       }
     });
   }
@@ -647,11 +647,8 @@ export function attachCertificatesEvents(params = {}) {
 
         db.certificates = db.certificates || [];
         db.certificates.unshift(newCert);
-        
-        apiRequest('/api/certificates/create', 'POST', newCert).catch(console.error);
         saveDB(db);
-        logAudit(`${user.name} (${user.role})`, "Minted Digital Certificate"
-, newId, `${name} - ${eventName}`);
+        logAudit(`${user.name} (${user.role})`, "Minted Digital Certificate", newId, `${name} - ${eventName}`);
 
         showToast("Credential Saved", `Certificate #${newId} recorded to verified digital ledger!`, "success");
         setTimeout(() => {
@@ -760,14 +757,8 @@ export function attachCertificatesEvents(params = {}) {
           count++;
         });
 
-        
-        apiRequest('/api/certificates/bulk-mint', 'POST', { 
-            eventId, awardType, template 
-        }).catch(console.error);
-
         saveDB(db);
-        logAudit(`${user.name} (${user.role})`, "Bulk Minted Certificates"
-, evt?.title, `Minted ${count} credentials`);
+        logAudit(`${user.name} (${user.role})`, "Bulk Minted Certificates", evt?.title, `Minted ${count} credentials`);
         showToast("Batch Mint Complete", `Successfully generated and dispatched ${count} digital certificates!`, "success");
         bulkModal.classList.add("hidden");
         setTimeout(() => window.location.reload(), 300);

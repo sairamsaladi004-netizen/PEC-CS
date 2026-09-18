@@ -111,3 +111,24 @@ export async function supabaseSignOut() {
     console.warn("[Frontend Supabase Auth] Sign out notice:", err.message);
   }
 }
+
+export async function supabaseSignInWithGoogle() {
+  if (!supabaseClient) {
+    // If Supabase client is not initialized, try initializing or fallback
+    throw new Error("Supabase client is not initialized. Please configure Supabase credentials.");
+  }
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin + window.location.pathname
+      }
+    });
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.warn("[Frontend Supabase Auth] Google OAuth error:", err.message);
+    throw err;
+  }
+}
+

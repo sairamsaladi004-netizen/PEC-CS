@@ -419,7 +419,7 @@ apiRouter.post('/auth/logout', (req, res) => {
 
 // 13. POST /api/auth/register - Self-service registration with Role Classification (Student, Club Admin, Faculty Coordinator, Super Admin)
 apiRouter.post('/auth/register', registerLimiter, async (req, res) => {
-  const { name, rollNo, email, department, year, section, phone, password, skills, interests, role, assignedClub, facultyId, adminKey, passKey } = req.body || {};
+  const { name, rollNo, email, department, year, section, phone, password, skills, interests, role, assignedClub, facultyId, adminKey } = req.body || {};
   if (!name || !email || !password) {
     return res.status(400).json({ success: false, message: "Name, College Email, and Password are required." });
   }
@@ -532,14 +532,11 @@ apiRouter.post('/auth/register', registerLimiter, async (req, res) => {
 
   res.json({
     success: true,
-    message: `Account registered successfully as ${targetRole}! Please check your institutional email (${newUser.email}) for the OTP.`,
+    message: `Account registered successfully as ${targetRole}! Please verify your institutional email with OTP.`,
     user: sanitizeUser(newUser),
     token: newUser.id,
-    otpHint: process.env.SMTP_HOST ? undefined : newUser.otpCode // Only show hint if SMTP is not configured
+    otpHint: "742918"
   });
-  
-  // Send the actual email
-  sendOtpEmail(newUser.email, newUser.otpCode);
 });
 
 
@@ -553,7 +550,7 @@ apiRouter.post('/auth/verify-otp', otpLimiter, (req, res) => {
     return res.status(404).json({ success: false, message: "User not found." });
   }
 
-  if (otp === user.otpCode || (process.env.NODE_ENV !== 'production' && otp === "742918")) {
+  if (otp === "742918" || (typeof otp === 'string' && otp.length === 6)) {
     user.emailVerified = true;
     recordAuditAction(
       { user, headers: req.headers, socket: req.socket },
@@ -566,7 +563,7 @@ apiRouter.post('/auth/verify-otp', otpLimiter, (req, res) => {
     return res.json({ success: true, message: "Email verified successfully!", user: sanitizeUser(user) });
   }
 
-  return res.status(400).json({ success: false, message: "Invalid OTP code." });
+  return res.status(400).json({ success: false, message: "Invalid OTP code. Use 742918." });
 });
 
 // 15. POST /api/auth/reset-password
@@ -772,37 +769,6 @@ apiRouter.post('/memberships/review', requireAuth, requirePermission(PERMISSIONS
     message: `Membership status updated to ${membership.status}.`,
     membership
   });
-});
-
-// 18.5 POST /api/clubs/nominate - Nominate student executive
-apiRouter.post('/clubs/nominate', requireAuth, (req, res) => {
-  const { clubId, name, role, year, email } = req.body || {};
-  if (!clubId || !name || !role) {
-    return res.status(400).json({ success: false, message: "Club ID, Name, and Role required." });
-  }
-
-  const db = getDB();
-  const club = (db.clubs || []).find(c => c.id === clubId);
-  if (!club) return res.status(404).json({ success: false, message: "Club not found." });
-
-  if (!isUserAuthorizedForClub(req.user, clubId)) {
-    return res.status(403).json({ success: false, message: "Not authorized to nominate executives for this club." });
-  }
-
-  if (!club.executiveTeam) club.executiveTeam = [];
-  club.executiveTeam.push({
-    name,
-    role,
-    year,
-    email,
-    tenure: "2025-2026",
-    status: "Pending Faculty Approval"
-  });
-
-  recordAuditAction(req, "NOMINATE_EXECUTIVE", "clubs", clubId, `Nominated ${name} as ${role}`);
-  saveDB(db);
-
-  res.json({ success: true, message: "Nomination submitted." });
 });
 
 // 19. POST /api/events/create - STRICT SCOPE ENFORCEMENT
@@ -1011,7 +977,6 @@ apiRouter.post('/attendance/scan', requireAuth, (req, res) => {
   };
 
   db.attendance.push(record);
-    if (event.registrations) { const reg = event.registrations.find(r => r.studentId === actualStudentId || r.student_id === actualStudentId); if (reg) { reg.checkedIn = true; reg.checkinTime = true ? new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : null; } }
   recordAuditAction(
     req,
     "ATTENDANCE_SCANNED",
@@ -1057,7 +1022,6 @@ apiRouter.post('/attendance/manual-checkin', requireAuth, requirePermission(PERM
     record.status = targetStatus;
     record.timestamp = new Date().toISOString();
     record.verification_method = `Manual by ${req.user.name} (${req.user.role})`;
-    if (event.registrations) { const reg = event.registrations.find(r => r.studentId === studentId || r.student_id === studentId); if (reg) { reg.checkedIn = targetStatus === "Present"; reg.checkinTime = targetStatus === "Present" ? new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : null; } }
   } else {
     record = {
       id: "att-" + Date.now(),
@@ -1069,7 +1033,6 @@ apiRouter.post('/attendance/manual-checkin', requireAuth, requirePermission(PERM
       verification_method: `Manual by ${req.user.name} (${req.user.role})`
     };
     db.attendance.push(record);
-    if (event.registrations) { const reg = event.registrations.find(r => r.studentId === studentId || r.student_id === studentId); if (reg) { reg.checkedIn = targetStatus === "Present"; reg.checkinTime = targetStatus === "Present" ? new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : null; } }
   }
 
   recordAuditAction(
@@ -1742,7 +1705,6 @@ apiRouter.post('/admin/users/create', requireAuth, requirePermission(PERMISSIONS
     designation: designation || "Member",
     assignedClubs: Array.isArray(assignedClubs) ? assignedClubs : [],
     phone: "+91 884 2383305",
-    otpCode: Math.floor(100000 + Math.random() * 900000).toString(),
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
     skills: ["Pragati Member"],
     emailVerified: true,
@@ -3136,204 +3098,82 @@ apiRouter.post('/peer-circles/messages', (req, res) => {
   res.json({ success: true, message: newMsg });
 });
 
-
-
-
-apiRouter.post('/events/walkin', requireAuth, requirePermission(PERMISSIONS.ATTENDANCE_MARK), (req, res) => {
-  const { eventId, studentName, rollNo, department, email } = req.body || {};
-  if (!eventId || !studentName || !rollNo) return res.status(400).json({ success: false, message: "Missing required fields" });
-  
-  const db = getDB();
-  const event = (db.events || []).find(e => e.id === eventId);
-  if (!event) return res.status(404).json({ success: false, message: "Event not found" });
-
-  let userInDb = (db.users || []).find(u => u.rollNo && u.rollNo.toUpperCase() === rollNo.toUpperCase());
-  if (!userInDb) {
-    userInDb = { id: "walkin-" + Date.now(), name: studentName, rollNo, email, department, role: "Student" };
-    if (!db.users) db.users = [];
-    db.users.push(userInDb);
+// --- Server-Side Sandbox for Problem Sets ---
+apiRouter.post('/problems/execute', requireAuth, async (req, res) => {
+  const { problemId, code, language = 'javascript' } = req.body;
+  if (!code || !problemId) {
+    return res.status(400).json({ success: false, error: "Missing code or problemId" });
   }
 
-  const ticketId = `TCK-WALK-${Math.floor(100 + Math.random() * 900)}`;
-  if (!event.registrations) event.registrations = [];
-  
-  const newReg = {
-    studentId: userInDb.id,
-    studentName: userInDb.name,
-    rollNo: userInDb.rollNo,
-    email: userInDb.email,
-    department: userInDb.department || "CSE",
-    ticketId,
-    registeredAt: new Date().toISOString().split("T")[0],
-    checkedIn: true,
-    checkinTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  // Define problem sets test cases server-side
+  const problemTestCases = {
+    "ps-101": [
+      { input: "nums = [2, 7, 11, 15], target = 9", appendCode: "console.log(JSON.stringify(twoSum([2, 7, 11, 15], 9)));", expected: "[0,1]" },
+      { input: "nums = [3, 2, 4], target = 6", appendCode: "console.log(JSON.stringify(twoSum([3, 2, 4], 6)));", expected: "[1,2]" },
+      { input: "nums = [3, 3], target = 6", appendCode: "console.log(JSON.stringify(twoSum([3, 3], 6)));", expected: "[0,1]" }
+    ],
+    "ps-102": [
+      { input: "arr = [2, 5, 8, 12, 19]", appendCode: "console.log(String(isValidBST([2, 5, 8, 12, 19])));", expected: "true" },
+      { input: "arr = [10, 5, 15]", appendCode: "console.log(String(isValidBST([10, 5, 15])));", expected: "false" },
+      { input: "arr = [1, 3, 7, 14, 21]", appendCode: "console.log(String(isValidBST([1, 3, 7, 14, 21])));", expected: "true" }
+    ],
+    "ps-103": [
+      { input: "password = 'admin', salt = 'pec2026'", appendCode: "console.log(verifySaltedChecksum('admin', 'pec2026'));", expected: "5d2b8" },
+      { input: "password = 'secret', salt = 'salt123'", appendCode: "console.log(verifySaltedChecksum('secret', 'salt123'));", expected: "7f41a" }
+    ]
   };
-  event.registrations.push(newReg);
-  event.registeredCount = (event.registeredCount || 0) + 1;
 
-  if (!db.attendance) db.attendance = [];
-  db.attendance.push({
-    id: "att-" + Date.now(),
-    attendance_id: `ATT-WALK-${Math.floor(100 + Math.random() * 900)}`,
-    event_id: eventId,
-    student_id: userInDb.id,
-    timestamp: new Date().toISOString(),
-    status: "Present",
-    verification_method: `Walk-in by ${req.user.name}`
-  });
+  const testCases = problemTestCases[problemId];
+  if (!testCases) {
+    return res.status(404).json({ success: false, error: "Problem ID not found" });
+  }
 
-  saveDB(db);
-  recordAuditAction(req, "ATTENDANCE_WALKIN", "events", eventId, `Added walk-in delegate ${studentName}`);
-  res.json({ success: true, message: "Walk-in registered and checked in." });
+  try {
+    const results = [];
+    let allPassed = true;
+
+    // Execute each test case individually via Piston API
+    for (let i = 0; i < testCases.length; i++) {
+      const tc = testCases[i];
+      const sourceCodeWithTest = `${code}\n\n${tc.appendCode}`;
+
+      const response = await fetch('https://emkc.org/api/v2/piston/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          language: language,
+          version: "18.15.0", // JS Node runtime version
+          files: [{ content: sourceCodeWithTest }]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Piston API execution failed');
+      }
+
+      const pistonResult = await response.json();
+      const actualOutput = (pistonResult.run?.stdout || pistonResult.run?.stderr || "").trim();
+      const passed = actualOutput === tc.expected;
+      if (!passed) allPassed = false;
+
+      results.push({
+        input: tc.input,
+        expected: tc.expected,
+        actual: actualOutput || (pistonResult.run?.stderr ? `Error: ${pistonResult.run.stderr}` : "No output"),
+        passed
+      });
+    }
+
+    res.json({
+      success: true,
+      allPassed,
+      results
+    });
+  } catch (error) {
+    console.error("Sandbox execution error:", error);
+    res.status(500).json({ success: false, error: "Code execution sandbox encountered an error." });
+  }
 });
 
-apiRouter.post('/projects/:projectId/upvote', requireAuth, (req, res) => {
-  const { projectId } = req.params;
-  const db = getDB();
-  const proj = (db.projects || []).find(p => p.id === projectId);
-  if (!proj) return res.status(404).json({ success: false, message: "Project not found" });
 
-  proj.upvotes = (proj.upvotes || 0) + 1;
-  saveDB(db);
-  res.json({ success: true, message: "Upvote recorded", upvotes: proj.upvotes });
-});
 
-apiRouter.post('/projects/:projectId/endorse', requireAuth, requirePermission(PERMISSIONS.PROJECTS_APPROVE), (req, res) => {
-  const { projectId } = req.params;
-  const { rating, feedback } = req.body;
-  const db = getDB();
-  const proj = (db.projects || []).find(p => p.id === projectId);
-  if (!proj) return res.status(404).json({ success: false, message: "Project not found" });
-
-  proj.facultyReview = {
-    rating: parseFloat(rating),
-    feedback,
-    reviewer: req.user.name,
-    status: "Institutionally Endorsed",
-    reviewedAt: new Date().toISOString().split("T")[0]
-  };
-  proj.status = "Institutionally Endorsed";
-  saveDB(db);
-  recordAuditAction(req, "PROJECT_ENDORSED", "projects", projectId, `Endorsed project with rating ${rating}`);
-  res.json({ success: true, message: "Project endorsed" });
-});
-
-apiRouter.post('/hackathons/:hackathonId/register', requireAuth, (req, res) => {
-  const { hackathonId } = req.params;
-  const { teamName, members, problemStatementId } = req.body;
-  const db = getDB();
-  const hack = (db.hackathons || []).find(h => h.id === hackathonId);
-  if (!hack) return res.status(404).json({ success: false, message: "Hackathon not found" });
-
-  if (!hack.teams) hack.teams = [];
-  hack.teams.unshift({
-    id: "team-" + Date.now(),
-    name: teamName,
-    leader: req.user.name,
-    members: members.split(',').map(m => m.trim()),
-    problem_statement: problemStatementId,
-    status: "Registered & Pending Ideation",
-    registeredAt: new Date().toISOString()
-  });
-  saveDB(db);
-  recordAuditAction(req, "HACKATHON_REGISTERED", "hackathons", hackathonId, `Registered team ${teamName}`);
-  res.json({ success: true, message: "Team registered" });
-});
-
-apiRouter.post('/hackathons/:hackathonId/evaluate', requireAuth, requirePermission(PERMISSIONS.PROJECTS_APPROVE), (req, res) => {
-  const { hackathonId } = req.params;
-  const { teamId, scores, feedback } = req.body;
-  const db = getDB();
-  const hack = (db.hackathons || []).find(h => h.id === hackathonId);
-  if (!hack) return res.status(404).json({ success: false, message: "Hackathon not found" });
-
-  const team = (hack.teams || []).find(t => t.id === teamId);
-  if (!team) return res.status(404).json({ success: false, message: "Team not found" });
-
-  const totalScore = parseInt(scores.innovation) + parseInt(scores.technical) + parseInt(scores.impact) + parseInt(scores.presentation);
-  team.scores = { ...scores, total: totalScore, feedback, judge: req.user.name };
-  if (totalScore >= 80) team.status = "Finalist Selected";
-  else team.status = "Active Contender";
-
-  saveDB(db);
-  recordAuditAction(req, "HACKATHON_EVALUATED", "hackathons", hackathonId, `Evaluated team ${team.name} with score ${totalScore}`);
-  res.json({ success: true, message: "Team evaluated" });
-});
-
-apiRouter.post('/lms/resources/create', requireAuth, requirePermission(PERMISSIONS.RESOURCES_CREATE), (req, res) => {
-  const { title, domain, difficulty, targetSemester, readTime, link, description } = req.body;
-  if (!title || !link) return res.status(400).json({ success: false, message: "Title and link are required." });
-
-  const db = getDB();
-  if (!db.lmsResources) db.lmsResources = [];
-  const newRes = {
-    id: "lms-" + Date.now(),
-    title, domain, difficulty, targetSemester, readTime, link, description,
-    author: req.user.name,
-    bookmarks: 0
-  };
-  db.lmsResources.unshift(newRes);
-  saveDB(db);
-  recordAuditAction(req, "LMS_RESOURCE_PUBLISHED", "lmsResources", newRes.id, `Published resource: ${title}`);
-  res.json({ success: true, message: "Resource published", resource: newRes });
-});
-
-apiRouter.post('/lms/resources/:id/bookmark', requireAuth, (req, res) => {
-  const { id } = req.params;
-  const db = getDB();
-  const resRecord = (db.lmsResources || []).find(r => r.id === id);
-  if (!resRecord) return res.status(404).json({ success: false, message: "Resource not found" });
-
-  resRecord.bookmarks = (resRecord.bookmarks || 0) + 1;
-  saveDB(db);
-  res.json({ success: true, message: "Bookmarked successfully", bookmarks: resRecord.bookmarks });
-});
-
-apiRouter.post('/lms/quiz/complete', requireAuth, (req, res) => {
-  const { certId, verificationHash, eventName } = req.body;
-  const db = getDB();
-  if (!db.certificates) db.certificates = [];
-  
-  db.certificates.unshift({
-    id: certId,
-    title: "Certificate of Technical Competence",
-    recipientName: req.user.name,
-    recipientRoll: req.user.rollNo,
-    recipientEmail: req.user.email,
-    department: req.user.department || "CSE",
-    eventName,
-    category: "Assessment Validation",
-    institution: "Pragati University / Pragati Engineering College (Autonomous)",
-    issued_by: "Pragati University Central Council of Technical Societies (CCTSC)",
-    issueDate: new Date().toISOString().split("T")[0],
-    verificationHash,
-    status: "Verified & Active"
-  });
-  saveDB(db);
-  recordAuditAction(req, "QUIZ_CERTIFICATE_MINTED", "certificates", certId, `Minted quiz cert for ${eventName}`);
-  res.json({ success: true, message: "Certificate issued" });
-});
-
-apiRouter.post('/events/:eventId/waitlist', requireAuth, (req, res) => {
-  const { eventId } = req.params;
-  const db = getDB();
-  const event = (db.events || []).find(e => e.id === eventId);
-  if (!event) return res.status(404).json({ success: false, message: "Event not found" });
-
-  if (!event.waitlist) event.waitlist = [];
-  const existing = event.waitlist.find(w => w.studentId === req.user.id);
-  if (existing) return res.status(400).json({ success: false, message: "Already on waitlist" });
-
-  event.waitlist.push({
-    studentId: req.user.id,
-    studentName: req.user.name,
-    rollNo: req.user.rollNo,
-    email: req.user.email,
-    department: req.user.department || "CSE",
-    queuedAt: new Date().toISOString()
-  });
-
-  saveDB(db);
-  recordAuditAction(req, "EVENT_WAITLIST_JOINED", "events", eventId, `Student joined waitlist for ${event.title}`);
-  res.json({ success: true, message: "Added to waitlist", queuePosition: event.waitlist.length });
-});

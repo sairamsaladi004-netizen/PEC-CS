@@ -1355,47 +1355,18 @@ export function resetDB() {
 }
 
 export function logAudit(actor, action, target, details) {
-  let finalActor = actor;
-  let finalAction = action;
-  let finalTarget = target;
-  let finalDetails = details;
-
-  if (actor && typeof actor === "object" && !action && !target && !details) {
-    // Single object configuration style
-    finalAction = actor.action;
-    finalTarget = actor.target || actor.category || "General";
-    finalDetails = actor.details;
-    
-    try {
-      const activeId = typeof localStorage !== "undefined" ? localStorage.getItem("campustech_active_user_id") : null;
-      if (activeId) {
-        const db = getDB();
-        const user = (db.users || []).find(u => u.id === activeId);
-        if (user) {
-          finalActor = `${user.name} (${user.role})`;
-        } else {
-          finalActor = activeId;
-        }
-      } else {
-        finalActor = "System / Guest";
-      }
-    } catch (e) {
-      finalActor = "System";
-    }
-  }
-
   const db = getDB();
   const now = new Date();
   const timestamp = now.toISOString().replace("T", " ").substring(0, 19);
   const logEntry = {
     id: "log-" + Date.now(),
     timestamp,
-    actor: finalActor,
-    user: finalActor,
-    action: finalAction,
-    target: finalTarget,
-    affected_record: finalTarget,
-    details: finalDetails
+    actor,
+    user: actor,
+    action,
+    target,
+    affected_record: target,
+    details
   };
   if (!db.audit_logs) db.audit_logs = [];
   db.audit_logs.unshift(logEntry);

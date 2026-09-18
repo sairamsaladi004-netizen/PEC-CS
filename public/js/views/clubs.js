@@ -17,7 +17,7 @@ export function renderClubsView(params = {}) {
     const userMemberships = user.id ? (db.club_memberships || []).filter(m => m.student_id === user.id || m.studentId === user.id) : [];
     const isMember = (user.clubs && user.clubs.includes(club.id)) || userMemberships.some(m => (m.club_id === club.id || m.clubId === club.id) && m.status === "Approved");
     const isPending = userMemberships.some(m => (m.club_id === club.id || m.clubId === club.id) && m.status === "Pending");
-    const isFaculty = ["Faculty Coordinator", "Department Admin", "Super Admin"].includes(user.role);
+    const isFaculty = ["Faculty Coordinator", "Department Admin", "Director (Academics)"].includes(user.role);
     const isClubAdmin = user.role === "Club Admin" || user.adminForClub === club.id || isFaculty;
     const clubEvents = (db.events || []).filter(e => e.clubId === club.id);
     const executiveTeam = club.executiveTeam || [];

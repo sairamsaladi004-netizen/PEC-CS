@@ -1,4 +1,4 @@
-import { getDB, apiRequest, saveDB, logAudit } from '../db.js';
+import { getDB, saveDB, logAudit } from '../db.js';
 import { getCurrentUser } from '../auth.js';
 import { showToast } from '../components/toast.js';
 import { getStudentEventPrediction, getEventParticipationPrediction } from '../intelligenceEngine.js';
@@ -181,7 +181,7 @@ export function filterTechnicalEvents(events, clubs, filters = {}) {
 export function renderEventDashboard(options = {}) {
   const db = getDB();
   const user = getCurrentUser() || {};
-  const isFacultyOrAdmin = ["Faculty Coordinator", "Department Admin", "Super Admin", "Club Admin"].includes(user.role);
+  const isFacultyOrAdmin = ["Faculty Coordinator", "Department Admin", "Director (Academics)", "Club Admin"].includes(user.role);
 
   const activeCategory = normalizeCategory(options.defaultCategory || options.initialCategory || options.category || "ALL");
   const activeClubId = options.defaultClubId || options.initialClubId || options.clubId || "ALL";
@@ -1588,10 +1588,10 @@ function attachCardAndRowActionListeners() {
 
       // Sync event_registrations relational table
       if (!currentDb.event_registrations) currentDb.event_registrations = [];
-      
       currentDb.event_registrations.push(newReg);
-      apiRequest('/api/events/register', 'POST', { eventId: evt.id }).catch(console.error);
 
+      saveDB(currentDb);
+      logAudit(`${user.name} (${user.role})`, "Registered for Technical Event", evt.title, `Ticket ID: ${ticketId}`);
       showToast(`Pass confirmed for "${evt.title}"! Gate Pass: ${ticketId}`, "success");
 
       // Auto-Pop QR Gate Pass Modal
@@ -1656,10 +1656,9 @@ function attachCardAndRowActionListeners() {
         rollNo: user.rollNo || "22CS101",
         queuedAt: new Date().toISOString()
       };
-      
       evt.waitlist.push(waitEntry);
-      apiRequest(`/api/events/${evt.id}/waitlist`, 'POST').catch(console.error);
-
+      saveDB(currentDb);
+      logAudit(`${user.name}`, "Joined Event Waitlist", evt.title, `Queue Pos: #${evt.waitlist.length}`);
       showToast(`Added to waitlist for "${evt.title}". Queue Position: #${evt.waitlist.length}`, "warning");
 
       setTimeout(() => {
@@ -1895,10 +1894,9 @@ function attachModalListeners() {
           waitlist: []
         };
 
-        
         currentDb.events.unshift(newEvt);
-        apiRequest('/api/events/create', 'POST', newEvt).catch(console.error);
-
+        saveDB(currentDb);
+        logAudit(`${user.name} (${user.role})`, "Created Society Event", newEvt.title, `Capacity: ${newEvt.capacity}`);
         showToast(`Event "${newEvt.title}" published! Official circular generated.`, "success");
         createModal.classList.add("hidden");
         createForm.reset();

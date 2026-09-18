@@ -5,6 +5,7 @@ import { getCurrentUser } from '../auth.js';
 import { getDB, apiRequest } from '../db.js';
 import { getSupabaseClient } from '../supabaseClient.js';
 import { showToast } from '../components/toast.js';
+import { renderClubLeaderboardD3 } from '../components/d3Visualizers.js';
 
 export function renderLeaderboardView() {
   const currentUser = getCurrentUser() || {};
@@ -150,17 +151,16 @@ export function renderLeaderboardView() {
         <div class="lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
           <div class="flex items-center justify-between">
             <div>
-              <h2 class="text-sm font-black text-slate-900">Departmental Score Averages</h2>
-              <p class="text-xs text-slate-500">Average engagement points across departments</p>
+              <h2 class="text-sm font-black text-slate-900">Student Club Leaderboard</h2>
+              <p class="text-xs text-slate-500">Events & Projects participation ranking</p>
             </div>
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 font-mono">
-              D3 Grouped
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 font-mono">
+              D3.v7
             </span>
           </div>
-
-          <!-- D3 Department Donut / Bar Chart Container -->
-          <div id="d3-dept-engagement-chart" class="w-full min-h-[300px] flex items-center justify-center">
-            <div class="text-xs text-slate-400 font-mono animate-pulse">Computing Department Vectors...</div>
+          <!-- D3 Club Leaderboard Container -->
+          <div id="d3-club-leaderboard-chart" class="w-full min-h-[300px] flex items-center justify-center">
+            <div class="text-xs text-slate-400 font-mono animate-pulse">Computing Club Metrics...</div>
           </div>
         </div>
 
@@ -316,7 +316,17 @@ export function attachLeaderboardEvents() {
 
     // Render D3 Charts
     renderD3BarChart("d3-leaderboard-bar-chart", filtered.slice(0, 10));
-    renderD3DeptChart("d3-dept-engagement-chart", filtered);
+    
+    // Club Leaderboard
+    const clubData = (db.clubs || []).map(c => {
+      const participation = (db.badge_scans || []).filter(s => s.club_id === c.id || s.clubId === c.id).length;
+      const projectsCount = (db.projects || []).filter(p => p.club_id === c.id || p.clubId === c.id).length;
+      return {
+        name: c.name,
+        totalScore: participation * 10 + projectsCount * 50
+      };
+    }).sort((a,b) => b.totalScore - a.totalScore);
+    renderClubLeaderboardD3("d3-club-leaderboard-chart", clubData);
   }
 
   // Filter Listeners

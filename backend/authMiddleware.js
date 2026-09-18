@@ -115,7 +115,7 @@ export function requirePermission(permission) {
   };
 }
 
-// Enforce Club Scope: User must be Super Admin or authorized for the specific clubId
+// Enforce Club Scope: User must be Director (Academics) or authorized for the specific clubId
 export function requireClubScope(getClubIdFn) {
   return (req, res, next) => {
     const clubId = typeof getClubIdFn === 'function' ? getClubIdFn(req) : (req.params.clubId || req.body.club_id || req.body.clubId);

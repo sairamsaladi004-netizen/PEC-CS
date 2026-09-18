@@ -93,7 +93,7 @@ const DEFAULT_SALT = "pec_secure_salt_2026";
 const DEFAULT_PASSWORD = process.env.DEMO_PASSWORD || "Password@123";
 const DEFAULT_PASSWORD_HASH = hashPassword(DEFAULT_PASSWORD, DEFAULT_SALT);
 
-export const INITIAL_BACKEND_SEED = {
+const INITIAL_BACKEND_SEED = {
   departments: [
     { code: "CE", name: "Civil Engineering" },
     { code: "IT", name: "Information Technology" },
@@ -1102,41 +1102,6 @@ async function persistChangesToSupabase(data) {
       }));
       for (let i = 0; i < notifRows.length; i += 50) {
         await supabase.from('notifications').upsert(notifRows.slice(i, i + 50), { onConflict: 'id' });
-      }
-    }
-
-    // Sync resources
-    if (Array.isArray(data.resources)) {
-      const resourceRows = data.resources.map(r => ({
-        id: r.id,
-        title: r.title,
-        description: r.description || null,
-        club_id: r.club_id || r.clubId || null,
-        category: r.category || 'Tutorial',
-        uploaded_by: r.uploaded_by || r.uploadedBy || 'Faculty Coordinator',
-        upload_date: r.upload_date || r.uploadDate || new Date().toISOString().split('T')[0],
-        file_url: r.file_url || r.fileUrl || null,
-        target_semester: r.target_semester || r.targetSemester || null
-      }));
-      for (let i = 0; i < resourceRows.length; i += 50) {
-        await supabase.from('resources').upsert(resourceRows.slice(i, i + 50), { onConflict: 'id' });
-      }
-    }
-
-    // Sync projects
-    if (Array.isArray(data.projects)) {
-      const projectRows = data.projects.map(p => ({
-        id: p.id,
-        title: p.title,
-        description: p.description || null,
-        problem_statement: p.problem_statement || p.problemStatement || null,
-        club_id: p.club_id || p.clubId || null,
-        student_id: p.student_id || p.studentId || null,
-        status: p.status || 'Pending',
-        created_at: p.created_at || p.createdAt || new Date().toISOString()
-      }));
-      for (let i = 0; i < projectRows.length; i += 50) {
-        await supabase.from('projects').upsert(projectRows.slice(i, i + 50), { onConflict: 'id' });
       }
     }
 

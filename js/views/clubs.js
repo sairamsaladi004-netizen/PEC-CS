@@ -17,7 +17,7 @@ export function renderClubsView(params = {}) {
     const userMemberships = user.id ? (db.club_memberships || []).filter(m => m.student_id === user.id || m.studentId === user.id) : [];
     const isMember = (user.clubs && user.clubs.includes(club.id)) || userMemberships.some(m => (m.club_id === club.id || m.clubId === club.id) && m.status === "Approved");
     const isPending = userMemberships.some(m => (m.club_id === club.id || m.clubId === club.id) && m.status === "Pending");
-    const isFaculty = ["Faculty Coordinator", "Department Admin", "Super Admin"].includes(user.role);
+    const isFaculty = ["Faculty Coordinator", "Department Admin", "Director (Academics)"].includes(user.role);
     const isClubAdmin = user.role === "Club Admin" || user.adminForClub === club.id || isFaculty;
     const clubEvents = (db.events || []).filter(e => e.clubId === club.id);
     const executiveTeam = club.executiveTeam || [];
@@ -771,15 +771,8 @@ export function attachClubsEvents(params = {}) {
             tenure: "2025-2026",
             status: "Pending Faculty Approval"
           });
-          
-        apiRequest('/api/clubs/nominate', 'POST', { clubId, name, role, year, email }).then(() => {
+          saveDB(db);
           logAudit("Club Admin", "Nominated Student Executive", `${club.name} - ${name}`, `Proposed role: ${role}`);
-          showToast("Nomination Submitted", `${name} nominated for ${role}. Pending review.`, "success");
-          teamModal.classList.add("hidden");
-          setTimeout(() => window.location.reload(), 300);
-        }).catch(console.error);
-        logAudit("Club Admin", "Nominated Student Executive"
-, `${club.name} - ${name}`, `Proposed role: ${role}`);
           showToast("Nomination Submitted", `${name} nominated for ${role}. Pending review.`, "success");
           teamModal.classList.add("hidden");
           setTimeout(() => window.location.reload(), 300);
@@ -797,14 +790,8 @@ export function attachClubsEvents(params = {}) {
       const club = db.clubs.find(c => c.id === clubId);
       if (club && club.executiveTeam && club.executiveTeam[memberIdx]) {
         club.executiveTeam[memberIdx].status = "Approved";
-        
-        apiRequest(`/api/clubs/${club.id}/executive/approve`, 'POST', {
-          memberIndex: memberIdx
-        }).catch(console.error);
-        
         saveDB(db);
-        logAudit("Faculty Coordinator", "Approved Executive Appointment"
-, `${club.name} - ${club.executiveTeam[memberIdx].name}`, `Endorsed ${club.executiveTeam[memberIdx].role}`);
+        logAudit("Faculty Coordinator", "Approved Executive Appointment", `${club.name} - ${club.executiveTeam[memberIdx].name}`, `Endorsed ${club.executiveTeam[memberIdx].role}`);
         showToast("Executive Approved", `${club.executiveTeam[memberIdx].name} appointment ratified.`, "success");
         setTimeout(() => window.location.reload(), 200);
       }
@@ -819,14 +806,8 @@ export function attachClubsEvents(params = {}) {
       const club = db.clubs.find(c => c.id === clubId);
       if (club && club.executiveTeam && club.executiveTeam[memberIdx]) {
         club.executiveTeam[memberIdx].status = "Rejected";
-        
-        apiRequest(`/api/clubs/${club.id}/executive/reject`, 'POST', {
-          memberIndex: memberIdx
-        }).catch(console.error);
-
         saveDB(db);
-        logAudit("Faculty Coordinator", "Rejected Executive Nomination"
-, `${club.name} - ${club.executiveTeam[memberIdx].name}`, "Nomination declined.");
+        logAudit("Faculty Coordinator", "Rejected Executive Nomination", `${club.name} - ${club.executiveTeam[memberIdx].name}`, "Nomination declined.");
         showToast("Nomination Declined", "Executive nomination status updated.", "info");
         setTimeout(() => window.location.reload(), 200);
       }

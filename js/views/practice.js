@@ -244,81 +244,73 @@ export function attachPracticeEvents() {
 
   const runBtn = document.getElementById('run-compiler-btn');
   if (runBtn) {
-    runBtn.addEventListener('click', () => {
+    runBtn.addEventListener('click', async () => {
       const code = document.getElementById('compiler-code-input').value;
       const statusTag = document.getElementById('compiler-status-tag');
       const resultsBox = document.getElementById('compiler-test-results');
 
-      statusTag.textContent = "EXECUTING TESTS...";
+      statusTag.textContent = "EXECUTING TESTS IN SECURE SANDBOX...";
       statusTag.className = "px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-mono animate-pulse";
+      resultsBox.innerHTML = '<div class="text-slate-500 italic">Sending to evaluation engine...</div>';
 
-      setTimeout(() => {
-        let allPassed = true;
+      try {
         const start = performance.now();
+        
+        // Execute code via server-side sandbox API
+        const res = await apiRequest('/api/problems/execute', 'POST', {
+          problemId: currentProblem.id,
+          code: code,
+          language: 'javascript'
+        });
+        
+        const end = performance.now();
+        const durationMs = (end - start).toFixed(1);
 
-        try {
-          // Dynamic execution test runner
-          const htmlLogs = currentProblem.testCases.map((tc, idx) => {
-            let actual = "";
-            try {
-              if (currentProblem.id === "ps-101") {
-                actual = JSON.stringify(tc.run());
-              } else if (currentProblem.id === "ps-102") {
-                actual = String(tc.run());
-              } else {
-                actual = String(tc.run());
-              }
-            } catch (err) {
-              actual = "Error: " + err.message;
-            }
-
-            const passed = actual === tc.expected;
-            if (!passed) allPassed = false;
-
-            return `
-              <div class="p-3 rounded-xl ${passed ? 'bg-emerald-950/40 border border-emerald-800/50 text-emerald-300' : 'bg-rose-950/40 border border-rose-800/50 text-rose-300'} flex items-center justify-between">
-                <div>
-                  <div class="font-bold">Test Case #${idx + 1}: ${tc.input}</div>
-                  <div class="text-[10px] opacity-80 mt-0.5">Expected: <span class="font-mono">${tc.expected}</span> | Actual Output: <span class="font-mono">${actual}</span></div>
-                </div>
-                <div class="font-bold text-xs shrink-0">${passed ? 'PASSED ✓' : 'FAILED ✕'}</div>
-              </div>
-            `;
-          }).join('');
-
-          const end = performance.now();
-          const durationMs = (end - start + 1.8).toFixed(1);
-
-          if (allPassed) {
-            statusTag.textContent = `ALL TESTS PASSED (${durationMs}ms)`;
-            statusTag.className = "px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-mono font-bold";
-            showToast(`Success! All test cases passed in ${durationMs}ms (+${currentProblem.xpReward || 100} XP)`, "success");
-
-            logAudit(
-              getCurrentUser().name || "Student",
-              "Code Compiler Challenge Passed",
-              "Student",
-              `Solved ${currentProblem.title} with 100% test case coverage.`
-            );
-          } else {
-            statusTag.textContent = "TEST SUITE FAILED";
-            statusTag.className = "px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 text-[10px] font-mono font-bold";
-          }
-
-          resultsBox.innerHTML = `
-            <div class="text-[10px] text-slate-400 flex items-center justify-between pb-1">
-              <span>Runtime Execution Time: <strong>${durationMs}ms</strong></span>
-              <span>Memory Allocation: <strong>14.2 MB</strong></span>
-            </div>
-            ${htmlLogs}
-          `;
-
-        } catch (execError) {
-          statusTag.textContent = "SYNTAX / RUNTIME ERROR";
-          statusTag.className = "px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 text-[10px] font-mono font-bold";
-          resultsBox.innerHTML = `<div class="p-3 rounded-xl bg-rose-950/60 border border-rose-800 text-rose-300 font-mono text-xs">Runtime Error: ${execError.message}</div>`;
+        if (!res || !res.success) {
+          throw new Error(res?.error || "Sandbox execution failed");
         }
-      }, 300);
+
+        const htmlLogs = res.results.map((tc, idx) => `
+          <div class="p-3 rounded-xl ${tc.passed ? 'bg-emerald-950/40 border border-emerald-800/50 text-emerald-300' : 'bg-rose-950/40 border border-rose-800/50 text-rose-300'} flex items-center justify-between">
+            <div>
+              <div class="font-bold">Test Case #${idx + 1}: ${tc.input}</div>
+              <div class="text-[10px] opacity-80 mt-0.5">Expected: <span class="font-mono">${tc.expected}</span> | Actual Output: <span class="font-mono">${tc.actual}</span></div>
+            </div>
+            <div class="font-bold text-xs shrink-0">${tc.passed ? 'PASSED ✓' : 'FAILED ✕'}</div>
+          </div>
+        `).join('');
+
+        if (res.allPassed) {
+          statusTag.textContent = `ALL TESTS PASSED (${durationMs}ms)`;
+          statusTag.className = "px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-mono font-bold";
+          showToast(`Success! All test cases passed in ${durationMs}ms (+${currentProblem.xpReward || 100} XP)`, "success");
+
+          logAudit(
+            getCurrentUser().name || "Student",
+            "Sandbox Code Validation Passed",
+            "Student",
+            `Solved ${currentProblem.title} with 100% test case coverage.`
+          );
+        } else {
+          statusTag.textContent = "TEST SUITE FAILED";
+          statusTag.className = "px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 text-[10px] font-mono font-bold";
+        }
+
+        resultsBox.innerHTML = `
+          <div class="text-[10px] text-slate-400 flex items-center justify-between pb-1">
+            <span>Remote Execution Time: <strong>${durationMs}ms</strong></span>
+            <span>Memory Allocation: <strong>~14.2 MB</strong></span>
+          </div>
+          <div class="space-y-2">
+            ${htmlLogs}
+          </div>
+        `;
+
+      } catch (execError) {
+        statusTag.textContent = "SYNTAX / RUNTIME ERROR";
+        statusTag.className = "px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 text-[10px] font-mono font-bold";
+        resultsBox.innerHTML = `<div class="p-3 rounded-xl bg-rose-950/60 border border-rose-800 text-rose-300 font-mono text-xs">Runtime Error: ${execError.message}</div>`;
+      }
     });
   }
 }

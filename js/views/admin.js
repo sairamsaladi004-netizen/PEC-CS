@@ -63,7 +63,7 @@ export function renderAdminView(params = {}) {
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div class="flex items-center space-x-2">
-            <span class="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-mono font-bold uppercase">Super Admin & Institutional Governance</span>
+            <span class="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-mono font-bold uppercase">Director (Academics) & Institutional Governance</span>
           </div>
           <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Council Governance Console</h1>
           <p class="text-xs sm:text-sm text-slate-500">Manage chapter life-cycles, audit budget claims, configure academic policies, and inspect immutable audit logs</p>
@@ -583,11 +583,8 @@ export function attachAdminEvents() {
       const pid = btn.dataset.propid;
       const prop = db.clubProposals.find(p => p.id === pid);
       if (prop) {
-        
-        apiRequest(`/api/admin/clubs/proposals/${pid}/approve`, 'POST', {}).catch(console.error);
         prop.status = "Approved & Chartered";
-        logAudit(`${user.name} (${user.role})`, "Approved Club Charter", prop.name
-, `Dept: ${prop.department}`);
+        logAudit(`${user.name} (${user.role})`, "Approved Club Charter", prop.name, `Dept: ${prop.department}`);
         saveDB(db);
         showToast("Charter Granted", `Official chapter status granted to ${prop.name}!`, "success");
         setTimeout(() => window.location.reload(), 300);
@@ -678,12 +675,9 @@ export function attachAdminEvents() {
           upcomingEventsCount: 0
         };
 
-        
-        apiRequest('/api/admin/clubs/create', 'POST', newClub).catch(console.error);
         db.clubs.push(newClub);
         saveDB(db);
-        logAudit(`${user.name} (${user.role})`, "Chartered Society"
-, newClub.name, `Dept: ${newClub.department}`);
+        logAudit(`${user.name} (${user.role})`, "Chartered Society", newClub.name, `Dept: ${newClub.department}`);
         showToast("Society Chartered", `${newClub.name} officially added!`, "success");
         clubModal.classList.add("hidden");
         setTimeout(() => window.location.reload(), 300);
@@ -718,12 +712,9 @@ export function attachAdminEvents() {
           agenda: ["Inauguration", "Hands-on Sprints", "Project Demos"]
         };
 
-        
-        apiRequest('/api/admin/events/create', 'POST', newEvent).catch(console.error);
         db.events.push(newEvent);
         saveDB(db);
-        logAudit(`${user.name} (${user.role})`, "Scheduled Event"
-, newEvent.title, `Date: ${newEvent.date}`);
+        logAudit(`${user.name} (${user.role})`, "Scheduled Event", newEvent.title, `Date: ${newEvent.date}`);
         showToast("Event Scheduled", `${newEvent.title} is now open for registration!`, "success");
         eventModal.classList.add("hidden");
         setTimeout(() => window.location.reload(), 300);
@@ -766,12 +757,9 @@ export function attachAdminEvents() {
           status: "Verified & Active"
         };
 
-        
-        apiRequest('/api/admin/certificates/create', 'POST', newCert).catch(console.error);
         db.certificates.unshift(newCert);
         saveDB(db);
-        logAudit(`${user.name} (${user.role})`, "Issued Certificate"
-, certId, `Recipient: ${studentName}`);
+        logAudit(`${user.name} (${user.role})`, "Issued Certificate", certId, `Recipient: ${studentName}`);
         showToast("Certificate Minted", `Issued ${certId} with cryptographic signature!`, "success");
         certModal.classList.add("hidden");
         setTimeout(() => window.location.reload(), 300);

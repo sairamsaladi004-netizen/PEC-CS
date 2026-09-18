@@ -1,4 +1,4 @@
-import { getCurrentUser, loginUser, registerStudent, resetPassword, verifyEmailWithOTP, getAllDemoAccounts, switchUser } from '../auth.js';
+import { getCurrentUser, loginUser, registerStudent, resetPassword, verifyEmailWithOTP, getAllDemoAccounts, loginWithGoogle } from '../auth.js';
 
 export function renderLoginView() {
   const user = getCurrentUser();
@@ -20,77 +20,53 @@ export function renderLoginView() {
       </div>
 
       <!-- Direct Demo Login Banner for 4 Roles -->
-      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 border border-slate-700/80 mb-8 shadow-xl text-white space-y-4">
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-4 border border-slate-700/80 mb-6 shadow-xl text-white space-y-3 max-w-4xl mx-auto">
         <div class="flex items-center justify-between flex-wrap gap-2">
           <div class="flex items-center space-x-2">
-            <span class="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider font-mono">
+            <span class="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[9px] font-black uppercase tracking-wider font-mono">
               DIRECT 1-CLICK DEMO LOGIN
             </span>
-            <span class="text-xs font-bold text-slate-200">Select Any Institutional Persona</span>
+            <span class="text-[11px] font-bold text-slate-200">Select Any Institutional Persona</span>
           </div>
-          <span class="text-[11px] text-emerald-400 font-mono font-bold">● Click card for instant portal access</span>
+          <span class="text-[9px] text-emerald-400 font-mono font-bold">● Click card for instant portal access</span>
         </div>
         
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2">
           
           <!-- Student Role Direct Login -->
-          <button type="button" class="demo-login-btn text-left p-4 rounded-2xl bg-slate-800/90 hover:bg-slate-800 border border-emerald-500/40 hover:border-emerald-400 transition-all hover:scale-[1.02] cursor-pointer group shadow-md" data-user-id="std-101" data-demo-email="aarav.sharma@pragati.ac.in" data-role="Student">
-            <div class="flex items-center justify-between mb-1.5">
-              <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">🎓 Student Member</span>
-              <span class="text-[10px] font-mono text-emerald-400 group-hover:underline">1-Click Login 🚀</span>
+          <button type="button" class="demo-login-btn text-left p-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-800 border border-emerald-500/40 hover:border-emerald-400 transition-all hover:scale-[1.02] cursor-pointer group shadow-md" data-user-id="std-101" data-demo-email="aarav.sharma@pragati.ac.in" data-role="Student">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">🎓 Student Member</span>
             </div>
-            <div class="text-sm font-bold text-white">Aarav Sharma</div>
-            <div class="text-[10px] font-mono text-slate-300 mt-0.5">aarav.sharma@pragati.ac.in</div>
-            <div class="text-[10px] text-slate-400 font-mono mt-1">Roll No: <strong class="text-emerald-300">22CS101</strong></div>
-            <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px]">
-              <span class="text-slate-400">Target Portal:</span>
-              <span class="font-bold text-emerald-400">Student Dashboard</span>
-            </div>
+            <div class="text-xs font-bold text-white truncate">Aarav Sharma</div>
+            <div class="text-[9px] font-mono text-slate-300 mt-0.5 truncate">aarav.sharma@pragati.ac.in</div>
           </button>
 
           <!-- Club Admin Role Direct Login -->
-          <button type="button" class="demo-login-btn text-left p-4 rounded-2xl bg-slate-800/90 hover:bg-slate-800 border border-blue-500/40 hover:border-blue-400 transition-all hover:scale-[1.02] cursor-pointer group shadow-md" data-user-id="std-102" data-demo-email="priya.patel@pragati.ac.in" data-role="Club Admin">
-            <div class="flex items-center justify-between mb-1.5">
-              <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40">⚡ Club Admin</span>
-              <span class="text-[10px] font-mono text-blue-400 group-hover:underline">1-Click Login 🚀</span>
+          <button type="button" class="demo-login-btn text-left p-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-800 border border-blue-500/40 hover:border-blue-400 transition-all hover:scale-[1.02] cursor-pointer group shadow-md" data-user-id="std-102" data-demo-email="priya.patel@pragati.ac.in" data-role="Club Admin">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40">⚡ Club Admin</span>
             </div>
-            <div class="text-sm font-bold text-white">Priya Patel</div>
-            <div class="text-[10px] font-mono text-slate-300 mt-0.5">priya.patel@pragati.ac.in</div>
-            <div class="text-[10px] text-slate-400 font-mono mt-1">Roll No: <strong class="text-blue-300">22CS142</strong></div>
-            <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px]">
-              <span class="text-slate-400">Target Portal:</span>
-              <span class="font-bold text-blue-400">Club Admin Panel</span>
-            </div>
+            <div class="text-xs font-bold text-white truncate">Priya Patel</div>
+            <div class="text-[9px] font-mono text-slate-300 mt-0.5 truncate">priya.patel@pragati.ac.in</div>
           </button>
 
           <!-- Faculty Coordinator Role Direct Login -->
-          <button type="button" class="demo-login-btn text-left p-4 rounded-2xl bg-slate-800/90 hover:bg-slate-800 border border-purple-500/40 hover:border-purple-400 transition-all hover:scale-[1.02] cursor-pointer group shadow-md" data-user-id="coord-201" data-demo-email="yamuna.l@pragati.ac.in" data-role="Faculty Coordinator">
-            <div class="flex items-center justify-between mb-1.5">
-              <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40">🏫 Faculty Coord</span>
-              <span class="text-[10px] font-mono text-purple-400 group-hover:underline">1-Click Login 🚀</span>
+          <button type="button" class="demo-login-btn text-left p-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-800 border border-purple-500/40 hover:border-purple-400 transition-all hover:scale-[1.02] cursor-pointer group shadow-md" data-user-id="coord-201" data-demo-email="yamuna.l@pragati.ac.in" data-role="Faculty Coordinator">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40">🏫 Faculty Coord</span>
             </div>
-            <div class="text-sm font-bold text-white">Mrs. L. Yamuna</div>
-            <div class="text-[10px] font-mono text-slate-300 mt-0.5">yamuna.l@pragati.ac.in</div>
-            <div class="text-[10px] text-slate-400 font-mono mt-1">Faculty ID: <strong class="text-purple-300">FAC-CSE-AIML-01</strong></div>
-            <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px]">
-              <span class="text-slate-400">Target Portal:</span>
-              <span class="font-bold text-purple-400">Faculty Coordinator</span>
-            </div>
+            <div class="text-xs font-bold text-white truncate">Mrs. L. Yamuna</div>
+            <div class="text-[9px] font-mono text-slate-300 mt-0.5 truncate">yamuna.l@pragati.ac.in</div>
           </button>
 
           <!-- Director (Academics) Role Direct Login -->
-          <button type="button" class="demo-login-btn text-left p-4 rounded-2xl bg-slate-800/90 hover:bg-slate-800 border border-rose-500/40 hover:border-rose-400 transition-all hover:scale-[1.02] cursor-pointer group shadow-md" data-user-id="admin-001" data-demo-email="director.academics@pragati.ac.in" data-role="Director (Academics)">
-            <div class="flex items-center justify-between mb-1.5">
-              <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">🏛️ Director (Academics)</span>
-              <span class="text-[10px] font-mono text-rose-400 group-hover:underline">1-Click Login 🚀</span>
+          <button type="button" class="demo-login-btn text-left p-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-800 border border-rose-500/40 hover:border-rose-400 transition-all hover:scale-[1.02] cursor-pointer group shadow-md" data-user-id="admin-001" data-demo-email="principal@pragati.ac.in" data-role="Director(Academics)">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">🏛️ Director(Academics)</span>
             </div>
-            <div class="text-sm font-bold text-white">Dr. K. Satyanarayana</div>
-            <div class="text-[10px] font-mono text-slate-300 mt-0.5">director.academics@pragati.ac.in</div>
-            <div class="text-[10px] text-slate-400 font-mono mt-1">Faculty ID: <strong class="text-rose-300">FAC-PEC-001</strong></div>
-            <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px]">
-              <span class="text-slate-400">Target Portal:</span>
-              <span class="font-bold text-rose-400">Directorate & Academic Council</span>
-            </div>
+            <div class="text-xs font-bold text-white truncate">Dr. K. Satyanarayana</div>
+            <div class="text-[9px] font-mono text-slate-300 mt-0.5 truncate">principal@pragati.ac.in</div>
           </button>
 
         </div>
@@ -133,6 +109,17 @@ export function renderLoginView() {
 
               <button type="submit" id="login-submit-btn" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 transition-all">
                 Sign In to Portal
+              </button>
+
+              <div class="relative flex py-2 items-center">
+                <div class="flex-grow border-t border-slate-200"></div>
+                <span class="flex-shrink mx-4 text-[10px] text-slate-400 font-bold uppercase tracking-wider">Or SSO Provider</span>
+                <div class="flex-grow border-t border-slate-200"></div>
+              </div>
+
+              <button type="button" id="google-oauth-btn" class="w-full py-3 px-4 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold shadow-sm transition-all flex items-center justify-center space-x-2.5 cursor-pointer">
+                <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.15v3.15C3.15 21.32 7.21 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.15C.42 8.04 0 9.96 0 12s.42 3.96 1.15 5.42l4.13-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.21 0 3.15 2.68 1.15 6.58l4.13 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/></svg>
+                <span>Institutional SSO / Sign In with Google</span>
               </button>
             </form>
           </div>
@@ -386,6 +373,22 @@ export function attachLoginEvents() {
     }
   });
 
+  // Google OAuth button listener
+  document.getElementById("google-oauth-btn")?.addEventListener("click", async () => {
+    const alertBox = document.getElementById("login-alert");
+    if (alertBox) {
+      alertBox.className = "p-3 rounded-xl text-xs font-medium bg-blue-50 text-blue-700 block animate-pulse";
+      alertBox.textContent = "Redirecting to Supabase Google OAuth SSO...";
+    }
+    const res = await loginWithGoogle();
+    if (!res.success) {
+      if (alertBox) {
+        alertBox.className = "p-3 rounded-xl text-xs font-medium bg-rose-50 text-rose-700 block";
+        alertBox.textContent = res.message || "Google OAuth sign-in failed.";
+      }
+    }
+  });
+
   // Role selector toggle logic
   const regRoleSelect = document.getElementById("reg-role");
   const regClubContainer = document.getElementById("reg-club-container");
@@ -556,11 +559,11 @@ export function attachLoginEvents() {
 
 function redirectAfterLogin(role) {
   const normRole = (role || "").toLowerCase();
-  if (normRole.includes("super") || normRole.includes("director") || normRole.includes("academic")) {
+  if (normRole.includes("super admin")) {
     window.location.hash = "#/admin/dashboard";
   } else if (normRole.includes("faculty") || normRole.includes("coordinator")) {
     window.location.hash = "#/coordinator/dashboard";
-  } else if (normRole.includes("club admin") || normRole.includes("leader") || normRole.includes("club_admin")) {
+  } else if (normRole.includes("club admin") || normRole.includes("leader")) {
     window.location.hash = "#/club-dashboard";
   } else {
     window.location.hash = "#/student/dashboard";

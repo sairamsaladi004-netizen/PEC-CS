@@ -1,6 +1,65 @@
 // D3 Visualizers for PEC CampusTech (Faculty Coordinator & Super Admin Dashboards)
 // Utilizes window.d3 (v7) with pure SVG fallback for guaranteed visual reliability.
 
+export function renderClubLeaderboardD3(containerId, clubData) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (!clubData || clubData.length === 0) {
+    container.innerHTML = `<div class="p-8 text-center text-slate-400 text-xs">No club engagement data available.</div>`;
+    return;
+  }
+
+  const d3 = window.d3;
+  if (!d3) return;
+
+  const width = container.clientWidth || 500;
+  const height = clubData.length * 50 + 40;
+  const margin = { top: 20, right: 30, bottom: 30, left: 150 };
+
+  const svg = d3.select(container)
+    .append("svg")
+    .attr("viewBox", `0 0 ${width} ${height}`)
+    .attr("class", "w-full h-auto font-sans");
+
+  const y = d3.scaleBand()
+    .domain(clubData.map(d => d.name))
+    .range([margin.top, height - margin.bottom])
+    .padding(0.3);
+
+  const x = d3.scaleLinear()
+    .domain([0, d3.max(clubData, d => d.totalScore) * 1.15 || 100])
+    .range([margin.left, width - margin.right]);
+
+  // Bars
+  svg.selectAll(".club-bar")
+    .data(clubData)
+    .enter()
+    .append("rect")
+    .attr("class", "club-bar transition-all hover:opacity-80")
+    .attr("y", d => y(d.name))
+    .attr("x", margin.left)
+    .attr("height", y.bandwidth())
+    .attr("width", d => x(d.totalScore) - margin.left)
+    .attr("fill", "#f59e0b")
+    .attr("rx", 6);
+
+  // Y Axis (Club Names)
+  svg.append("g")
+    .attr("transform", `translate(${margin.left},0)`)
+    .call(d3.axisLeft(y).tickSize(0))
+    .selectAll("text")
+    .attr("class", "text-[11px] font-bold fill-slate-700");
+
+  // X Axis
+  svg.append("g")
+    .attr("transform", `translate(0,${height - margin.bottom})`)
+    .call(d3.axisBottom(x).ticks(5).tickSize(0))
+    .selectAll("text")
+    .attr("class", "text-[10px] font-mono fill-slate-400");
+}
+
 export function renderAttendanceBarChart(containerId, eventData) {
   const container = document.getElementById(containerId);
   if (!container) return;

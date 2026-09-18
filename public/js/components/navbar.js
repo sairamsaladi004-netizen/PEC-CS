@@ -20,7 +20,7 @@ export function renderNavbar() {
   };
 
   return `
-    <header class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-white">
+    <header class="no-print sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
           
@@ -53,6 +53,12 @@ export function renderNavbar() {
               <span class="w-1.5 h-1.5 rounded-full ${currentRole === ROLES.SUPER_ADMIN ? 'bg-rose-400' : currentRole === ROLES.FACULTY_COORDINATOR ? 'bg-purple-400' : currentRole === ROLES.CLUB_ADMIN ? 'bg-blue-400' : currentRole === ROLES.STUDENT ? 'bg-emerald-400' : 'bg-slate-400'}"></span>
               <span>${currentRole}</span>
             </div>
+
+            <!-- Supabase DB Status Trigger -->
+            <button id="open-supabase-modal-btn" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 text-xs flex items-center space-x-1.5 border border-emerald-700/60 transition-colors cursor-pointer" title="Supabase Database Management Console">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span class="hidden sm:inline font-bold">Supabase DB</span>
+            </button>
 
             <!-- Global Search Trigger -->
             <button id="nav-search-trigger" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center space-x-1.5 border border-slate-700/60 transition-colors">
@@ -366,6 +372,15 @@ export function attachNavbarEvents() {
       if (!notifDropdown.contains(e.target) && !notifBtn.contains(e.target)) {
         notifDropdown.classList.add("hidden");
       }
+    });
+  }
+
+  // Supabase Console trigger
+  const sbBtn = document.getElementById("open-supabase-modal-btn");
+  if (sbBtn) {
+    sbBtn.addEventListener("click", () => {
+      const sbModal = document.getElementById("supabase-config-modal");
+      if (sbModal) sbModal.classList.remove("hidden");
     });
   }
 
